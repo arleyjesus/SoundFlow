@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
+import com.example.comarleyaetheraudio.data.local.FavoriteSongEntity
 import com.example.comarleyaetheraudio.data.local.FolderScanner
 import com.example.comarleyaetheraudio.data.local.dao.MusicDao
 import com.example.comarleyaetheraudio.data.local.entity.FolderEntity
@@ -61,6 +62,17 @@ class AudioRepositoryImpl(
         dao.deleteFolder(folderUri)
     }
 
+    override fun getFavoriteSongIds(): Flow<List<Long>> = dao.getFavoriteSongIds()
+
+    override suspend fun toggleFavorite(songId: Long, isFavorite: Boolean) {
+        if (isFavorite) {
+            dao.deleteFavorite(songId)
+        } else {
+            dao.insertFavorite(FavoriteSongEntity(songId = songId))
+        }
+    }
+
+
     private fun SongEntity.toDomainModel(): Song {
         return Song(
             id = id,
@@ -82,4 +94,6 @@ class AudioRepositoryImpl(
             folderUri = folderUri
         )
     }
+
+
 }

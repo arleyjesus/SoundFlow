@@ -9,8 +9,14 @@ import com.example.comarleyaetheraudio.data.local.entity.FolderEntity
 import com.example.comarleyaetheraudio.data.local.entity.SongEntity
 
 @Database(
-    entities = [SongEntity::class, FolderEntity::class],
-    version = 1,
+    entities = [
+        SongEntity::class,
+        FolderEntity::class,
+        FavoriteSongEntity::class,
+        PlaylistEntity::class,
+        PlaylistSongCrossRef::class
+    ],
+    version = 2,
     exportSchema = false
 )
 abstract class MusicDatabase : RoomDatabase() {
@@ -25,8 +31,10 @@ abstract class MusicDatabase : RoomDatabase() {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     MusicDatabase::class.java,
-                    "aether_music_db"
-                ).build()
+                    "soundflow_database"
+                )
+                    .fallbackToDestructiveMigration() // Recrea la DB limpiamente al subir de versión
+                    .build()
                 INSTANCE = instance
                 instance
             }

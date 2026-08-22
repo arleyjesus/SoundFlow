@@ -126,9 +126,16 @@ fun MainAppStructure(viewModel: LibraryViewModel) {
                 startDestination = Screen.Home.route
             ) {
                 composable(Screen.Home.route) {
+                    val favoriteIds by viewModel.favoriteIds.collectAsState()
+
                     HomeScreen(
                         playerState = playerState,
-                        onTogglePlayPause = { viewModel.onTogglePlayPause() }
+                        allSongs = songs,
+                        favoriteIds = favoriteIds,
+                        onSongClick = { selectedSong ->
+                            val favoriteSongs = songs.filter { favoriteIds.contains(it.id) }
+                            viewModel.playerHandler.playSong(selectedSong, favoriteSongs)
+                        }
                     )
                 }
                 composable(Screen.Songs.route) {
@@ -156,9 +163,22 @@ fun MainAppStructure(viewModel: LibraryViewModel) {
         }
 
         // Reproductor Pantalla Completa
+        val favoriteIds by viewModel.favoriteIds.collectAsState()
+        val isCurrentFavorite = playerState.currentSong?.let { favoriteIds.contains(it.id) } ?: false
+
         if (showFullPlayer) {
+            val favoriteIds by viewModel.favoriteIds.collectAsState()
+            val currentSong = playerState.currentSong
+            val isCurrentFavorite = currentSong?.let { favoriteIds.contains(it.id) } ?: false
+
             FullPlayerSheet(
                 playerState = playerState,
+                isFavorite = isCurrentFavorite,
+                onToggleFavorite = {
+                    currentSong?.let { song ->
+                        viewModel.toggleFavorite(song.id)
+                    }
+                },
                 onDismiss = { showFullPlayer = false },
                 onTogglePlayPause = { viewModel.onTogglePlayPause() },
                 onSeekTo = { pos -> viewModel.playerHandler.seekTo(pos) },

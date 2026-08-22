@@ -71,4 +71,19 @@ class LibraryViewModel(
             settingsRepository.setDarkMode(enabled)
         }
     }
+
+    val favoriteIds: StateFlow<List<Long>> = repository.getFavoriteSongIds()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = emptyList()
+        )
+
+    fun toggleFavorite(songId: Long) {
+        viewModelScope.launch {
+            val currentFavorites = favoriteIds.value
+            val isFav = currentFavorites.contains(songId)
+            repository.toggleFavorite(songId, isFav)
+        }
+    }
 }

@@ -1,6 +1,6 @@
 package com.example.comarleyaetheraudio.presentation.player
 
-import androidx.compose.ui.graphics.asImageBitmap
+import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -13,19 +13,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.comarleyaetheraudio.domain.model.AudioPlayerState
-import android.graphics.BitmapFactory
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FullPlayerSheet(
     playerState: AudioPlayerState,
+    isFavorite: Boolean,
+    onToggleFavorite: () -> Unit,
     onDismiss: () -> Unit,
     onTogglePlayPause: () -> Unit,
     onSeekTo: (Long) -> Unit,
@@ -33,18 +34,16 @@ fun FullPlayerSheet(
     onPrevious: () -> Unit,
     onRewind: () -> Unit,
     onForward: () -> Unit,
-    onToggleShuffle: () -> Unit // Nueva acción
+    onToggleShuffle: () -> Unit
 ) {
     val song = playerState.currentSong ?: return
     var sliderPosition by remember { mutableStateOf<Float?>(null) }
-
-    // ESTO fuerza a la hoja a abrirse completa en un solo movimiento
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.background, // Respeta el negro puro
+        containerColor = MaterialTheme.colorScheme.background,
         modifier = Modifier.fillMaxSize()
     ) {
         Column(
@@ -60,10 +59,8 @@ fun FullPlayerSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Carátula (Cuadrada, esquinas redondeadas, sombra elegante)
-            // Procesamiento optimizado de la carátula
+            // Carátula de la canción
             val artworkData = playerState.artworkData
-            // Convertimos los bytes en un Bitmap nativo de Android (recordado para no consumir batería extra)
             val bitmap = remember(artworkData) {
                 artworkData?.let { bytes -> BitmapFactory.decodeByteArray(bytes, 0, bytes.size) }
             }
@@ -80,7 +77,6 @@ fun FullPlayerSheet(
                     contentScale = ContentScale.Crop
                 )
             } else if (song.albumArtUri != null) {
-                // Respaldo por si hay una ruta web o archivo temporal
                 AsyncImage(
                     model = song.albumArtUri,
                     contentDescription = null,
@@ -92,7 +88,6 @@ fun FullPlayerSheet(
                     contentScale = ContentScale.Crop
                 )
             } else {
-                // Diseño Placeholder limpio y elegante en modo oscuro/morado
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -112,25 +107,39 @@ fun FullPlayerSheet(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Información de la canción (Alineada a la izquierda, moderno)
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = song.title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.ExtraBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = song.artist,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+            // Información de la canción + Botón de Favorito (Corazón)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = song.title,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = song.artist,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                IconButton(onClick = onToggleFavorite) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = "Favorito",
+                        tint = if (isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
             }
 
-            // Usamos weight para empujar los controles hacia abajo y llenar espacios vacíos
             Spacer(modifier = Modifier.weight(1f))
 
             // Barra de progreso
@@ -181,7 +190,7 @@ fun FullPlayerSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Controles Principales: Anterior, Play/Pause gigante, Siguiente
+            // Controles Principales: Anterior, Play/Pause, Siguiente
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,

@@ -29,4 +29,8 @@ interface AudioRepository {
      * Elimina una carpeta de la BD local y remueve sus canciones asociadas.
      */
     suspend fun removeFolder(folderUri: String)
+
+    suspend fun toggleFavorite(songId: Long, isFavorite: Boolean)
+
+    fun getFavoriteSongIds(): Flow<List<Long>>
 }
