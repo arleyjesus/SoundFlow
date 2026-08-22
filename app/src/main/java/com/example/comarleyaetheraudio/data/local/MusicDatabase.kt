@@ -33,7 +33,7 @@ abstract class MusicDatabase : RoomDatabase() {
                     MusicDatabase::class.java,
                     "soundflow_database"
                 )
-                    .fallbackToDestructiveMigration() // Recrea la DB limpiamente al subir de versión
+                    .fallbackToDestructiveMigration() // Evita que la app se cierre si cambia la versión de la DB
                     .build()
                 INSTANCE = instance
                 instance

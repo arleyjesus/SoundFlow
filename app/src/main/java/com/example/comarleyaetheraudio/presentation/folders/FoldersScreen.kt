@@ -3,99 +3,103 @@ package com.example.comarleyaetheraudio.presentation.folders
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CreateNewFolder
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.comarleyaetheraudio.data.local.entity.FolderEntity
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FoldersScreen(
     folders: List<FolderEntity>,
     onAddFolder: (Uri) -> Unit,
-    onRemoveFolder: (String) -> Unit
+    onRemoveFolder: (String) -> Unit,
+    onFolderClick: (String) -> Unit
 ) {
-    // Launcher para abrir el selector nativo de carpetas de Android (SAF)
-    val folderPickerLauncher = rememberLauncherForActivityResult(
+    val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
-    ) { uri: Uri? ->
-        uri?.let { selectedFolderUri ->
-            onAddFolder(selectedFolderUri)
-        }
+    ) { uri ->
+        uri?.let { onAddFolder(it) }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        // Botón principal para seleccionar una nueva carpeta
-        Button(
-            onClick = { folderPickerLauncher.launch(null) },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(Icons.Default.CreateNewFolder, contentDescription = "Agregar carpeta")
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Seleccionar Carpeta de Música")
+    Scaffold(
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = { launcher.launch(null) },
+                icon = { Icon(Icons.Default.Add, contentDescription = "Agregar carpeta") },
+                text = { Text("Agregar Carpeta") },
+                containerColor = MaterialTheme.colorScheme.primary
+            )
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
+    ) { paddingValues ->
         if (folders.isEmpty()) {
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "No has agregado carpetas aún.\nToca el botón de arriba para seleccionar tus carpetas de música.",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = "No has agregado carpetas. Presiona '+' para vincular tu música.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         } else {
-            Text(
-                text = "Carpetas analizadas:",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-
             LazyColumn(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
             ) {
                 items(folders) { folder ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
-                    ) {
-                        ListItem(
-                            leadingContent = {
-                                Icon(Icons.Default.Folder, contentDescription = null)
-                            },
-                            headlineContent = { Text(folder.name) },
-                            supportingContent = { Text("${folder.songCount} canciones encontradas") },
-                            trailingContent = {
-                                IconButton(onClick = { onRemoveFolder(folder.uriString) }) {
-                                    Icon(
-                                        Icons.Default.Delete,
-                                        contentDescription = "Eliminar carpeta",
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
-                                }
+                    ListItem(
+                        modifier = Modifier.clickable { onFolderClick(folder.path) },
+                        leadingContent = {
+                            Icon(
+                                imageVector = Icons.Default.Folder,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(36.dp)
+                            )
+                        },
+                        headlineContent = {
+                            Text(
+                                text = folder.name.ifEmpty { folder.path.substringAfterLast("/").ifEmpty { folder.path } },
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        },
+                        supportingContent = {
+                            Text(
+                                text = "${folder.songCount} canciones • ${folder.path}",
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        trailingContent = {
+                            IconButton(onClick = { onRemoveFolder(folder.uriString) }) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Eliminar carpeta",
+                                    tint = MaterialTheme.colorScheme.error
+                                )
                             }
-                        )
-                    }
+                        }
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                 }
             }
         }

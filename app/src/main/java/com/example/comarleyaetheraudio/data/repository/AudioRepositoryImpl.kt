@@ -90,6 +90,7 @@ class AudioRepositoryImpl(
             bitrate = bitrate,
             sampleRate = sampleRate,
             isHiRes = isHiRes,
+            path = path,
             folderPath = folderName,
             folderUri = folderUri
         )

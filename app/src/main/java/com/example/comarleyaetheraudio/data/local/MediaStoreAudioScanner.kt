@@ -34,7 +34,8 @@ class MediaStoreAudioScanner(private val context: Context) {
             MediaStore.Audio.Media.DURATION,
             MediaStore.Audio.Media.ALBUM_ID,
             MediaStore.Audio.Media.SIZE,
-            MediaStore.Audio.Media.MIME_TYPE
+            MediaStore.Audio.Media.MIME_TYPE,
+            MediaStore.Audio.Media.DATA
         )
 
         // Filtro: Solo archivos que la plataforma reconoce como música y mayores a 30 segundos
@@ -57,6 +58,7 @@ class MediaStoreAudioScanner(private val context: Context) {
             val albumIdColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)
             val sizeColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE)
             val mimeTypeColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.MIME_TYPE)
+            val dataColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
 
             while (cursor.moveToNext()) {
                 val id = cursor.getLong(idColumn)
@@ -67,6 +69,7 @@ class MediaStoreAudioScanner(private val context: Context) {
                 val albumId = cursor.getLong(albumIdColumn)
                 val size = cursor.getLong(sizeColumn)
                 val mimeType = cursor.getString(mimeTypeColumn) ?: ""
+                val path = cursor.getString(dataColumn) ?: ""
 
                 // URI para reproducir el archivo directamente
                 val contentUri: Uri = ContentUris.withAppendedId(
@@ -100,7 +103,8 @@ class MediaStoreAudioScanner(private val context: Context) {
                         mimeType = mimeType,
                         bitrate = bitrate,
                         sampleRate = sampleRate,
-                        isHiRes = isHiResQuality
+                        isHiRes = isHiResQuality,
+                        path = path
                     )
                 )
             }

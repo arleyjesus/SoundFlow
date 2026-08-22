@@ -20,6 +20,7 @@ data class SongEntity(
     val bitrate: Int,
     val sampleRate: Int,
     val isHiRes: Boolean,
+    val path: String,
     val folderUri: String,
     val folderName: String
 )

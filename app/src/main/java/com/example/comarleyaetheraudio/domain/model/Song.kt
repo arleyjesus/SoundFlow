@@ -22,6 +22,7 @@ data class Song(
     val bitrate: Int = 0,
     val sampleRate: Int = 0,
     val isHiRes: Boolean = false,
+    val path: String = "",              // Nuevo: Ruta absoluta del archivo (necesaria para letras .lrc)
     val folderPath: String = "",       // Nuevo: Para agrupar las canciones por la carpeta que eligió el usuario
     val folderUri: String = ""         // Nuevo: El identificador de la carpeta padre
 )

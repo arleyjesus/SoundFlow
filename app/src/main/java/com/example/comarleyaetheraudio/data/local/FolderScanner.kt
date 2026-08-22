@@ -37,6 +37,7 @@ class FolderScanner(private val context: Context) {
                         bitrate = metadata.bitrate,
                         sampleRate = metadata.sampleRate,
                         isHiRes = metadata.isHiRes,
+                        path = fileUri.path ?: "",
                         folderUri = folderUri.toString(),
                         folderName = folderName
                     )

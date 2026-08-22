@@ -1,21 +1,22 @@
 package com.example.comarleyaetheraudio
 
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.comarleyaetheraudio.data.local.FolderScanner
 import com.example.comarleyaetheraudio.data.local.MusicDatabase
 import com.example.comarleyaetheraudio.data.player.AudioPlayerHandler
@@ -24,7 +25,7 @@ import com.example.comarleyaetheraudio.data.repository.SettingsRepository
 import com.example.comarleyaetheraudio.domain.model.Song
 import com.example.comarleyaetheraudio.presentation.Screen
 import com.example.comarleyaetheraudio.presentation.components.MiniPlayer
-import com.example.comarleyaetheraudio.presentation.components.SongItem
+import com.example.comarleyaetheraudio.presentation.folders.FolderDetailScreen
 import com.example.comarleyaetheraudio.presentation.folders.FoldersScreen
 import com.example.comarleyaetheraudio.presentation.home.HomeScreen
 import com.example.comarleyaetheraudio.presentation.library.LibraryViewModel
@@ -40,7 +41,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Inicialización de dependencias y base de datos local
         val database = MusicDatabase.getDatabase(applicationContext)
         val scanner = FolderScanner(applicationContext)
         val repository = AudioRepositoryImpl(applicationContext, database.musicDao(), scanner)
@@ -92,13 +92,12 @@ fun MainAppStructure(viewModel: LibraryViewModel) {
                         MiniPlayer(
                             song = song,
                             isPlaying = playerState.isPlaying,
-                            artworkData = playerState.artworkData, // Pasar los bytes de la imagen
+                            artworkData = playerState.artworkData,
                             onTogglePlayPause = { viewModel.onTogglePlayPause() }
                         )
                     }
                 }
 
-                // Menú de navegación inferior de 4 secciones
                 NavigationBar {
                     screens.forEach { screen ->
                         NavigationBarItem(
@@ -150,9 +149,37 @@ fun MainAppStructure(viewModel: LibraryViewModel) {
                     FoldersScreen(
                         folders = folders,
                         onAddFolder = { uri -> viewModel.onAddFolder(uri) },
-                        onRemoveFolder = { folderUri -> viewModel.onRemoveFolder(folderUri) }
+                        onRemoveFolder = { folderUri -> viewModel.onRemoveFolder(folderUri) },
+                        onFolderClick = { folderPath ->
+                            navController.navigate(Screen.FolderDetail.createRoute(folderPath))
+                        }
                     )
                 }
+                composable(
+                    route = Screen.FolderDetail.route,
+                    arguments = listOf(navArgument("folderPath") { type = NavType.StringType })
+                ) { backStackEntry: NavBackStackEntry ->
+                    val encodedPath: String = backStackEntry.arguments?.getString("folderPath") ?: ""
+                    val folderPath: String = Uri.decode(encodedPath) ?: ""
+
+                    val songsInFolder = songs.filter { song: Song ->
+                        val songPath = song.path
+                        val songUriString = song.contentUri.toString()
+                        songPath.contains(folderPath) || songUriString.contains(folderPath)
+                    }
+
+                    val folderName = folderPath.substringAfterLast("/")
+
+                    FolderDetailScreen(
+                        folderName = if (folderName.isNotEmpty()) folderName else "Carpeta",
+                        songsInFolder = songsInFolder,
+                        onBackClick = { navController.popBackStack() },
+                        onSongClick = { selectedSong ->
+                            viewModel.playerHandler.playSong(selectedSong, songsInFolder)
+                        }
+                    )
+                }
+                // RUTA DE AJUSTES QUE HACÍA FALTA
                 composable(Screen.Settings.route) {
                     SettingsScreen(
                         isDarkMode = isDarkMode,
@@ -160,34 +187,30 @@ fun MainAppStructure(viewModel: LibraryViewModel) {
                     )
                 }
             }
-        }
 
-        // Reproductor Pantalla Completa
-        val favoriteIds by viewModel.favoriteIds.collectAsState()
-        val isCurrentFavorite = playerState.currentSong?.let { favoriteIds.contains(it.id) } ?: false
+            if (showFullPlayer) {
+                val favoriteIds by viewModel.favoriteIds.collectAsState()
+                val currentSong = playerState.currentSong
+                val isCurrentFavorite = currentSong?.let { favoriteIds.contains(it.id) } ?: false
 
-        if (showFullPlayer) {
-            val favoriteIds by viewModel.favoriteIds.collectAsState()
-            val currentSong = playerState.currentSong
-            val isCurrentFavorite = currentSong?.let { favoriteIds.contains(it.id) } ?: false
-
-            FullPlayerSheet(
-                playerState = playerState,
-                isFavorite = isCurrentFavorite,
-                onToggleFavorite = {
-                    currentSong?.let { song ->
-                        viewModel.toggleFavorite(song.id)
-                    }
-                },
-                onDismiss = { showFullPlayer = false },
-                onTogglePlayPause = { viewModel.onTogglePlayPause() },
-                onSeekTo = { pos -> viewModel.playerHandler.seekTo(pos) },
-                onNext = { viewModel.playerHandler.playNext() },
-                onPrevious = { viewModel.playerHandler.playPrevious() },
-                onRewind = { viewModel.playerHandler.seekRewind() },
-                onForward = { viewModel.playerHandler.seekForward() },
-                onToggleShuffle = { viewModel.playerHandler.toggleShuffle() }
-            )
+                FullPlayerSheet(
+                    playerState = playerState,
+                    isFavorite = isCurrentFavorite,
+                    onToggleFavorite = {
+                        currentSong?.let { song ->
+                            viewModel.toggleFavorite(song.id)
+                        }
+                    },
+                    onDismiss = { showFullPlayer = false },
+                    onTogglePlayPause = { viewModel.onTogglePlayPause() },
+                    onSeekTo = { pos -> viewModel.playerHandler.seekTo(pos) },
+                    onNext = { viewModel.playerHandler.playNext() },
+                    onPrevious = { viewModel.playerHandler.playPrevious() },
+                    onRewind = { viewModel.playerHandler.seekRewind() },
+                    onForward = { viewModel.playerHandler.seekForward() },
+                    onToggleShuffle = { viewModel.playerHandler.toggleShuffle() }
+                )
+            }
         }
     }
 }
