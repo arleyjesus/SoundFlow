@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.devtools.ksp") version "2.1.0-1.0.29" // Plugin KSP compatible con Kotlin 2.1.0
 }
 
 android {
@@ -38,7 +39,6 @@ android {
     }
 }
 
-// Forzar a Kotlin a usar exactamente la Toolchain de Java 17
 kotlin {
     jvmToolchain(17)
 }
@@ -48,6 +48,7 @@ dependencies {
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("androidx.activity:activity-compose:1.10.0")
+    implementation(libs.androidx.documentfile)
 
     // Jetpack Compose UI
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))
@@ -55,8 +56,18 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-extended:1.7.6")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.navigation:navigation-compose:2.8.5")
+
+    // Base de datos local (Room con KSP)
+    val roomVersion = "2.7.0-alpha13" // Versión de Room con soporte nativo para Kotlin 2.1+
+    implementation("androidx.room:room-runtime:$roomVersion")
+    implementation("androidx.room:room-ktx:$roomVersion")
+    ksp("androidx.room:room-compiler:$roomVersion")
+
+    // DataStore (Preferences)
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
 
     // Media3 (ExoPlayer & MediaSession)
     implementation("androidx.media3:media3-exoplayer:1.5.1")

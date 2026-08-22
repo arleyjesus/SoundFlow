@@ -1,13 +1,32 @@
 package com.example.comarleyaetheraudio.domain.repository
 
+import android.net.Uri
+import com.example.comarleyaetheraudio.data.local.entity.FolderEntity
 import com.example.comarleyaetheraudio.domain.model.Song
+import kotlinx.coroutines.flow.Flow
 
 /**
- * Contrato de interfaz para gestionar los datos de audio en la app.
+ * Contrato actualizado de la capa Domain para gestionar canciones y carpetas locales con Room.
  */
 interface AudioRepository {
+
     /**
-     * Consulta el almacenamiento local y devuelve la lista de canciones encontradas.
+     * Flujo reactivo en tiempo real con todas las canciones guardadas en la BD local.
      */
-    suspend fun getLocalSongs(): List<Song>
+    fun getSongsFlow(): Flow<List<Song>>
+
+    /**
+     * Flujo reactivo con todas las carpetas seleccionadas por el usuario.
+     */
+    fun getFoldersFlow(): Flow<List<FolderEntity>>
+
+    /**
+     * Guarda los permisos de una nueva carpeta seleccionada via SAF y la analiza.
+     */
+    suspend fun addAndScanFolder(folderUri: Uri)
+
+    /**
+     * Elimina una carpeta de la BD local y remueve sus canciones asociadas.
+     */
+    suspend fun removeFolder(folderUri: String)
 }
