@@ -1,5 +1,9 @@
 package com.example.comarleyaetheraudio.presentation.components
 
+import android.graphics.BitmapFactory
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,16 +13,16 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 import com.example.comarleyaetheraudio.domain.model.Song
 
 @Composable
@@ -29,29 +33,18 @@ fun SongItem(
     ListItem(
         modifier = Modifier.clickable { onClick() },
         leadingContent = {
-            if (song.albumArtUri != null) {
-                AsyncImage(
-                    model = song.albumArtUri,
-                    contentDescription = "Carátula de ${song.album}",
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(8.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Surface(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(8.dp)),
-                    color = MaterialTheme.colorScheme.surfaceVariant
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.MusicNote,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+            Surface(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.MusicNote,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                    )
                 }
             }
         },
@@ -59,21 +52,19 @@ fun SongItem(
             Text(
                 text = song.title,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
                 fontWeight = FontWeight.Medium
             )
         },
         supportingContent = {
             Text(
                 text = "${song.artist} • ${song.album}",
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                maxLines = 1
             )
         },
         trailingContent = {
             if (song.isHiRes) {
                 Surface(
-                    color = Color(0xFFFFD700), // Dorado Hi-Res
+                    color = Color(0xFFFFD700),
                     shape = MaterialTheme.shapes.extraSmall
                 ) {
                     Text(
@@ -91,12 +82,18 @@ fun SongItem(
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MiniPlayer(
     song: Song,
     isPlaying: Boolean,
+    artworkData: ByteArray?,
     onTogglePlayPause: () -> Unit
 ) {
+    val bitmap = remember(artworkData) {
+        artworkData?.let { bytes -> BitmapFactory.decodeByteArray(bytes, 0, bytes.size) }
+    }
+
     Surface(
         tonalElevation = 8.dp,
         shadowElevation = 8.dp,
@@ -114,27 +111,27 @@ fun MiniPlayer(
                 modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (song.albumArtUri != null) {
-                    AsyncImage(
-                        model = song.albumArtUri,
+                if (bitmap != null) {
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
                         contentDescription = null,
                         modifier = Modifier
-                            .size(40.dp)
-                            .clip(RoundedCornerShape(6.dp)),
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(8.dp)),
                         contentScale = ContentScale.Crop
                     )
                 } else {
                     Surface(
                         modifier = Modifier
-                            .size(40.dp)
-                            .clip(RoundedCornerShape(6.dp)),
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(8.dp)),
                         color = MaterialTheme.colorScheme.secondaryContainer
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.Default.MusicNote,
                                 contentDescription = null,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(24.dp)
                             )
                         }
                     }
@@ -143,18 +140,19 @@ fun MiniPlayer(
                 Spacer(modifier = Modifier.width(12.dp))
 
                 Column {
+                    // MEJORA 3: Texto Marquesina deslizable para títulos largos
                     Text(
                         text = song.title,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        modifier = Modifier.basicMarquee()
                     )
                     Text(
                         text = song.artist,
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        modifier = Modifier.basicMarquee()
                     )
                 }
             }

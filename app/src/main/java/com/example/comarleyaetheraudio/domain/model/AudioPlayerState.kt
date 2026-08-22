@@ -8,5 +8,7 @@ data class AudioPlayerState(
     val isPlaying: Boolean = false,
     val currentPosition: Long = 0L,
     val duration: Long = 0L,
-    val isHiResActive: Boolean = false
+    val isHiResActive: Boolean = false,
+    val isShuffleEnabled: Boolean = false,     // NUEVO
+    val artworkData: ByteArray? = null        // NUEVO
 )

@@ -28,21 +28,27 @@ class AudioRepositoryImpl(
     }
 
     override suspend fun addAndScanFolder(folderUri: Uri) {
-        // Tomar permisos persistentes de lectura para esta carpeta en Android
         val contentResolver = context.contentResolver
         val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION
         contentResolver.takePersistableUriPermission(folderUri, takeFlags)
 
         val folderDoc = DocumentFile.fromTreeUri(context, folderUri)
         val folderName = folderDoc?.name ?: "Carpeta Música"
+        val uriString = folderUri.toString()
 
-        // Escanear e insertar canciones
+        // 1. ELIMINAR REGISTROS PREVIOS:
+        // Si la carpeta ya existía, borramos sus canciones antiguas para evitar duplicados.
+        dao.deleteSongsByFolder(uriString)
+
+        // 2. ESCANEAR NUEVAMENTE E INSERTAR
         val songs = scanner.scanFolderUri(folderUri, folderName)
-        dao.insertSongs(songs)
+        if (songs.isNotEmpty()) {
+            dao.insertSongs(songs)
+        }
 
-        // Registrar la carpeta en la BD
+        // 3. ACTUALIZAR O REGISTRAR LA CARPETA
         val folderEntity = FolderEntity(
-            uriString = folderUri.toString(),
+            uriString = uriString,
             name = folderName,
             path = folderUri.path ?: "",
             songCount = songs.size

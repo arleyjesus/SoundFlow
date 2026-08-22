@@ -2,24 +2,22 @@ package com.example.comarleyaetheraudio.data.player
 
 import android.content.Intent
 import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 
 /**
- * Servicio en primer plano (Foreground Service) que gestiona la reproducción continua
- * y la sesión multimedia en la cortina de notificaciones de Android.
+ * Servicio en segundo plano para mantener la reproducción activa y vincular
+ * el reproductor con el panel de notificaciones nativo de Android.
  */
-class AudioService : MediaSessionService() {
+class SoundFlowMediaService : MediaSessionService() {
 
     private var mediaSession: MediaSession? = null
 
     override fun onCreate() {
         super.onCreate()
-        // Inicializamos el motor del reproductor
-        val playerHandler = AudioPlayerHandler(this)
-
-        // Creamos la sesión nativa vinculada a ExoPlayer
-        mediaSession = MediaSession.Builder(this, playerHandler.exoPlayer).build()
+        val player = ExoPlayer.Builder(this).build()
+        mediaSession = MediaSession.Builder(this, player).build()
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? {

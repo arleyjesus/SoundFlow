@@ -1,24 +1,28 @@
 package com.example.comarleyaetheraudio.data.player
 
+import android.content.ComponentName
 import android.content.Context
+import android.media.MediaMetadataRetriever
+import android.net.Uri
+import androidx.core.content.ContextCompat
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
-import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionToken
 import com.example.comarleyaetheraudio.domain.model.AudioPlayerState
 import com.example.comarleyaetheraudio.domain.model.Song
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 
-class AudioPlayerHandler(context: Context) {
+class AudioPlayerHandler(private val context: Context) {
 
-    val exoPlayer = ExoPlayer.Builder(context).build()
+    private var player: Player? = null
     private val _playerState = MutableStateFlow(AudioPlayerState())
     val playerState: StateFlow<AudioPlayerState> = _playerState.asStateFlow()
 
@@ -27,85 +31,144 @@ class AudioPlayerHandler(context: Context) {
     private val scope = CoroutineScope(Dispatchers.Main)
 
     init {
-        exoPlayer.addListener(object : Player.Listener {
+        val sessionToken = SessionToken(context, ComponentName(context, SoundFlowMediaService::class.java))
+        val controllerFuture = MediaController.Builder(context, sessionToken).buildAsync()
+
+        controllerFuture.addListener({
+            player = controllerFuture.get()
+
+            // 1. MEJORA: Pausa inteligente y Audio Focus (Llamadas, WhatsApp, Desconexión de auriculares)
+            val audioAttributes = AudioAttributes.Builder()
+                .setUsage(C.USAGE_MEDIA)
+                .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+                .build()
+            player?.setAudioAttributes(audioAttributes, true)
+
+            setupPlayerListener()
+        }, ContextCompat.getMainExecutor(context))
+    }
+
+    private fun setupPlayerListener() {
+        player?.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 _playerState.update { it.copy(isPlaying = isPlaying) }
                 if (isPlaying) startProgressUpdate() else stopProgressUpdate()
             }
 
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                if (playbackState == Player.STATE_ENDED) {
-                    playNext()
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                super.onMediaItemTransition(mediaItem, reason)
+                val songId = mediaItem?.mediaId?.toLongOrNull()
+                val newSong = currentPlaylist.find { it.id == songId }
+                if (newSong != null) {
+                    // Extraer carátula nativamente del archivo local
+                    val artBytes = extractArtworkBytes(newSong.contentUri)
+                    _playerState.update {
+                        it.copy(
+                            currentSong = newSong,
+                            duration = newSong.duration,
+                            currentPosition = 0L,
+                            artworkData = artBytes
+                        )
+                    }
                 }
             }
+
+            override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
+                _playerState.update { it.copy(isShuffleEnabled = shuffleModeEnabled) }
+            }
         })
+    }
+
+    /**
+     * Extractor directo de carátulas nativo para etiquetas ID3 / FLAC / MP3
+     */
+    private fun extractArtworkBytes(contentUri: Uri): ByteArray? {
+        val mmr = MediaMetadataRetriever()
+        return try {
+            mmr.setDataSource(context, contentUri)
+            mmr.embeddedPicture
+        } catch (_: Exception) {
+            null
+        } finally {
+            try { mmr.release() } catch (_: Exception) {}
+        }
     }
 
     fun playSong(song: Song, playlist: List<Song> = emptyList()) {
         if (playlist.isNotEmpty()) {
             currentPlaylist = playlist
         }
-        _playerState.update {
-            it.copy(
-                currentSong = song,
-                duration = song.duration,
-                currentPosition = 0L
-            )
+
+        val mediaItems = currentPlaylist.map { s ->
+            MediaItem.Builder()
+                .setMediaId(s.id.toString())
+                .setUri(s.contentUri)
+                .setMediaMetadata(
+                    MediaMetadata.Builder()
+                        .setTitle(s.title)
+                        .setArtist(s.artist)
+                        .setAlbumTitle(s.album)
+                        .build()
+                )
+                .build()
         }
-        val mediaItem = MediaItem.fromUri(song.contentUri)
-        exoPlayer.setMediaItem(mediaItem)
-        exoPlayer.prepare()
-        exoPlayer.play()
+
+        val startIndex = currentPlaylist.indexOfFirst { it.id == song.id }.coerceAtLeast(0)
+        player?.setMediaItems(mediaItems, startIndex, 0L)
+        player?.prepare()
+        player?.play()
     }
 
     fun togglePlayPause() {
-        if (exoPlayer.isPlaying) {
-            exoPlayer.pause()
-        } else {
-            exoPlayer.play()
-        }
+        player?.let { if (it.isPlaying) it.pause() else it.play() }
     }
 
     fun seekTo(positionMs: Long) {
-        exoPlayer.seekTo(positionMs)
+        player?.seekTo(positionMs)
         _playerState.update { it.copy(currentPosition = positionMs) }
     }
 
     fun seekForward(seconds: Int = 10) {
-        val newPos = (exoPlayer.currentPosition + seconds * 1000).coerceAtMost(exoPlayer.duration)
-        seekTo(newPos)
+        player?.let {
+            val newPos = (it.currentPosition + seconds * 1000).coerceAtMost(it.duration)
+            seekTo(newPos)
+        }
     }
 
     fun seekRewind(seconds: Int = 10) {
-        val newPos = (exoPlayer.currentPosition - seconds * 1000).coerceAtLeast(0)
-        seekTo(newPos)
+        player?.let {
+            val newPos = (it.currentPosition - seconds * 1000).coerceAtLeast(0)
+            seekTo(newPos)
+        }
     }
 
     fun playNext() {
-        if (currentPlaylist.isEmpty()) return
-        val currentIndex = currentPlaylist.indexOfFirst { it.id == _playerState.value.currentSong?.id }
-        if (currentIndex != -1 && currentIndex < currentPlaylist.size - 1) {
-            playSong(currentPlaylist[currentIndex + 1], currentPlaylist)
+        if (player?.hasNextMediaItem() == true) {
+            player?.seekToNextMediaItem()
         }
     }
 
     fun playPrevious() {
-        if (currentPlaylist.isEmpty()) return
-        val currentIndex = currentPlaylist.indexOfFirst { it.id == _playerState.value.currentSong?.id }
-        if (currentIndex > 0) {
-            playSong(currentPlaylist[currentIndex - 1], currentPlaylist)
+        if (player?.hasPreviousMediaItem() == true) {
+            player?.seekToPreviousMediaItem()
         }
+    }
+
+    fun toggleShuffle() {
+        player?.let { it.shuffleModeEnabled = !it.shuffleModeEnabled }
     }
 
     private fun startProgressUpdate() {
         stopProgressUpdate()
         progressJob = scope.launch {
             while (true) {
-                _playerState.update {
-                    it.copy(
-                        currentPosition = exoPlayer.currentPosition,
-                        duration = if (exoPlayer.duration > 0) exoPlayer.duration else it.duration
-                    )
+                player?.let { p ->
+                    _playerState.update {
+                        it.copy(
+                            currentPosition = p.currentPosition,
+                            duration = if (p.duration > 0) p.duration else it.duration
+                        )
+                    }
                 }
                 delay(500)
             }

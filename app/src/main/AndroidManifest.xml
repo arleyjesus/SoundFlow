@@ -2,12 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Permisos para leer archivos de audio -->
+    <!-- Permisos de almacenamiento y audio -->
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
 
-    <!-- Permisos para reproducción en segundo plano y notificaciones multimedia -->
+    <!-- Permisos para reproducción en segundo plano y notificaciones -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
@@ -31,11 +31,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <!-- Servicio de reproducción multimedia en segundo plano -->
+
+        <!-- Servicio de reproducción multimedia en segundo plano oficial SoundFlow -->
         <service
-            android:name="com.example.comarleyaetheraudio.data.player.AudioService"
-            android:foregroundServiceType="mediaPlayback"
-            android:exported="true">
+            android:name="com.example.comarleyaetheraudio.data.player.SoundFlowMediaService"
+            android:enabled="true"
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback">
             <intent-filter>
                 <action android:name="androidx.media3.session.MediaSessionService" />
             </intent-filter>

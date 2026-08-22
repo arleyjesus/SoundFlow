@@ -7,6 +7,7 @@ import com.example.comarleyaetheraudio.data.local.entity.FolderEntity
 import com.example.comarleyaetheraudio.data.player.AudioPlayerHandler
 import com.example.comarleyaetheraudio.domain.model.AudioPlayerState
 import com.example.comarleyaetheraudio.domain.model.Song
+import com.example.comarleyaetheraudio.data.repository.SettingsRepository
 import com.example.comarleyaetheraudio.domain.repository.AudioRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -15,8 +16,17 @@ import kotlinx.coroutines.launch
 
 class LibraryViewModel(
     private val repository: AudioRepository,
-    val playerHandler: AudioPlayerHandler
+    val playerHandler: AudioPlayerHandler,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
+
+    // Modo oscuro
+    val isDarkMode: StateFlow<Boolean> = settingsRepository.isDarkMode
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = true
+        )
 
     // Lista reactiva de canciones guardadas en Room
     val songs: StateFlow<List<Song>> = repository.getSongsFlow()
@@ -54,5 +64,11 @@ class LibraryViewModel(
 
     fun onTogglePlayPause() {
         playerHandler.togglePlayPause()
+    }
+
+    fun onToggleDarkMode(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setDarkMode(enabled)
+        }
     }
 }

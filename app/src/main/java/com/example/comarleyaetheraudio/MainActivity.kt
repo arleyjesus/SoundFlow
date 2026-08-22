@@ -20,6 +20,7 @@ import com.example.comarleyaetheraudio.data.local.FolderScanner
 import com.example.comarleyaetheraudio.data.local.MusicDatabase
 import com.example.comarleyaetheraudio.data.player.AudioPlayerHandler
 import com.example.comarleyaetheraudio.data.repository.AudioRepositoryImpl
+import com.example.comarleyaetheraudio.data.repository.SettingsRepository
 import com.example.comarleyaetheraudio.domain.model.Song
 import com.example.comarleyaetheraudio.presentation.Screen
 import com.example.comarleyaetheraudio.presentation.components.MiniPlayer
@@ -27,8 +28,10 @@ import com.example.comarleyaetheraudio.presentation.components.SongItem
 import com.example.comarleyaetheraudio.presentation.folders.FoldersScreen
 import com.example.comarleyaetheraudio.presentation.home.HomeScreen
 import com.example.comarleyaetheraudio.presentation.library.LibraryViewModel
+import com.example.comarleyaetheraudio.presentation.library.SongsScreen
 import com.example.comarleyaetheraudio.presentation.player.FullPlayerSheet
 import com.example.comarleyaetheraudio.presentation.settings.SettingsScreen
+import com.example.comarleyaetheraudio.ui.theme.ComarleyjesusaetheraudioTheme
 
 class MainActivity : ComponentActivity() {
 
@@ -37,16 +40,18 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Inicialización de la base de datos local y dependencias
+        // Inicialización de dependencias y base de datos local
         val database = MusicDatabase.getDatabase(applicationContext)
         val scanner = FolderScanner(applicationContext)
         val repository = AudioRepositoryImpl(applicationContext, database.musicDao(), scanner)
         val playerHandler = AudioPlayerHandler(applicationContext)
+        val settingsRepository = SettingsRepository(applicationContext)
 
-        viewModel = LibraryViewModel(repository, playerHandler)
+        viewModel = LibraryViewModel(repository, playerHandler, settingsRepository)
 
         setContent {
-            MaterialTheme {
+            val isDarkMode by viewModel.isDarkMode.collectAsState()
+            ComarleyjesusaetheraudioTheme(darkTheme = isDarkMode) {
                 MainAppStructure(viewModel = viewModel)
             }
         }
@@ -63,6 +68,7 @@ fun MainAppStructure(viewModel: LibraryViewModel) {
     val songs by viewModel.songs.collectAsState()
     val folders by viewModel.folders.collectAsState()
     val playerState by viewModel.playerState.collectAsState()
+    val isDarkMode by viewModel.isDarkMode.collectAsState()
 
     var showFullPlayer by remember { mutableStateOf(false) }
 
@@ -76,32 +82,20 @@ fun MainAppStructure(viewModel: LibraryViewModel) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Aether Audio") }
+                title = { Text("SoundFlow") }
             )
         },
         bottomBar = {
             Column {
-                // MiniPlayer flotante si hay canción activa
                 playerState.currentSong?.let { song ->
                     Box(modifier = Modifier.clickable { showFullPlayer = true }) {
                         MiniPlayer(
                             song = song,
                             isPlaying = playerState.isPlaying,
+                            artworkData = playerState.artworkData, // Pasar los bytes de la imagen
                             onTogglePlayPause = { viewModel.onTogglePlayPause() }
                         )
                     }
-                }
-                if (showFullPlayer) {
-                    FullPlayerSheet(
-                        playerState = playerState,
-                        onDismiss = { showFullPlayer = false },
-                        onTogglePlayPause = { viewModel.onTogglePlayPause() },
-                        onSeekTo = { pos -> viewModel.playerHandler.seekTo(pos) },
-                        onNext = { viewModel.playerHandler.playNext() },
-                        onPrevious = { viewModel.playerHandler.playPrevious() },
-                        onRewind = { viewModel.playerHandler.seekRewind() },
-                        onForward = { viewModel.playerHandler.seekForward() }
-                    )
                 }
 
                 // Menú de navegación inferior de 4 secciones
@@ -125,7 +119,6 @@ fun MainAppStructure(viewModel: LibraryViewModel) {
                 }
             }
         }
-
     ) { paddingValues ->
         Box(modifier = Modifier.padding(paddingValues)) {
             NavHost(
@@ -139,20 +132,12 @@ fun MainAppStructure(viewModel: LibraryViewModel) {
                     )
                 }
                 composable(Screen.Songs.route) {
-                    if (songs.isEmpty()) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("No hay canciones. Ve a 'Carpetas' para agregar tu música.")
+                    SongsScreen(
+                        songs = songs,
+                        onSongClick = { selectedSong ->
+                            viewModel.playerHandler.playSong(selectedSong, songs)
                         }
-                    } else {
-                        LazyColumn(modifier = Modifier.fillMaxSize()) {
-                            items(songs) { song: Song ->
-                                SongItem(song = song, onClick = { viewModel.onSongClick(song) })
-                            }
-                        }
-                    }
+                    )
                 }
                 composable(Screen.Folders.route) {
                     FoldersScreen(
@@ -162,9 +147,27 @@ fun MainAppStructure(viewModel: LibraryViewModel) {
                     )
                 }
                 composable(Screen.Settings.route) {
-                    SettingsScreen()
+                    SettingsScreen(
+                        isDarkMode = isDarkMode,
+                        onToggleDarkMode = { viewModel.onToggleDarkMode(it) }
+                    )
                 }
             }
+        }
+
+        // Reproductor Pantalla Completa
+        if (showFullPlayer) {
+            FullPlayerSheet(
+                playerState = playerState,
+                onDismiss = { showFullPlayer = false },
+                onTogglePlayPause = { viewModel.onTogglePlayPause() },
+                onSeekTo = { pos -> viewModel.playerHandler.seekTo(pos) },
+                onNext = { viewModel.playerHandler.playNext() },
+                onPrevious = { viewModel.playerHandler.playPrevious() },
+                onRewind = { viewModel.playerHandler.seekRewind() },
+                onForward = { viewModel.playerHandler.seekForward() },
+                onToggleShuffle = { viewModel.playerHandler.toggleShuffle() }
+            )
         }
     }
 }
