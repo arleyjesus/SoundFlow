@@ -1,20 +1,79 @@
 package com.example.comarleyaetheraudio.data.repository
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import androidx.documentfile.provider.DocumentFile
+import com.example.comarleyaetheraudio.data.local.FolderScanner
+import com.example.comarleyaetheraudio.data.local.dao.MusicDao
+import com.example.comarleyaetheraudio.data.local.entity.FolderEntity
+import com.example.comarleyaetheraudio.data.local.entity.SongEntity
 import com.example.comarleyaetheraudio.domain.model.Song
-import com.example.comarleyaetheraudio.data.local.MediaStoreAudioScanner
 import com.example.comarleyaetheraudio.domain.repository.AudioRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
-/**
- * Implementación concreta del repositorio.
- * Conecta el contrato de dominio con la fuente de datos real (MediaStore).
- */
 class AudioRepositoryImpl(
-    private val scanner: MediaStoreAudioScanner
+    private val context: Context,
+    private val dao: MusicDao,
+    private val scanner: FolderScanner
 ) : AudioRepository {
 
-    override suspend fun getLocalSongs(): List<Song> {
-        // En el futuro, aquí podríamos agregar lógica para guardar en una base de datos local (Room)
-        // Por ahora, leemos directamente del almacenamiento cada vez.
-        return scanner.scanAudioFiles()
+    override fun getSongsFlow(): Flow<List<Song>> {
+        return dao.getAllSongs().map { entities -> entities.map { it.toDomainModel() } }
+    }
+
+    override fun getFoldersFlow(): Flow<List<FolderEntity>> {
+        return dao.getAllFolders()
+    }
+
+    override suspend fun addAndScanFolder(folderUri: Uri) {
+        // Tomar permisos persistentes de lectura para esta carpeta en Android
+        val contentResolver = context.contentResolver
+        val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION
+        contentResolver.takePersistableUriPermission(folderUri, takeFlags)
+
+        val folderDoc = DocumentFile.fromTreeUri(context, folderUri)
+        val folderName = folderDoc?.name ?: "Carpeta Música"
+
+        // Escanear e insertar canciones
+        val songs = scanner.scanFolderUri(folderUri, folderName)
+        dao.insertSongs(songs)
+
+        // Registrar la carpeta en la BD
+        val folderEntity = FolderEntity(
+            uriString = folderUri.toString(),
+            name = folderName,
+            path = folderUri.path ?: "",
+            songCount = songs.size
+        )
+        dao.insertFolder(folderEntity)
+    }
+
+    override suspend fun removeFolder(folderUri: String) {
+        dao.deleteSongsByFolder(folderUri)
+        dao.deleteFolder(folderUri)
+    }
+
+    private fun SongEntity.toDomainModel(): Song {
+        return Song(
+            id = id,
+            title = title,
+            artist = artist,
+            album = album,
+            genre = genre,
+            year = year,
+            trackNumber = trackNumber,
+            duration = duration,
+            contentUri = Uri.parse(contentUri),
+            albumArtUri = albumArtUri?.let { Uri.parse(it) },
+            size = size,
+            mimeType = mimeType,
+            bitrate = bitrate,
+            sampleRate = sampleRate,
+            isHiRes = isHiRes,
+            folderPath = folderName,
+            folderUri = folderUri
+        )
     }
 }

@@ -2,6 +2,7 @@ package com.example.comarleyaetheraudio.domain.usecase
 
 import com.example.comarleyaetheraudio.domain.model.Song
 import com.example.comarleyaetheraudio.domain.repository.AudioRepository
+import kotlinx.coroutines.flow.Flow
 
 /**
  * Caso de uso: Obtener todos los archivos de audio locales.
@@ -10,11 +11,7 @@ import com.example.comarleyaetheraudio.domain.repository.AudioRepository
 class GetLocalAudioFilesUseCase(
     private val repository: AudioRepository
 ) {
-    suspend operator fun invoke(): List<Song> {
-        val songs = repository.getLocalSongs()
-
-        // Aquí podríamos aplicar lógica de negocio, por ejemplo:
-        // Filtrar archivos corruptos o priorizar las canciones Hi-Res al principio de la lista.
-        return songs
+    operator fun invoke(): Flow<List<Song>> {
+        return repository.getSongsFlow()
     }
 }
