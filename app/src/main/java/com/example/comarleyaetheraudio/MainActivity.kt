@@ -3,6 +3,7 @@ package com.example.comarleyaetheraudio
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -26,6 +27,7 @@ import com.example.comarleyaetheraudio.presentation.components.SongItem
 import com.example.comarleyaetheraudio.presentation.folders.FoldersScreen
 import com.example.comarleyaetheraudio.presentation.home.HomeScreen
 import com.example.comarleyaetheraudio.presentation.library.LibraryViewModel
+import com.example.comarleyaetheraudio.presentation.player.FullPlayerSheet
 import com.example.comarleyaetheraudio.presentation.settings.SettingsScreen
 
 class MainActivity : ComponentActivity() {
@@ -62,6 +64,8 @@ fun MainAppStructure(viewModel: LibraryViewModel) {
     val folders by viewModel.folders.collectAsState()
     val playerState by viewModel.playerState.collectAsState()
 
+    var showFullPlayer by remember { mutableStateOf(false) }
+
     val screens = listOf(
         Screen.Home,
         Screen.Songs,
@@ -79,10 +83,24 @@ fun MainAppStructure(viewModel: LibraryViewModel) {
             Column {
                 // MiniPlayer flotante si hay canción activa
                 playerState.currentSong?.let { song ->
-                    MiniPlayer(
-                        song = song,
-                        isPlaying = playerState.isPlaying,
-                        onTogglePlayPause = { viewModel.onTogglePlayPause() }
+                    Box(modifier = Modifier.clickable { showFullPlayer = true }) {
+                        MiniPlayer(
+                            song = song,
+                            isPlaying = playerState.isPlaying,
+                            onTogglePlayPause = { viewModel.onTogglePlayPause() }
+                        )
+                    }
+                }
+                if (showFullPlayer) {
+                    FullPlayerSheet(
+                        playerState = playerState,
+                        onDismiss = { showFullPlayer = false },
+                        onTogglePlayPause = { viewModel.onTogglePlayPause() },
+                        onSeekTo = { pos -> viewModel.playerHandler.seekTo(pos) },
+                        onNext = { viewModel.playerHandler.playNext() },
+                        onPrevious = { viewModel.playerHandler.playPrevious() },
+                        onRewind = { viewModel.playerHandler.seekRewind() },
+                        onForward = { viewModel.playerHandler.seekForward() }
                     )
                 }
 
@@ -107,6 +125,7 @@ fun MainAppStructure(viewModel: LibraryViewModel) {
                 }
             }
         }
+
     ) { paddingValues ->
         Box(modifier = Modifier.padding(paddingValues)) {
             NavHost(
