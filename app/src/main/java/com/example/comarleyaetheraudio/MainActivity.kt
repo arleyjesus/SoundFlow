@@ -31,6 +31,7 @@ import com.example.comarleyaetheraudio.presentation.home.HomeScreen
 import com.example.comarleyaetheraudio.presentation.library.LibraryViewModel
 import com.example.comarleyaetheraudio.presentation.library.SongsScreen
 import com.example.comarleyaetheraudio.presentation.player.FullPlayerSheet
+import com.example.comarleyaetheraudio.presentation.settings.AudioFxScreen
 import com.example.comarleyaetheraudio.presentation.settings.SettingsScreen
 import com.example.comarleyaetheraudio.ui.theme.ComarleyjesusaetheraudioTheme
 
@@ -122,8 +123,16 @@ fun MainAppStructure(viewModel: LibraryViewModel) {
         Box(modifier = Modifier.padding(paddingValues)) {
             NavHost(
                 navController = navController,
-                startDestination = Screen.Home.route
+                startDestination = Screen.Home.route,
+
             ) {
+                composable(Screen.AudioFx.route) {
+                    AudioFxScreen(
+                        playerHandler = viewModel.playerHandler,
+                        onBackClick = { navController.popBackStack() }
+                    )
+                }
+
                 composable(Screen.Home.route) {
                     val favoriteIds by viewModel.favoriteIds.collectAsState()
 
@@ -183,7 +192,8 @@ fun MainAppStructure(viewModel: LibraryViewModel) {
                 composable(Screen.Settings.route) {
                     SettingsScreen(
                         isDarkMode = isDarkMode,
-                        onToggleDarkMode = { viewModel.onToggleDarkMode(it) }
+                        onToggleDarkMode = { viewModel.onToggleDarkMode(it) },
+                        onNavigateToAudioFx = { navController.navigate(Screen.AudioFx.route) } // CONEXIÓN DE NAVEGACIÓN
                     )
                 }
             }

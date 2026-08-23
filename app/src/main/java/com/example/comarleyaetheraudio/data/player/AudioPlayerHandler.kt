@@ -19,8 +19,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import android.media.audiofx.BassBoost
+import android.media.audiofx.Equalizer
+import android.media.audiofx.Virtualizer
 
 class AudioPlayerHandler(private val context: Context) {
+
+
 
     private var player: Player? = null
     private val _playerState = MutableStateFlow(AudioPlayerState())
@@ -177,5 +182,21 @@ class AudioPlayerHandler(private val context: Context) {
 
     private fun stopProgressUpdate() {
         progressJob?.cancel()
+    }
+
+    var equalizer: Equalizer? = null
+    private var bassBoost: BassBoost? = null
+    private var virtualizer: Virtualizer? = null
+
+    fun setupAudioEffects(audioSessionId: Int) {
+        if (audioSessionId != android.media.audiofx.AudioEffect.ERROR_BAD_VALUE) {
+            try {
+                equalizer = Equalizer(0, audioSessionId).apply { enabled = true }
+                bassBoost = BassBoost(0, audioSessionId).apply { enabled = true }
+                virtualizer = Virtualizer(0, audioSessionId).apply { enabled = true }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 }

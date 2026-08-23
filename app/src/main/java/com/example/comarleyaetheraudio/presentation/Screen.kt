@@ -14,4 +14,6 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object FolderDetail : Screen("folder_detail/{folderPath}", "Detalle", Icons.Default.Folder) {
         fun createRoute(folderPath: String) = "folder_detail/${android.net.Uri.encode(folderPath)}"
     }
+
+    object AudioFx : Screen("audio_fx", "Ecualizador", Icons.Default.Equalizer)
 }
