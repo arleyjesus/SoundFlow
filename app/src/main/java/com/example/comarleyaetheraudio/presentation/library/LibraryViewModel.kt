@@ -86,4 +86,20 @@ class LibraryViewModel(
             repository.toggleFavorite(songId, isFav)
         }
     }
+
+    fun updateSongTags(song: Song, newTitle: String, newArtist: String, newAlbum: String) {
+        viewModelScope.launch {
+            // 1. Modificamos el archivo físico con Jaudiotagger
+            val success = com.example.comarleyaetheraudio.data.local.TagEditorUtil.editSongTags(
+                song, newTitle, newArtist, newAlbum
+            )
+
+            // 2. Validamos el éxito
+            if (success) {
+                // El archivo físico ya fue modificado exitosamente.
+                // (Nota: Para que el cambio se refleje al instante en la UI sin reiniciar,
+                // en el futuro implementaremos una actualización directa a Room DB aquí).
+            }
+        }
+    }
 }

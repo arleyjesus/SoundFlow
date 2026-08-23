@@ -208,7 +208,14 @@ fun MainAppStructure(viewModel: LibraryViewModel) {
                     onPrevious = { viewModel.playerHandler.playPrevious() },
                     onRewind = { viewModel.playerHandler.seekRewind() },
                     onForward = { viewModel.playerHandler.seekForward() },
-                    onToggleShuffle = { viewModel.playerHandler.toggleShuffle() }
+                    onToggleShuffle = { viewModel.playerHandler.toggleShuffle() },
+
+                    // NUEVA CONEXIÓN PARA EL EDITOR
+                    onEditTags = { newTitle, newArtist, newAlbum ->
+                        currentSong?.let { song ->
+                            viewModel.updateSongTags(song, newTitle, newArtist, newAlbum)
+                        }
+                    }
                 )
             }
         }

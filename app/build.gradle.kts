@@ -85,4 +85,7 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+    // Librería para leer y editar etiquetas ID3 de MP3/FLAC
+    implementation("net.jthink:jaudiotagger:3.0.1")
 }

@@ -35,13 +35,15 @@ fun FullPlayerSheet(
     onPrevious: () -> Unit,
     onRewind: () -> Unit,
     onForward: () -> Unit,
-    onToggleShuffle: () -> Unit
+    onToggleShuffle: () -> Unit,
+    onEditTags: (String, String, String) -> Unit // NUEVO PARÁMETRO
 ) {
     val song = playerState.currentSong ?: return
     var sliderPosition by remember { mutableStateOf<Float?>(null) }
 
-    // ESTADO DE LETRAS: Alterna entre la carátula grande y las letras sincronizadas
+    // ESTADOS
     var showLyrics by remember { mutableStateOf(false) }
+    var showTagEditor by remember { mutableStateOf(false) } // NUEVO ESTADO PARA EL EDITOR
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -57,7 +59,9 @@ fun FullPlayerSheet(
                 .padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Barra Superior: Minimizar + Botón de Letras Sincronizadas
+            // ==========================================
+            // BARRA SUPERIOR: Minimizar + Editar + Letras
+            // ==========================================
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -67,14 +71,26 @@ fun FullPlayerSheet(
                     Icon(Icons.Default.ExpandMore, contentDescription = "Minimizar", modifier = Modifier.size(32.dp))
                 }
 
-                // Botón para Activar / Desactivar Letras
-                IconButton(onClick = { showLyrics = !showLyrics }) {
-                    Icon(
-                        imageVector = Icons.Default.FormatQuote,
-                        contentDescription = "Ver Letras",
-                        tint = if (showLyrics) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(28.dp)
-                    )
+                Row {
+                    // BOTÓN DE LÁPIZ (EDITAR ETIQUETAS)
+                    IconButton(onClick = { showTagEditor = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Editar Etiquetas",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+
+                    // BOTÓN PARA LETRAS
+                    IconButton(onClick = { showLyrics = !showLyrics }) {
+                        Icon(
+                            imageVector = Icons.Default.FormatQuote,
+                            contentDescription = "Ver Letras",
+                            tint = if (showLyrics) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
                 }
             }
 
@@ -123,7 +139,6 @@ fun FullPlayerSheet(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Componente de Letras Sincronizadas que creamos en el Paso 2
                 LyricsView(
                     lyrics = remember(song) { LrcParser.parseLrcForSong(song.path) },
                     currentPositionMs = playerState.currentPosition,
@@ -289,6 +304,20 @@ fun FullPlayerSheet(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+        }
+
+        // ==========================================
+        // DIÁLOGO DEL EDITOR DE ETIQUETAS
+        // ==========================================
+        if (showTagEditor) {
+            com.example.comarleyaetheraudio.presentation.components.TagEditorDialog(
+                song = song,
+                onDismiss = { showTagEditor = false },
+                onSave = { newTitle, newArtist, newAlbum ->
+                    onEditTags(newTitle, newArtist, newAlbum)
+                    showTagEditor = false
+                }
+            )
         }
     }
 }
