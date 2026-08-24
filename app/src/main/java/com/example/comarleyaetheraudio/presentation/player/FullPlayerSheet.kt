@@ -2,6 +2,8 @@ package com.example.comarleyaetheraudio.presentation.player
 
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,6 +15,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -26,9 +30,19 @@ import com.example.comarleyaetheraudio.domain.model.LyricLine
 import com.example.comarleyaetheraudio.presentation.player.LyricsView
 import com.example.comarleyaetheraudio.presentation.components.TagEditorDialog
 
+// Paleta Oficial v2.0.0
+// Paleta Oficial v2.0.0
+val ElectricPurple = Color(0xFF8A2BE2)
+val LightLavender = Color(0xFFB388FF)
+val PastelPink = Color(0xFFF48FB1) // <--- ASEGÚRATE DE INCLUIR ESTA LÍNEA
+val BrandGradient = Brush.linearGradient(listOf(ElectricPurple, LightLavender))
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FullPlayerSheet(
+    // Agrega estos tres parámetros al final de la firma de la función:
+    currentTimerMinutes: Int = 0,
+    onStartTimer: (Int, Boolean) -> Unit = { _, _ -> },
+    onCancelTimer: () -> Unit = {},
     playerState: AudioPlayerState,
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
@@ -42,35 +56,26 @@ fun FullPlayerSheet(
     onToggleShuffle: () -> Unit,
     onEditTags: (String, String, String) -> Unit
 ) {
+
+    var showTimerDialog by remember { mutableStateOf(false) }
     val song = playerState.currentSong ?: return
     var sliderPosition by remember { mutableStateOf<Float?>(null) }
 
-    // ESTADOS
     var showLyrics by remember { mutableStateOf(false) }
     var showTagEditor by remember { mutableStateOf(false) }
 
     var fetchedLyrics by remember(song) { mutableStateOf<List<LyricLine>?>(null) }
     var isLoadingLyrics by remember { mutableStateOf(false) }
 
-    // EFECTO DE DESCARGA DE LETRAS EN SEGUNDO PLANO
-    // EFECTO DE BÚSQUEDA DE LETRAS OPTIMIZADO
     LaunchedEffect(showLyrics, song) {
         if (showLyrics && fetchedLyrics == null) {
             isLoadingLyrics = true
-
-            // 1. Intentar lectura local
             val localLyrics = LrcParser.parseLrcForSong(song.path)
-
             if (localLyrics.isNotEmpty()) {
                 fetchedLyrics = localLyrics
             } else {
-                // 2. Limpiar Título y Artista para mejorar la búsqueda en la API
-                val cleanTitle = song.title
-                    .replace(Regex("(?i)\\(official.*?\\)|\\[official.*?\\]|\\.(mp3|flac|m4a)"), "")
-                    .trim()
+                val cleanTitle = song.title.replace(Regex("(?i)\\(official.*?\\)|\\[official.*?\\]|\\.(mp3|flac|m4a)"), "").trim()
                 val cleanArtist = if (song.artist.contains("Unknown", ignoreCase = true)) "" else song.artist.trim()
-
-                // 3. Consultar la red
                 val remoteLyrics = LrcLibService.fetchSyncedLyrics(cleanTitle, cleanArtist)
                 fetchedLyrics = remoteLyrics ?: emptyList()
             }
@@ -83,175 +88,109 @@ fun FullPlayerSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = MaterialTheme.colorScheme.background, // Fondo AMOLED
         modifier = Modifier.fillMaxSize()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
+                .padding(horizontal = 24.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // BARRA SUPERIOR: Minimizar + Editar + Letras
+            // BARRA SUPERIOR
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onDismiss) {
-                    Icon(Icons.Default.ExpandMore, contentDescription = "Minimizar", modifier = Modifier.size(32.dp))
+                IconButton(onClick = { showTimerDialog = true }) {
+                    Icon(
+                        imageVector = Icons.Default.Timer,
+                        contentDescription = "Timer",
+                        tint = if (currentTimerMinutes > 0) LightLavender else Color.Gray
+                    )
                 }
-
                 Row {
                     IconButton(onClick = { showTagEditor = true }) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Editar Etiquetas",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(28.dp)
-                        )
+                        Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Color.LightGray)
                     }
-
                     IconButton(onClick = { showLyrics = !showLyrics }) {
                         Icon(
-                            imageVector = Icons.Default.FormatQuote,
-                            contentDescription = "Ver Letras",
-                            tint = if (showLyrics) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(28.dp)
+                            Icons.Default.FormatQuote,
+                            contentDescription = "Letras",
+                            tint = if (showLyrics) LightLavender else Color.LightGray
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             val artworkData = playerState.artworkData
             val bitmap = remember(artworkData) {
                 artworkData?.let { bytes -> BitmapFactory.decodeByteArray(bytes, 0, bytes.size) }
             }
 
-            // ZONA CENTRAL: Letras o Carátula
-            if (showLyrics) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (bitmap != null) {
-                        Image(
-                            bitmap = bitmap.asImageBitmap(),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(50.dp)
-                                .clip(RoundedCornerShape(8.dp)),
-                            contentScale = ContentScale.Crop
-                        )
-                    } else {
-                        Surface(
-                            modifier = Modifier
-                                .size(50.dp)
-                                .clip(RoundedCornerShape(8.dp)),
-                            color = MaterialTheme.colorScheme.surfaceVariant
-                        ) {
-                            Icon(Icons.Default.MusicNote, contentDescription = null, modifier = Modifier.padding(12.dp))
-                        }
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(song.title, fontWeight = FontWeight.Bold, maxLines = 1, style = MaterialTheme.typography.titleMedium)
-                        Text(song.artist, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
-                    }
-                }
+            // CARÁTULA DINÁMICA CON EFECTO NEÓN
+            // Si hay letras, la carátula ocupa el 50% del ancho. Si no, ocupa casi todo el ancho.
+            val imageFraction = if (showLyrics) 0.5f else 1f
+            val imageShape = if (showLyrics) CircleShape else RoundedCornerShape(24.dp)
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                if (isLoadingLyrics) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                    }
-                } else {
-                    // CÓDIGO NUEVO A PEGAR:
-                    if (isLoadingLyrics) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                        }
-                    } else if (!fetchedLyrics.isNullOrEmpty()) {
-                        LyricsView(
-                            lyrics = fetchedLyrics!!,
-                            currentPositionMs = playerState.currentPosition,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f)
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "No se encontraron letras para esta canción",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
-                    }
-                }
-            } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(imageFraction)
+                    .aspectRatio(1f)
+                    .shadow(
+                        elevation = if (showLyrics) 24.dp else 32.dp,
+                        shape = imageShape,
+                        spotColor = ElectricPurple, // Sombra de Neón Morada
+                        ambientColor = LightLavender
+                    )
+                    .clip(imageShape)
+            ) {
                 if (bitmap != null) {
                     Image(
                         bitmap = bitmap.asImageBitmap(),
-                        contentDescription = "Carátula de ${song.album}",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1f)
-                            .shadow(16.dp, RoundedCornerShape(24.dp))
-                            .clip(RoundedCornerShape(24.dp)),
-                        contentScale = ContentScale.Crop
-                    )
-                } else if (song.albumArtUri != null) {
-                    AsyncImage(
-                        model = song.albumArtUri,
                         contentDescription = null,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1f)
-                            .shadow(16.dp, RoundedCornerShape(24.dp))
-                            .clip(RoundedCornerShape(24.dp)),
+                        modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
                 } else {
                     Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1f)
-                            .shadow(8.dp, RoundedCornerShape(24.dp))
-                            .clip(RoundedCornerShape(24.dp)),
-                        color = MaterialTheme.colorScheme.surfaceVariant
+                        modifier = Modifier.fillMaxSize(),
+                        color = Color.DarkGray
                     ) {
                         Icon(
                             imageVector = Icons.Default.MusicNote,
-                            contentDescription = "Sin carátula",
-                            modifier = Modifier.padding(72.dp),
-                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
+                            contentDescription = null,
+                            modifier = Modifier.padding(48.dp),
+                            tint = LightLavender
                         )
                     }
                 }
+            }
 
-                Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
+            // INFO Y LETRAS
+            if (showLyrics) {
+                if (isLoadingLyrics) {
+                    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = ElectricPurple)
+                    }
+                } else if (!fetchedLyrics.isNullOrEmpty()) {
+                    LyricsView(
+                        lyrics = fetchedLyrics!!,
+                        currentPositionMs = playerState.currentPosition,
+                        modifier = Modifier.weight(1f).fillMaxWidth()
+                    )
+                } else {
+                    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                        Text("No se encontraron letras.", color = Color.Gray)
+                    }
+                }
+            } else {
+                // INFO DE CANCIÓN (Modo Normal)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -260,34 +199,33 @@ fun FullPlayerSheet(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = song.title,
-                            style = MaterialTheme.typography.headlineSmall,
+                            style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onBackground,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = song.artist,
                             style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = LightLavender,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
-
                     IconButton(onClick = onToggleFavorite) {
                         Icon(
                             imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                             contentDescription = "Favorito",
-                            tint = if (isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(28.dp)
+                            tint = if (isFavorite) PastelPink else Color.Gray,
+                            modifier = Modifier.size(32.dp)
                         )
                     }
                 }
-
                 Spacer(modifier = Modifier.weight(1f))
             }
 
-            // BARRA DE PROGRESO
+            // SLIDER
             val currentPos = sliderPosition ?: playerState.currentPosition.toFloat()
             val totalDuration = playerState.duration.coerceAtLeast(1L).toFloat()
 
@@ -300,23 +238,20 @@ fun FullPlayerSheet(
                 },
                 valueRange = 0f..totalDuration,
                 colors = SliderDefaults.colors(
-                    thumbColor = MaterialTheme.colorScheme.primary,
-                    activeTrackColor = MaterialTheme.colorScheme.primary
+                    thumbColor = LightLavender,
+                    activeTrackColor = ElectricPurple,
+                    inactiveTrackColor = Color.DarkGray
                 ),
                 modifier = Modifier.fillMaxWidth()
             )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(text = formatTime(currentPos.toLong()), style = MaterialTheme.typography.labelMedium)
-                Text(text = formatTime(playerState.duration), style = MaterialTheme.typography.labelMedium)
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(formatTime(currentPos.toLong()), style = MaterialTheme.typography.labelMedium, color = Color.Gray)
+                Text(formatTime(playerState.duration), style = MaterialTheme.typography.labelMedium, color = Color.Gray)
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // CONTROLES SECUNDARIOS
+            // CONTROLES DE REPRODUCCIÓN (Neón)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
@@ -324,50 +259,43 @@ fun FullPlayerSheet(
             ) {
                 IconButton(onClick = onToggleShuffle) {
                     Icon(
-                        imageVector = Icons.Default.Shuffle,
+                        Icons.Default.Shuffle,
                         contentDescription = "Aleatorio",
-                        tint = if (playerState.isShuffleEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = if (playerState.isShuffleEnabled) LightLavender else Color.Gray
                     )
                 }
-                IconButton(onClick = onRewind) { Icon(Icons.Default.Replay10, contentDescription = "-10s") }
-                IconButton(onClick = onForward) { Icon(Icons.Default.Forward10, contentDescription = "+10s") }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // CONTROLES PRINCIPALES
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
                 IconButton(onClick = onPrevious) {
-                    Icon(Icons.Default.SkipPrevious, contentDescription = "Anterior", modifier = Modifier.size(48.dp))
+                    Icon(Icons.Default.SkipPrevious, contentDescription = "Anterior", tint = Color.White, modifier = Modifier.size(40.dp))
                 }
 
-                FilledIconButton(
-                    onClick = onTogglePlayPause,
-                    modifier = Modifier.size(76.dp),
-                    shape = CircleShape,
-                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.primary)
+                // Botón Play/Pause con Gradiente
+                Box(
+                    modifier = Modifier
+                        .size(72.dp)
+                        .shadow(16.dp, CircleShape, spotColor = ElectricPurple)
+                        .background(BrandGradient, CircleShape)
+                        .clip(CircleShape)
+                        .clickable { onTogglePlayPause() },
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = if (playerState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                         contentDescription = null,
-                        modifier = Modifier.size(40.dp),
-                        tint = MaterialTheme.colorScheme.onPrimary
+                        tint = Color.White,
+                        modifier = Modifier.size(40.dp)
                     )
                 }
 
                 IconButton(onClick = onNext) {
-                    Icon(Icons.Default.SkipNext, contentDescription = "Siguiente", modifier = Modifier.size(48.dp))
+                    Icon(Icons.Default.SkipNext, contentDescription = "Siguiente", tint = Color.White, modifier = Modifier.size(40.dp))
+                }
+                IconButton(onClick = { /* Todo: Sleep Timer */ }) {
+                    Icon(Icons.Default.Timer, contentDescription = "Timer", tint = Color.Gray)
                 }
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(32.dp))
         }
 
-        // DIÁLOGO DE ETIQUETAS
         if (showTagEditor) {
             TagEditorDialog(
                 song = song,
@@ -379,11 +307,22 @@ fun FullPlayerSheet(
             )
         }
     }
-}
 
+
+    if (showTimerDialog) {
+        com.example.comarleyaetheraudio.presentation.components.SleepTimerDialog(
+            currentTimerMinutes = currentTimerMinutes,
+            onStartTimer = onStartTimer,
+            onCancelTimer = onCancelTimer,
+            onDismiss = { showTimerDialog = false }
+        )
+    }
+}
 private fun formatTime(ms: Long): String {
     val totalSeconds = ms / 1000
     val m = totalSeconds / 60
     val s = totalSeconds % 60
     return String.format("%02d:%02d", m, s)
 }
+
+

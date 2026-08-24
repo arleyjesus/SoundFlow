@@ -8,6 +8,7 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object Home : Screen("home", "Inicio", Icons.Default.Home)
     object Songs : Screen("songs", "Canciones", Icons.Default.MusicNote)
     object Folders : Screen("folders", "Carpetas", Icons.Default.Folder)
+    object Playlists : Screen("playlists", "Listas", Icons.Default.QueueMusic)
     object Settings : Screen("settings", "Ajustes", Icons.Default.Settings)
 
     // NUEVA RUTA PARA DETALLE DE CARPETA

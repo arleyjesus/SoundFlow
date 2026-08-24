@@ -3,24 +3,26 @@ package com.example.comarleyaetheraudio.presentation.library
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.comarleyaetheraudio.data.local.PlaylistEntity
+import com.example.comarleyaetheraudio.data.local.PlaylistSongCrossRef
+import com.example.comarleyaetheraudio.data.local.dao.PlaylistDao
 import com.example.comarleyaetheraudio.data.local.entity.FolderEntity
 import com.example.comarleyaetheraudio.data.player.AudioPlayerHandler
 import com.example.comarleyaetheraudio.domain.model.AudioPlayerState
+import com.example.comarleyaetheraudio.domain.model.Playlist
 import com.example.comarleyaetheraudio.domain.model.Song
 import com.example.comarleyaetheraudio.data.repository.SettingsRepository
 import com.example.comarleyaetheraudio.domain.repository.AudioRepository
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class LibraryViewModel(
     private val repository: AudioRepository,
     val playerHandler: AudioPlayerHandler,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val playlistDao: PlaylistDao
 ) : ViewModel() {
 
-    // Modo oscuro
     val isDarkMode: StateFlow<Boolean> = settingsRepository.isDarkMode
         .stateIn(
             scope = viewModelScope,
@@ -28,7 +30,6 @@ class LibraryViewModel(
             initialValue = true
         )
 
-    // Lista reactiva de canciones guardadas en Room
     val songs: StateFlow<List<Song>> = repository.getSongsFlow()
         .stateIn(
             scope = viewModelScope,
@@ -36,7 +37,6 @@ class LibraryViewModel(
             initialValue = emptyList()
         )
 
-    // Lista reactiva de carpetas guardadas en Room
     val folders: StateFlow<List<FolderEntity>> = repository.getFoldersFlow()
         .stateIn(
             scope = viewModelScope,
@@ -44,7 +44,73 @@ class LibraryViewModel(
             initialValue = emptyList()
         )
 
+    // Lista de canciones recientes procesada en segundo plano
+    val recentSongs: StateFlow<List<Song>> = songs
+        .map { allSongs ->
+            allSongs.sortedByDescending { it.id }.take(15)
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
     val playerState: StateFlow<AudioPlayerState> = playerHandler.playerState
+
+    val playlists: StateFlow<List<Playlist>> = combine(
+        playlistDao.getAllPlaylists(),
+        songs,
+        playlistDao.getAllPlaylistSongsFlow()
+    ) { entities, allSongs, crossRefs ->
+        entities.map { entity ->
+            val songIdsInPlaylist = crossRefs
+                .filter { it.playlistId == entity.id }
+                .map { it.songId }
+            val playlistSongs = allSongs.filter { song -> songIdsInPlaylist.contains(song.id) }
+            Playlist(
+                id = entity.id,
+                name = entity.name,
+                songs = playlistSongs
+            )
+        }
+    }
+    .catch { emit(emptyList()) }
+    .stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+    fun createPlaylist(name: String) {
+        if (name.isBlank()) return
+        viewModelScope.launch {
+            playlistDao.insertPlaylist(
+                PlaylistEntity(name = name.trim())
+            )
+        }
+    }
+
+    fun addSongToPlaylist(playlistId: Long, songId: Long) {
+        viewModelScope.launch {
+            playlistDao.insertSongToPlaylist(
+                PlaylistSongCrossRef(playlistId = playlistId, songId = songId)
+            )
+        }
+    }
+
+    fun removeSongFromPlaylist(playlistId: Long, songId: Long) {
+        viewModelScope.launch {
+            playlistDao.removeSongFromPlaylist(playlistId, songId)
+        }
+    }
+
+    fun deletePlaylist(playlist: Playlist) {
+        viewModelScope.launch {
+            playlistDao.deletePlaylist(
+                PlaylistEntity(id = playlist.id, name = playlist.name)
+            )
+        }
+    }
 
     fun onAddFolder(folderUri: Uri) {
         viewModelScope.launch {
@@ -89,16 +155,11 @@ class LibraryViewModel(
 
     fun updateSongTags(song: Song, newTitle: String, newArtist: String, newAlbum: String) {
         viewModelScope.launch {
-            // 1. Modificamos el archivo físico con Jaudiotagger
             val success = com.example.comarleyaetheraudio.data.local.TagEditorUtil.editSongTags(
                 song, newTitle, newArtist, newAlbum
             )
-
-            // 2. Validamos el éxito
             if (success) {
-                // El archivo físico ya fue modificado exitosamente.
-                // (Nota: Para que el cambio se refleje al instante en la UI sin reiniciar,
-                // en el futuro implementaremos una actualización directa a Room DB aquí).
+                // Modificado exitosamente
             }
         }
     }

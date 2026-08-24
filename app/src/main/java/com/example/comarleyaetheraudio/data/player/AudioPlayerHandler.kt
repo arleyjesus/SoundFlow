@@ -3,6 +3,9 @@ package com.example.comarleyaetheraudio.data.player
 import android.content.ComponentName
 import android.content.Context
 import android.media.MediaMetadataRetriever
+import android.media.audiofx.BassBoost
+import android.media.audiofx.Equalizer
+import android.media.audiofx.Virtualizer
 import android.net.Uri
 import androidx.core.content.ContextCompat
 import androidx.media3.common.AudioAttributes
@@ -14,14 +17,15 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.example.comarleyaetheraudio.domain.model.AudioPlayerState
 import com.example.comarleyaetheraudio.domain.model.Song
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import android.media.audiofx.BassBoost
-import android.media.audiofx.Equalizer
-import android.media.audiofx.Virtualizer
+import kotlinx.coroutines.launch
 
 class AudioPlayerHandler(private val context: Context) {
 
@@ -221,5 +225,50 @@ class AudioPlayerHandler(private val context: Context) {
             p.pause()
             p.volume = initialVolume // Restablece el volumen original
         }.start()
+    }
+
+    // ==========================================
+    // LÓGICA DEL TEMPORIZADOR DE APAGADO (SLEEP TIMER)
+    // ==========================================
+    private var sleepTimerJob: Job? = null
+    private val _sleepTimerMinutes = MutableStateFlow(0)
+    val sleepTimerMinutes: StateFlow<Int> = _sleepTimerMinutes.asStateFlow()
+
+    fun startSleepTimer(minutes: Int, stopAfterCurrentSong: Boolean = false) {
+        cancelSleepTimer()
+        _sleepTimerMinutes.value = minutes
+
+        if (stopAfterCurrentSong) {
+            // Escucha cuando termina la canción actual para pausar
+            player?.addListener(object : Player.Listener {
+                override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                    if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) {
+                        fadeOutAndPause(2000)
+                        cancelSleepTimer()
+                        player?.removeListener(this)
+                    }
+                }
+            })
+            return
+        }
+
+        // Timer por conteo regresivo en minutos
+        sleepTimerJob = scope.launch {
+            var remainingSeconds = minutes * 60
+            while (remainingSeconds > 0) {
+                delay(1000)
+                remainingSeconds--
+                _sleepTimerMinutes.value = (remainingSeconds / 60) + 1
+            }
+            // Atenúa el volumen suavemente durante 2 segundos y frena la música
+            fadeOutAndPause(2000)
+            cancelSleepTimer()
+        }
+    }
+
+    fun cancelSleepTimer() {
+        sleepTimerJob?.cancel()
+        sleepTimerJob = null
+        _sleepTimerMinutes.value = 0
     }
 }

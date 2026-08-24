@@ -1,28 +1,30 @@
 package com.example.comarleyaetheraudio.ui.theme
 
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 
+// 1. Esquema Oscuro AMOLED
 private val DarkColorScheme = darkColorScheme(
-    primary = PurpleLight,
-    secondary = SoftPink,
-    background = PureBlack,
-    surface = DarkSurface,
-    onPrimary = PureBlack,
+    primary = ElectricPurple,
+    secondary = LightLavender,
+    tertiary = PastelPink,
+    background = Color.Black, // Fondo negro puro #000000
+    surface = Color(0xFF121212), // Reemplazamos el error por un gris oscuro real
+    onPrimary = Color.White,
     onBackground = Color.White,
     onSurface = Color.White,
-    surfaceVariant = DarkCard
+    surfaceVariant = Color(0xFF1E1E1E)
 )
 
+// 2. Esquema Claro
 private val LightColorScheme = lightColorScheme(
-    primary = PurplePrimary,
-    secondary = PurpleLight,
+    primary = ElectricPurple,
+    secondary = LightLavender,
+    tertiary = PastelPink,
     background = Color(0xFFFBFBFE),
-    surface = Color.White,
+    surface = Color.White, // Reemplazamos el error por color blanco real
     onPrimary = Color.White,
     onBackground = Color.Black,
     onSurface = Color.Black,
@@ -38,7 +40,7 @@ fun ComarleyjesusaetheraudioTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography, // Asegúrate de tener tu archivo Typography
+        typography = Typography,
         content = content
     )
 }

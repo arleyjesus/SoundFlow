@@ -71,7 +71,7 @@ fun SongItem(
                         text = "HI-RES",
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                         style = MaterialTheme.typography.labelSmall.copy(
-                            color = Color.Black,
+                            color = MaterialTheme.colorScheme.background,
                             fontWeight = FontWeight.Bold,
                             fontSize = 10.sp
                         )

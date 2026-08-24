@@ -5,6 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.comarleyaetheraudio.data.local.dao.MusicDao
+import com.example.comarleyaetheraudio.data.local.dao.PlaylistDao
 import com.example.comarleyaetheraudio.data.local.entity.FolderEntity
 import com.example.comarleyaetheraudio.data.local.entity.SongEntity
 
@@ -21,6 +22,7 @@ import com.example.comarleyaetheraudio.data.local.entity.SongEntity
 )
 abstract class MusicDatabase : RoomDatabase() {
     abstract fun musicDao(): MusicDao
+    abstract fun playlistDao(): PlaylistDao
 
     companion object {
         @Volatile
@@ -33,7 +35,7 @@ abstract class MusicDatabase : RoomDatabase() {
                     MusicDatabase::class.java,
                     "soundflow_database"
                 )
-                    .fallbackToDestructiveMigration() // Evita que la app se cierre si cambia la versión de la DB
+                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance

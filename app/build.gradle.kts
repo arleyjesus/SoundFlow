@@ -10,13 +10,16 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.arleyaetheraudio"
+        applicationId = "com.example.comarleyaetheraudio"
         minSdk = 24
-        targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        targetSdk = 34
+        versionCode = 2          // Cambiado de 1 a 2
+        versionName = "2.0.0"    // Cambiado de "1.0.0" a "2.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        vectorDrawables {
+            useSupportLibrary = true
+        }
     }
 
     buildTypes {
