@@ -20,7 +20,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.comarleyaetheraudio.data.local.LrcParser
+import com.example.comarleyaetheraudio.data.remote.LrcLibService
 import com.example.comarleyaetheraudio.domain.model.AudioPlayerState
+import com.example.comarleyaetheraudio.domain.model.LyricLine
+import com.example.comarleyaetheraudio.presentation.player.LyricsView
+import com.example.comarleyaetheraudio.presentation.components.TagEditorDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,14 +40,43 @@ fun FullPlayerSheet(
     onRewind: () -> Unit,
     onForward: () -> Unit,
     onToggleShuffle: () -> Unit,
-    onEditTags: (String, String, String) -> Unit // NUEVO PARÁMETRO
+    onEditTags: (String, String, String) -> Unit
 ) {
     val song = playerState.currentSong ?: return
     var sliderPosition by remember { mutableStateOf<Float?>(null) }
 
     // ESTADOS
     var showLyrics by remember { mutableStateOf(false) }
-    var showTagEditor by remember { mutableStateOf(false) } // NUEVO ESTADO PARA EL EDITOR
+    var showTagEditor by remember { mutableStateOf(false) }
+
+    var fetchedLyrics by remember(song) { mutableStateOf<List<LyricLine>?>(null) }
+    var isLoadingLyrics by remember { mutableStateOf(false) }
+
+    // EFECTO DE DESCARGA DE LETRAS EN SEGUNDO PLANO
+    // EFECTO DE BÚSQUEDA DE LETRAS OPTIMIZADO
+    LaunchedEffect(showLyrics, song) {
+        if (showLyrics && fetchedLyrics == null) {
+            isLoadingLyrics = true
+
+            // 1. Intentar lectura local
+            val localLyrics = LrcParser.parseLrcForSong(song.path)
+
+            if (localLyrics.isNotEmpty()) {
+                fetchedLyrics = localLyrics
+            } else {
+                // 2. Limpiar Título y Artista para mejorar la búsqueda en la API
+                val cleanTitle = song.title
+                    .replace(Regex("(?i)\\(official.*?\\)|\\[official.*?\\]|\\.(mp3|flac|m4a)"), "")
+                    .trim()
+                val cleanArtist = if (song.artist.contains("Unknown", ignoreCase = true)) "" else song.artist.trim()
+
+                // 3. Consultar la red
+                val remoteLyrics = LrcLibService.fetchSyncedLyrics(cleanTitle, cleanArtist)
+                fetchedLyrics = remoteLyrics ?: emptyList()
+            }
+            isLoadingLyrics = false
+        }
+    }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -59,9 +92,7 @@ fun FullPlayerSheet(
                 .padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // ==========================================
             // BARRA SUPERIOR: Minimizar + Editar + Letras
-            // ==========================================
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -72,7 +103,6 @@ fun FullPlayerSheet(
                 }
 
                 Row {
-                    // BOTÓN DE LÁPIZ (EDITAR ETIQUETAS)
                     IconButton(onClick = { showTagEditor = true }) {
                         Icon(
                             imageVector = Icons.Default.Edit,
@@ -82,7 +112,6 @@ fun FullPlayerSheet(
                         )
                     }
 
-                    // BOTÓN PARA LETRAS
                     IconButton(onClick = { showLyrics = !showLyrics }) {
                         Icon(
                             imageVector = Icons.Default.FormatQuote,
@@ -96,15 +125,13 @@ fun FullPlayerSheet(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Procesamiento de la carátula
             val artworkData = playerState.artworkData
             val bitmap = remember(artworkData) {
                 artworkData?.let { bytes -> BitmapFactory.decodeByteArray(bytes, 0, bytes.size) }
             }
 
-            // ZONA CENTRAL: Alterna entre Carátula Grande o Visor de Letras (.lrc)
+            // ZONA CENTRAL: Letras o Carátula
             if (showLyrics) {
-                // MODO LETRAS: Miniatura + Lista con Scroll Automático
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -139,15 +166,50 @@ fun FullPlayerSheet(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                LyricsView(
-                    lyrics = remember(song) { LrcParser.parseLrcForSong(song.path) },
-                    currentPositionMs = playerState.currentPosition,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                )
+                if (isLoadingLyrics) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    }
+                } else {
+                    // CÓDIGO NUEVO A PEGAR:
+                    if (isLoadingLyrics) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                        }
+                    } else if (!fetchedLyrics.isNullOrEmpty()) {
+                        LyricsView(
+                            lyrics = fetchedLyrics!!,
+                            currentPositionMs = playerState.currentPosition,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "No se encontraron letras para esta canción",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                }
             } else {
-                // MODO NORMAL: Carátula Principal Grande
                 if (bitmap != null) {
                     Image(
                         bitmap = bitmap.asImageBitmap(),
@@ -190,7 +252,6 @@ fun FullPlayerSheet(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Información de la canción + Corazón Favoritos
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -226,7 +287,7 @@ fun FullPlayerSheet(
                 Spacer(modifier = Modifier.weight(1f))
             }
 
-            // Barra de progreso de reproducción
+            // BARRA DE PROGRESO
             val currentPos = sliderPosition ?: playerState.currentPosition.toFloat()
             val totalDuration = playerState.duration.coerceAtLeast(1L).toFloat()
 
@@ -255,7 +316,7 @@ fun FullPlayerSheet(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Controles Secundarios: Aleatorio y +/- 10s
+            // CONTROLES SECUNDARIOS
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
@@ -274,7 +335,7 @@ fun FullPlayerSheet(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Controles Principales: Anterior, Play/Pause, Siguiente
+            // CONTROLES PRINCIPALES
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
@@ -306,11 +367,9 @@ fun FullPlayerSheet(
             Spacer(modifier = Modifier.height(24.dp))
         }
 
-        // ==========================================
-        // DIÁLOGO DEL EDITOR DE ETIQUETAS
-        // ==========================================
+        // DIÁLOGO DE ETIQUETAS
         if (showTagEditor) {
-            com.example.comarleyaetheraudio.presentation.components.TagEditorDialog(
+            TagEditorDialog(
                 song = song,
                 onDismiss = { showTagEditor = false },
                 onSave = { newTitle, newArtist, newAlbum ->

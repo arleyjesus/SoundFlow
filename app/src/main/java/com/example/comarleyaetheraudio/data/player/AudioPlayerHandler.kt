@@ -199,4 +199,27 @@ class AudioPlayerHandler(private val context: Context) {
             }
         }
     }
+
+    // Configuración de Transiciones Suaves y Reproducción Continuada
+    fun enableSmoothTransitions() {
+        player?.repeatMode = Player.REPEAT_MODE_OFF // Asegura la continuidad normal de la lista sin pausas forzadas
+    }
+
+    // Función para atenuación de volumen progresiva (Crossfade manual al pausar/cambiar)
+    fun fadeOutAndPause(durationMs: Long = 1000) {
+        val p = player ?: return
+        val initialVolume = p.volume
+        val steps = 10
+        val stepDelay = durationMs / steps
+        val volumeStep = initialVolume / steps
+
+        Thread {
+            for (i in 1..steps) {
+                p.volume = (initialVolume - (i * volumeStep)).coerceAtLeast(0f)
+                Thread.sleep(stepDelay)
+            }
+            p.pause()
+            p.volume = initialVolume // Restablece el volumen original
+        }.start()
+    }
 }

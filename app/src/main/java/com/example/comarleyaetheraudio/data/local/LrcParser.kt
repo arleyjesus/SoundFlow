@@ -1,45 +1,55 @@
 package com.example.comarleyaetheraudio.data.local
 
 import com.example.comarleyaetheraudio.domain.model.LyricLine
+import org.jaudiotagger.audio.AudioFileIO
+import org.jaudiotagger.tag.FieldKey
 import java.io.File
 
 object LrcParser {
-    fun parseLrcForSong(songPath: String?): List<LyricLine> {
-        if (songPath == null) return getMockLyrics() // Letras de prueba si no hay ruta
+    fun parseLrcForSong(songPath: String): List<LyricLine> {
+        // 1. Intentar leer archivo .lrc externo con el mismo nombre
+        val lrcPath = songPath.substringBeforeLast(".") + ".lrc"
+        val lrcFile = File(lrcPath)
 
-        return try {
-            val songFile = File(songPath)
-            val lrcFile = File(songFile.parent, "${songFile.nameWithoutExtension}.lrc")
+        if (lrcFile.exists()) {
+            val content = lrcFile.readText()
+            val parsed = parseLrcContent(content)
+            if (parsed.isNotEmpty()) return parsed
+        }
 
-            if (!lrcFile.exists()) return getMockLyrics() // Letras de prueba si no existe el archivo
-
-            val lines = mutableListOf<LyricLine>()
-            lrcFile.forEachLine { line ->
-                val regex = "\\[(\\d{2}):(\\d{2})\\.(\\d{2,3})\\](.*)".toRegex()
-                val match = regex.find(line)
-                if (match != null) {
-                    val (min, sec, ms, text) = match.destructured
-                    val totalMs = (min.toLong() * 60 * 1000) + (sec.toLong() * 1000) + ms.toLong()
-                    if (text.trim().isNotEmpty()) {
-                        lines.add(LyricLine(totalMs, text.trim()))
-                    }
+        // 2. Intentar leer etiquetas ID3/USLT incrustadas dentro del propio archivo audio
+        try {
+            val audioFile = AudioFileIO.read(File(songPath))
+            val tag = audioFile.tag
+            if (tag != null) {
+                val embeddedLyrics = tag.getFirst(FieldKey.LYRICS)
+                if (embeddedLyrics.isNotBlank()) {
+                    val parsed = parseLrcContent(embeddedLyrics)
+                    if (parsed.isNotEmpty()) return parsed
                 }
             }
-            lines.sortedBy { it.timeMs }
-        } catch (_: Exception) {
-            getMockLyrics()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
+
+        // 3. Si no hay letra local ni incrustada, retorna lista vacía (sin textos genéricos de prueba)
+        return emptyList()
     }
 
-    // Datos de prueba para validar que la UI funciona correctamente
-    private fun getMockLyrics(): List<LyricLine> {
-        return listOf(
-            LyricLine(0, "🎵 [Música]"),
-            LyricLine(10000, "Esta es una letra de prueba sincronizada"),
-            LyricLine(20000, "Si ves que el texto avanza solo..."),
-            LyricLine(30000, "¡La UI de letras funciona perfecto!"),
-            LyricLine(40000, "Para ver letras reales, añade un archivo .lrc"),
-            LyricLine(50000, "con el mismo nombre que tu archivo .mp3")
-        )
+    private fun parseLrcContent(content: String): List<LyricLine> {
+        val lines = mutableListOf<LyricLine>()
+        val regex = "\\[(\\d{2}):(\\d{2})\\.(\\d{2,3})\\](.*)".toRegex()
+
+        content.lines().forEach { line ->
+            val match = regex.find(line)
+            if (match != null) {
+                val (min, sec, ms, text) = match.destructured
+                val totalMs = (min.toLong() * 60 * 1000) + (sec.toLong() * 1000) + ms.toLong()
+                if (text.trim().isNotEmpty()) {
+                    lines.add(LyricLine(totalMs, text.trim()))
+                }
+            }
+        }
+        return lines.sortedBy { it.timeMs }
     }
 }
