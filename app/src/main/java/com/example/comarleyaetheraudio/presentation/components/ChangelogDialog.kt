@@ -17,12 +17,12 @@ fun ChangelogDialog(onDismiss: () -> Unit) {
         title = {
             Column {
                 Text(
-                    text = "¡Bienvenido a SoundFlow v2.0.0! 🎉",
+                    text = "¡Bienvenido a SoundFlow v2.2.0! 🎨",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Novedades y Mejoras",
+                    text = "Novedades de esta actualización",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -30,11 +30,10 @@ fun ChangelogDialog(onDismiss: () -> Unit) {
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                ChangelogItem("⚡", "Rendimiento ultra fluido a 120 FPS con caché local de carátulas.")
-                ChangelogItem("🎨", "Nuevo diseño adaptable en Modo Claro / Oscuro con colores de marca.")
-                ChangelogItem("📑", "Motor de Playlists completo para crear y organizar tus listas.")
-                ChangelogItem("🗂️", "Escáner por carpetas sin cierres inesperados.")
-                ChangelogItem("⋮", "Menú de 3 puntos en canciones para gestión rápida.")
+                ChangelogItem("🎨", "Color Dinámico: Adaptación de la interfaz a la carátula activa (Palette API).")
+                ChangelogItem("📊", "Visualizador de Audio: Espectro audio-reactivo en tiempo real.")
+                ChangelogItem("🎛️", "Personalización de temas (Claro, Oscuro y AMOLED Puro).")
+                ChangelogItem("⚡", "Renderizado optimizado a 120 FPS.")
             }
         },
         confirmButton = {
@@ -43,7 +42,7 @@ fun ChangelogDialog(onDismiss: () -> Unit) {
                 colors = ButtonDefaults.buttonColors(containerColor = ElectricPurple),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("¡Entendido!")
+                Text("¡Disfrutar!")
             }
         },
         shape = RoundedCornerShape(20.dp)

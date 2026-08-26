@@ -1,11 +1,8 @@
 package com.example.comarleyaetheraudio.presentation.home
 
-import android.graphics.Bitmap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import com.example.comarleyaetheraudio.data.local.CoverCacheManager
-import java.io.File
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -34,22 +31,23 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import coil.compose.SubcomposeAsyncImage
-import coil.request.CachePolicy
 import coil.request.ImageRequest
-import com.example.comarleyaetheraudio.data.local.ArtworkLoader
+import com.example.comarleyaetheraudio.data.local.CoverCacheManager
 import com.example.comarleyaetheraudio.domain.model.AudioPlayerState
 import com.example.comarleyaetheraudio.domain.model.Song
 import com.example.comarleyaetheraudio.ui.theme.*
+import java.io.File
 
 @Composable
 fun HomeScreen(
     playerState: AudioPlayerState,
-    recentSongs: List<Song>, // Recibe la lista ya ordenada
+    allSongs: List<Song>,
     favoriteIds: List<Long>,
     onSongClick: (Song) -> Unit,
     onFavoritesClick: () -> Unit
 ) {
+    val recentSongs = remember(allSongs) { allSongs.sortedByDescending { it.id }.take(15) }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -107,9 +105,7 @@ fun HomeScreen(
                     .padding(bottom = 28.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                NeonSmartCard("Favoritos", Icons.Default.Favorite, PinkGradient) {
-                    onFavoritesClick()
-                }
+                NeonSmartCard("Favoritos", Icons.Default.Favorite, PinkGradient, onClick = onFavoritesClick)
                 NeonSmartCard("Nuevas", Icons.Default.NewReleases, BrandGradient) {}
                 NeonSmartCard("Aleatorio", Icons.Default.Shuffle, BrandGradient) {}
             }
@@ -122,7 +118,6 @@ fun RecentPosterCard(song: Song, onClick: () -> Unit) {
     val context = LocalContext.current
     var coverFile by remember(song.id) { mutableStateOf<File?>(null) }
 
-    // Cargar la carátula desde la caché en disco o procesarla en segundo plano
     LaunchedEffect(song.id) {
         coverFile = CoverCacheManager.getOrFetchCover(context, song.id, song.albumArtUri, song.path)
     }
@@ -146,7 +141,7 @@ fun RecentPosterCard(song: Song, onClick: () -> Unit) {
             AsyncImage(
                 model = ImageRequest.Builder(context)
                     .data(coverFile)
-                    .crossfade(false) // Elimina el parpadeo al reciclar la vista en el LazyRow
+                    .crossfade(false)
                     .build(),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
@@ -161,7 +156,6 @@ fun RecentPosterCard(song: Song, onClick: () -> Unit) {
             )
         }
 
-        // Sombra inferior degradada para destacar el texto sobre la carátula
         Box(
             modifier = Modifier
                 .fillMaxSize()

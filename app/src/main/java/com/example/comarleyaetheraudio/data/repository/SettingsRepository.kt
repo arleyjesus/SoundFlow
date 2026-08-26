@@ -32,7 +32,7 @@ class SettingsRepository(private val context: Context) {
     suspend fun setAccentColor(colorIndex: Int) {
         context.dataStore.edit { prefs -> prefs[ACCENT_COLOR_KEY] = colorIndex }
     }
-    private val LAST_VERSION_KEY = booleanPreferencesKey("v2_0_0_shown")
+    private val LAST_VERSION_KEY = booleanPreferencesKey("v2_2_0_shown")
 
     val showChangelog: Flow<Boolean> = context.dataStore.data
         .map { prefs -> !(prefs[LAST_VERSION_KEY] ?: false) }

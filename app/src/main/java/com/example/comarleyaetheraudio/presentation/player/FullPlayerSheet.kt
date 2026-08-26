@@ -3,7 +3,6 @@ package com.example.comarleyaetheraudio.presentation.player
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,24 +21,17 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import com.example.comarleyaetheraudio.data.local.LrcParser
-import com.example.comarleyaetheraudio.data.remote.LrcLibService
 import com.example.comarleyaetheraudio.domain.model.AudioPlayerState
-import com.example.comarleyaetheraudio.domain.model.LyricLine
-import com.example.comarleyaetheraudio.presentation.player.LyricsView
+import com.example.comarleyaetheraudio.presentation.components.SleepTimerDialog
 import com.example.comarleyaetheraudio.presentation.components.TagEditorDialog
+import com.example.comarleyaetheraudio.ui.theme.DynamicThemeExtractor
+import com.example.comarleyaetheraudio.ui.theme.ElectricPurple
+import com.example.comarleyaetheraudio.ui.theme.LightLavender
 
-// Paleta Oficial v2.0.0
-// Paleta Oficial v2.0.0
-val ElectricPurple = Color(0xFF8A2BE2)
-val LightLavender = Color(0xFFB388FF)
-val PastelPink = Color(0xFFF48FB1) // <--- ASEGÚRATE DE INCLUIR ESTA LÍNEA
-val BrandGradient = Brush.linearGradient(listOf(ElectricPurple, LightLavender))
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FullPlayerSheet(
-    // Agrega estos tres parámetros al final de la firma de la función:
     currentTimerMinutes: Int = 0,
     onStartTimer: (Int, Boolean) -> Unit = { _, _ -> },
     onCancelTimer: () -> Unit = {},
@@ -56,31 +48,31 @@ fun FullPlayerSheet(
     onToggleShuffle: () -> Unit,
     onEditTags: (String, String, String) -> Unit
 ) {
-
-    var showTimerDialog by remember { mutableStateOf(false) }
     val song = playerState.currentSong ?: return
     var sliderPosition by remember { mutableStateOf<Float?>(null) }
 
     var showLyrics by remember { mutableStateOf(false) }
     var showTagEditor by remember { mutableStateOf(false) }
+    var showTimerDialog by remember { mutableStateOf(false) }
 
-    var fetchedLyrics by remember(song) { mutableStateOf<List<LyricLine>?>(null) }
-    var isLoadingLyrics by remember { mutableStateOf(false) }
+    val artworkData = playerState.artworkData
+    val bitmap = remember(artworkData) {
+        artworkData?.let { bytes -> BitmapFactory.decodeByteArray(bytes, 0, bytes.size) }
+    }
 
-    LaunchedEffect(showLyrics, song) {
-        if (showLyrics && fetchedLyrics == null) {
-            isLoadingLyrics = true
-            val localLyrics = LrcParser.parseLrcForSong(song.path)
-            if (localLyrics.isNotEmpty()) {
-                fetchedLyrics = localLyrics
-            } else {
-                val cleanTitle = song.title.replace(Regex("(?i)\\(official.*?\\)|\\[official.*?\\]|\\.(mp3|flac|m4a)"), "").trim()
-                val cleanArtist = if (song.artist.contains("Unknown", ignoreCase = true)) "" else song.artist.trim()
-                val remoteLyrics = LrcLibService.fetchSyncedLyrics(cleanTitle, cleanArtist)
-                fetchedLyrics = remoteLyrics ?: emptyList()
-            }
-            isLoadingLyrics = false
-        }
+    // EXTRAER COLOR DINÁMICO (v2.2.0 Palette API)
+    val dominantColor = remember(bitmap) {
+        DynamicThemeExtractor.extractDominantColor(bitmap, ElectricPurple)
+    }
+
+    val dynamicGradient = remember(dominantColor) {
+        Brush.verticalGradient(
+            colors = listOf(
+                dominantColor.copy(alpha = 0.45f),
+                Color(0xFF0D0D0D),
+                Color.Black
+            )
+        )
     }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -88,214 +80,243 @@ fun FullPlayerSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.background, // Fondo AMOLED
+        containerColor = Color.Black,
         modifier = Modifier.fillMaxSize()
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp, vertical = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .background(dynamicGradient)
         ) {
-            // BARRA SUPERIOR
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { showTimerDialog = true }) {
-                    Icon(
-                        imageVector = Icons.Default.Timer,
-                        contentDescription = "Timer",
-                        tint = if (currentTimerMinutes > 0) LightLavender else Color.Gray
-                    )
-                }
-                Row {
-                    IconButton(onClick = { showTagEditor = true }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Color.LightGray)
-                    }
-                    IconButton(onClick = { showLyrics = !showLyrics }) {
-                        Icon(
-                            Icons.Default.FormatQuote,
-                            contentDescription = "Letras",
-                            tint = if (showLyrics) LightLavender else Color.LightGray
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            val artworkData = playerState.artworkData
-            val bitmap = remember(artworkData) {
-                artworkData?.let { bytes -> BitmapFactory.decodeByteArray(bytes, 0, bytes.size) }
-            }
-
-            // CARÁTULA DINÁMICA CON EFECTO NEÓN
-            // Si hay letras, la carátula ocupa el 50% del ancho. Si no, ocupa casi todo el ancho.
-            val imageFraction = if (showLyrics) 0.5f else 1f
-            val imageShape = if (showLyrics) CircleShape else RoundedCornerShape(24.dp)
-
-            Box(
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth(imageFraction)
-                    .aspectRatio(1f)
-                    .shadow(
-                        elevation = if (showLyrics) 24.dp else 32.dp,
-                        shape = imageShape,
-                        spotColor = ElectricPurple, // Sombra de Neón Morada
-                        ambientColor = LightLavender
-                    )
-                    .clip(imageShape)
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp, vertical = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                if (bitmap != null) {
-                    Image(
-                        bitmap = bitmap.asImageBitmap(),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Surface(
-                        modifier = Modifier.fillMaxSize(),
-                        color = Color.DarkGray
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.MusicNote,
-                            contentDescription = null,
-                            modifier = Modifier.padding(48.dp),
-                            tint = LightLavender
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // INFO Y LETRAS
-            if (showLyrics) {
-                if (isLoadingLyrics) {
-                    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = ElectricPurple)
-                    }
-                } else if (!fetchedLyrics.isNullOrEmpty()) {
-                    LyricsView(
-                        lyrics = fetchedLyrics!!,
-                        currentPositionMs = playerState.currentPosition,
-                        modifier = Modifier.weight(1f).fillMaxWidth()
-                    )
-                } else {
-                    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                        Text("No se encontraron letras.", color = Color.Gray)
-                    }
-                }
-            } else {
-                // INFO DE CANCIÓN (Modo Normal)
+                // BARRA SUPERIOR: Temporizador + Editar + Letras + Minimizar
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = song.title,
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.onBackground,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = song.artist,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = LightLavender,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.ExpandMore, contentDescription = "Minimizar", modifier = Modifier.size(32.dp))
                     }
-                    IconButton(onClick = onToggleFavorite) {
-                        Icon(
-                            imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = "Favorito",
-                            tint = if (isFavorite) PastelPink else Color.Gray,
-                            modifier = Modifier.size(32.dp)
-                        )
+
+                    Row {
+                        IconButton(onClick = { showTimerDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Timer,
+                                contentDescription = "Timer",
+                                tint = if (currentTimerMinutes > 0) LightLavender else Color.Gray
+                            )
+                        }
+                        IconButton(onClick = { showTagEditor = true }) {
+                            Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Color.LightGray)
+                        }
+                        IconButton(onClick = { showLyrics = !showLyrics }) {
+                            Icon(
+                                imageVector = Icons.Default.FormatQuote,
+                                contentDescription = "Letras",
+                                tint = if (showLyrics) dominantColor else Color.LightGray,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
                     }
                 }
-                Spacer(modifier = Modifier.weight(1f))
-            }
 
-            // SLIDER
-            val currentPos = sliderPosition ?: playerState.currentPosition.toFloat()
-            val totalDuration = playerState.duration.coerceAtLeast(1L).toFloat()
+                Spacer(modifier = Modifier.height(12.dp))
 
-            Slider(
-                value = currentPos,
-                onValueChange = { sliderPosition = it },
-                onValueChangeFinished = {
-                    sliderPosition?.let { onSeekTo(it.toLong()) }
-                    sliderPosition = null
-                },
-                valueRange = 0f..totalDuration,
-                colors = SliderDefaults.colors(
-                    thumbColor = LightLavender,
-                    activeTrackColor = ElectricPurple,
-                    inactiveTrackColor = Color.DarkGray
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(formatTime(currentPos.toLong()), style = MaterialTheme.typography.labelMedium, color = Color.Gray)
-                Text(formatTime(playerState.duration), style = MaterialTheme.typography.labelMedium, color = Color.Gray)
-            }
+                // ZONA CENTRAL: Carátula o Visor de Letras
+                if (showLyrics) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (bitmap != null) {
+                            Image(
+                                bitmap = bitmap.asImageBitmap(),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(50.dp)
+                                    .clip(RoundedCornerShape(8.dp)),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(song.title, fontWeight = FontWeight.Bold, maxLines = 1, style = MaterialTheme.typography.titleMedium)
+                            Text(song.artist, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                        }
+                    }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
-            // CONTROLES DE REPRODUCCIÓN (Neón)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onToggleShuffle) {
-                    Icon(
-                        Icons.Default.Shuffle,
-                        contentDescription = "Aleatorio",
-                        tint = if (playerState.isShuffleEnabled) LightLavender else Color.Gray
+                    LyricsView(
+                        lyrics = remember(song) { LrcParser.parseLrcForSong(song.path) },
+                        currentPositionMs = playerState.currentPosition,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
                     )
-                }
-                IconButton(onClick = onPrevious) {
-                    Icon(Icons.Default.SkipPrevious, contentDescription = "Anterior", tint = Color.White, modifier = Modifier.size(40.dp))
+                } else {
+                    if (bitmap != null) {
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = "Carátula",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(1f)
+                                .shadow(24.dp, RoundedCornerShape(24.dp), spotColor = dominantColor)
+                                .clip(RoundedCornerShape(24.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(1f)
+                                .clip(RoundedCornerShape(24.dp)),
+                            color = MaterialTheme.colorScheme.surfaceVariant
+                        ) {
+                            Icon(Icons.Default.MusicNote, contentDescription = null, modifier = Modifier.padding(72.dp))
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // VISUALIZADOR DE ESPECTRO AUDIO-REACTIVO CANVAS (v2.2.0)
+                    AudioVisualizerView(
+                        isPlaying = playerState.isPlaying,
+                        primaryColor = dominantColor,
+                        secondaryColor = LightLavender,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // INFO DE LA CANCIÓN Y FAVORITOS
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = song.title,
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.ExtraBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = song.artist,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        IconButton(onClick = onToggleFavorite) {
+                            Icon(
+                                imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = "Favorito",
+                                tint = if (isFavorite) dominantColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.weight(1f))
                 }
 
-                // Botón Play/Pause con Gradiente
-                Box(
-                    modifier = Modifier
-                        .size(72.dp)
-                        .shadow(16.dp, CircleShape, spotColor = ElectricPurple)
-                        .background(BrandGradient, CircleShape)
-                        .clip(CircleShape)
-                        .clickable { onTogglePlayPause() },
-                    contentAlignment = Alignment.Center
+                // SLIDER DE TIEMPO
+                val currentPos = sliderPosition ?: playerState.currentPosition.toFloat()
+                val totalDuration = playerState.duration.coerceAtLeast(1L).toFloat()
+
+                Slider(
+                    value = currentPos,
+                    onValueChange = { sliderPosition = it },
+                    onValueChangeFinished = {
+                        sliderPosition?.let { onSeekTo(it.toLong()) }
+                        sliderPosition = null
+                    },
+                    valueRange = 0f..totalDuration,
+                    colors = SliderDefaults.colors(
+                        thumbColor = dominantColor,
+                        activeTrackColor = dominantColor
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Icon(
-                        imageVector = if (playerState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(40.dp)
-                    )
+                    Text(text = formatTime(currentPos.toLong()), style = MaterialTheme.typography.labelMedium)
+                    Text(text = formatTime(playerState.duration), style = MaterialTheme.typography.labelMedium)
                 }
 
-                IconButton(onClick = onNext) {
-                    Icon(Icons.Default.SkipNext, contentDescription = "Siguiente", tint = Color.White, modifier = Modifier.size(40.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // CONTROLES DE REPRODUCCIÓN
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onToggleShuffle) {
+                        Icon(
+                            imageVector = Icons.Default.Shuffle,
+                            contentDescription = "Aleatorio",
+                            tint = if (playerState.isShuffleEnabled) dominantColor else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    IconButton(onClick = onRewind) { Icon(Icons.Default.Replay10, contentDescription = "-10s") }
+                    IconButton(onClick = onForward) { Icon(Icons.Default.Forward10, contentDescription = "+10s") }
                 }
-                IconButton(onClick = { /* Todo: Sleep Timer */ }) {
-                    Icon(Icons.Default.Timer, contentDescription = "Timer", tint = Color.Gray)
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onPrevious) {
+                        Icon(Icons.Default.SkipPrevious, contentDescription = "Anterior", modifier = Modifier.size(48.dp))
+                    }
+
+                    FilledIconButton(
+                        onClick = onTogglePlayPause,
+                        modifier = Modifier.size(76.dp),
+                        shape = CircleShape,
+                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = dominantColor)
+                    ) {
+                        Icon(
+                            imageVector = if (playerState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            modifier = Modifier.size(40.dp),
+                            tint = Color.White
+                        )
+                    }
+
+                    IconButton(onClick = onNext) {
+                        Icon(Icons.Default.SkipNext, contentDescription = "Siguiente", modifier = Modifier.size(48.dp))
+                    }
                 }
+
+                Spacer(modifier = Modifier.height(24.dp))
             }
-            Spacer(modifier = Modifier.height(32.dp))
         }
 
+        // DIÁLOGOS FLOTANTES
         if (showTagEditor) {
             TagEditorDialog(
                 song = song,
@@ -306,23 +327,21 @@ fun FullPlayerSheet(
                 }
             )
         }
-    }
 
-
-    if (showTimerDialog) {
-        com.example.comarleyaetheraudio.presentation.components.SleepTimerDialog(
-            currentTimerMinutes = currentTimerMinutes,
-            onStartTimer = onStartTimer,
-            onCancelTimer = onCancelTimer,
-            onDismiss = { showTimerDialog = false }
-        )
+        if (showTimerDialog) {
+            SleepTimerDialog(
+                currentTimerMinutes = currentTimerMinutes,
+                onStartTimer = onStartTimer,
+                onCancelTimer = onCancelTimer,
+                onDismiss = { showTimerDialog = false }
+            )
+        }
     }
 }
+
 private fun formatTime(ms: Long): String {
     val totalSeconds = ms / 1000
     val m = totalSeconds / 60
     val s = totalSeconds % 60
     return String.format("%02d:%02d", m, s)
 }
-
-
