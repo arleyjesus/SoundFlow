@@ -5,20 +5,21 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
-    object Home : Screen("home", "Inicio", Icons.Default.PlayCircle)
-    object Songs : Screen("songs", "Canciones", Icons.Default.MusicNote)
-    object Playlists : Screen("playlists", "Listas", Icons.Default.QueueMusic)
-    object Folders : Screen("folders", "Carpetas", Icons.Default.Folder)
-    object Settings : Screen("settings", "Ajustes", Icons.Default.Settings)
-    object AudioFx : Screen("audio_fx", "Ecualizador", Icons.Default.Equalizer)
+    // 📱 NUEVA BARRA INFERIOR (4 Opciones)
+    object Home : Screen("home", "Inicio", Icons.Default.Home)
+    object Library : Screen("library", "Biblioteca", Icons.Default.LibraryMusic)
+    object Search : Screen("search", "Buscar", Icons.Default.Search)
+    object Profile : Screen("profile", "Perfil", Icons.Default.Person)
 
-    // Detalle de Carpeta
-    object FolderDetail : Screen("folder_detail/{folderPath}", "Detalle Carpeta", Icons.Default.Folder) {
+    // 🔗 SUB-RUTAS (Ocultas de la barra principal)
+    object Settings : Screen("settings", "Ajustes", Icons.Default.Settings)
+    object AudioFx : Screen("audio_fx", "Ecualizador", Icons.Default.GraphicEq)
+
+    object FolderDetail : Screen("folder_detail/{folderPath}", "Detalle", Icons.Default.Folder) {
         fun createRoute(folderPath: String) = "folder_detail/${android.net.Uri.encode(folderPath)}"
     }
 
-    // NUEVA RUTA: Detalle de Playlist por ID
-    object PlaylistDetail : Screen("playlist_detail/{playlistId}", "Detalle Lista", Icons.Default.QueueMusic) {
+    object PlaylistDetail : Screen("playlist_detail/{playlistId}", "Playlist", Icons.Default.QueueMusic) {
         fun createRoute(playlistId: Long) = "playlist_detail/$playlistId"
     }
 }

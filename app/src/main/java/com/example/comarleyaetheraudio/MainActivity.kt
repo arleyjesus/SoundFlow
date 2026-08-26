@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -33,13 +34,12 @@ import com.example.comarleyaetheraudio.presentation.components.ChangelogDialog
 import com.example.comarleyaetheraudio.presentation.components.CreatePlaylistDialog
 import com.example.comarleyaetheraudio.presentation.components.MiniPlayer
 import com.example.comarleyaetheraudio.presentation.folders.FolderDetailScreen
-import com.example.comarleyaetheraudio.presentation.folders.FoldersScreen
 import com.example.comarleyaetheraudio.presentation.home.HomeScreen
+import com.example.comarleyaetheraudio.presentation.library.LibraryScreen
 import com.example.comarleyaetheraudio.presentation.library.LibraryViewModel
-import com.example.comarleyaetheraudio.presentation.library.PlaylistDetailScreen
-import com.example.comarleyaetheraudio.presentation.library.PlaylistsScreen
-import com.example.comarleyaetheraudio.presentation.library.SongsScreen
 import com.example.comarleyaetheraudio.presentation.player.FullPlayerSheet
+import com.example.comarleyaetheraudio.presentation.profile.ProfileScreen
+import com.example.comarleyaetheraudio.presentation.search.SearchScreen
 import com.example.comarleyaetheraudio.presentation.settings.AudioFxScreen
 import com.example.comarleyaetheraudio.presentation.settings.SettingsScreen
 import com.example.comarleyaetheraudio.ui.theme.ComarleyjesusaetheraudioTheme
@@ -63,7 +63,9 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val isDarkMode by viewModel.isDarkMode.collectAsState()
-            ComarleyjesusaetheraudioTheme(darkTheme = isDarkMode) {
+            val currentTheme by viewModel.currentTheme.collectAsState()
+
+            ComarleyjesusaetheraudioTheme(darkTheme = isDarkMode, appTheme = currentTheme) {
                 MainAppStructure(
                     viewModel = viewModel,
                     settingsRepository = settingsRepository
@@ -79,6 +81,7 @@ fun MainAppStructure(
     viewModel: LibraryViewModel,
     settingsRepository: SettingsRepository
 ) {
+    val context = LocalContext.current
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -88,6 +91,7 @@ fun MainAppStructure(
     val playlists by viewModel.playlists.collectAsState()
     val playerState by viewModel.playerState.collectAsState()
     val isDarkMode by viewModel.isDarkMode.collectAsState()
+    val currentTheme by viewModel.currentTheme.collectAsState()
 
     var showFullPlayer by remember { mutableStateOf(false) }
     var showChangelogDialog by remember { mutableStateOf(false) }
@@ -102,7 +106,7 @@ fun MainAppStructure(
     }
 
     LaunchedEffect(Unit) {
-        val currentCode = 3 // versionCode v2.1.0
+        val currentCode = 4
         val info = UpdateChecker.checkForUpdates(currentCode)
         if (info != null) {
             updateInfoState = info
@@ -111,10 +115,9 @@ fun MainAppStructure(
 
     val screens = listOf(
         Screen.Home,
-        Screen.Songs,
-        Screen.Playlists,
-        Screen.Folders,
-        Screen.Settings
+        Screen.Library,
+        Screen.Search,
+        Screen.Profile
     )
 
     Scaffold(
@@ -173,78 +176,58 @@ fun MainAppStructure(
                             viewModel.playerHandler.playSong(selectedSong, songs)
                         },
                         onFavoritesClick = {
-                            navController.navigate(Screen.Songs.route)
+                            navController.navigate(Screen.Library.route)
                         }
                     )
                 }
 
-                composable(Screen.Songs.route) {
+                composable(Screen.Library.route) {
                     val favoriteIds by viewModel.favoriteIds.collectAsState()
 
-                    SongsScreen(
+                    LibraryScreen(
                         songs = songs,
                         playlists = playlists,
-                        favoriteIds = favoriteIds,
-                        onSongClick = { selectedSong ->
-                            viewModel.playerHandler.playSong(selectedSong, songs)
-                        },
-                        onToggleFavorite = { song -> viewModel.toggleFavorite(song.id) },
-                        onAddToPlaylist = { playlistId, songId -> viewModel.addSongToPlaylist(playlistId, songId) }
-                    )
-                }
-
-                composable(Screen.Playlists.route) {
-                    var showCreateDialog by remember { mutableStateOf(false) }
-
-                    PlaylistsScreen(
-                        playlists = playlists,
-                        onPlaylistClick = { playlist ->
-                            navController.navigate(Screen.PlaylistDetail.createRoute(playlist.id))
-                        },
-                        onCreatePlaylistClick = { showCreateDialog = true }
-                    )
-
-                    if (showCreateDialog) {
-                        CreatePlaylistDialog(
-                            onDismiss = { showCreateDialog = false },
-                            onCreate = { name -> viewModel.createPlaylist(name) }
-                        )
-                    }
-                }
-
-                composable(
-                    route = Screen.PlaylistDetail.route,
-                    arguments = listOf(navArgument("playlistId") { type = NavType.LongType })
-                ) { backStackEntry ->
-                    val playlistId = backStackEntry.arguments?.getLong("playlistId") ?: 0L
-                    val selectedPlaylist = playlists.find { it.id == playlistId }
-                    val playlistSongs = remember(selectedPlaylist) {
-                        selectedPlaylist?.songs ?: emptyList()
-                    }
-
-                    if (selectedPlaylist != null) {
-                        PlaylistDetailScreen(
-                            playlist = selectedPlaylist,
-                            playlistSongs = playlistSongs,
-                            onBackClick = { navController.popBackStack() },
-                            onSongClick = { song -> viewModel.playerHandler.playSong(song, playlistSongs) },
-                            onPlayAllClick = {
-                                if (playlistSongs.isNotEmpty()) {
-                                    viewModel.playerHandler.playSong(playlistSongs.first(), playlistSongs)
-                                }
-                            }
-                        )
-                    }
-                }
-
-                composable(Screen.Folders.route) {
-                    FoldersScreen(
                         folders = folders,
+                        favoriteIds = favoriteIds,
+                        onSongClick = { selectedSong -> viewModel.playerHandler.playSong(selectedSong, songs) },
+                        onToggleFavorite = { song -> viewModel.toggleFavorite(song.id) },
+                        onAddToPlaylist = { playlistId, songId -> viewModel.addSongToPlaylist(playlistId, songId) },
+                        onFolderClick = { folderPath -> navController.navigate(Screen.FolderDetail.createRoute(folderPath)) },
                         onAddFolder = { uri -> viewModel.onAddFolder(uri) },
-                        onRemoveFolder = { folderUri -> viewModel.onRemoveFolder(folderUri) },
-                        onFolderClick = { folderPath ->
-                            navController.navigate(Screen.FolderDetail.createRoute(folderPath))
-                        }
+                        onRemoveFolder = { uriString -> viewModel.onRemoveFolder(uriString) },
+                        onPlaylistClick = { playlist -> navController.navigate(Screen.PlaylistDetail.createRoute(playlist.id)) },
+                        onCreatePlaylistClick = { /* Diálogo de crear */ }
+                    )
+                }
+
+                composable(Screen.Search.route) {
+                    SearchScreen(
+                        songs = songs,
+                        onSongClick = { selectedSong -> viewModel.playerHandler.playSong(selectedSong, songs) }
+                    )
+                }
+
+                composable(Screen.Profile.route) {
+                    ProfileScreen(
+                        onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
+                        onNavigateToAudioFx = { navController.navigate(Screen.AudioFx.route) }
+                    )
+                }
+
+                composable(Screen.Settings.route) {
+                    SettingsScreen(
+                        isDarkMode = isDarkMode,
+                        currentAppTheme = currentTheme,
+                        onToggleDarkMode = { viewModel.onToggleDarkMode(it) },
+                        onSelectTheme = { viewModel.onSelectTheme(it) },
+                        onNavigateToAudioFx = { navController.navigate(Screen.AudioFx.route) }
+                    )
+                }
+
+                composable(Screen.AudioFx.route) {
+                    AudioFxScreen(
+                        playerHandler = viewModel.playerHandler,
+                        onBackClick = { navController.popBackStack() }
                     )
                 }
 
@@ -259,30 +242,14 @@ fun MainAppStructure(
                             song.path.contains(folderPath) || song.contentUri.toString().contains(folderPath)
                         }
                     }
-                    val folderName = remember(folderPath) { folderPath.substringAfterLast("/") }
 
                     FolderDetailScreen(
-                        folderName = if (folderName.isNotEmpty()) folderName else "Carpeta",
+                        folderName = folderPath.substringAfterLast("/").ifEmpty { "Carpeta" },
                         songs = songsInFolder,
                         onBackClick = { navController.popBackStack() },
                         onSongClick = { selectedSong ->
                             viewModel.playerHandler.playSong(selectedSong, songsInFolder)
                         }
-                    )
-                }
-
-                composable(Screen.AudioFx.route) {
-                    AudioFxScreen(
-                        playerHandler = viewModel.playerHandler,
-                        onBackClick = { navController.popBackStack() }
-                    )
-                }
-
-                composable(Screen.Settings.route) {
-                    SettingsScreen(
-                        isDarkMode = isDarkMode,
-                        onToggleDarkMode = { viewModel.onToggleDarkMode(it) },
-                        onNavigateToAudioFx = { navController.navigate(Screen.AudioFx.route) }
                     )
                 }
             }
@@ -334,7 +301,7 @@ fun MainAppStructure(
                                 android.content.Intent.ACTION_VIEW,
                                 Uri.parse(update.apkUrl)
                             )
-                            navController.context.startActivity(intent)
+                            context.startActivity(intent)
                             updateInfoState = null
                         }) {
                             Text("Descargar")

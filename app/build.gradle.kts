@@ -13,8 +13,8 @@ android {
         applicationId = "com.example.comarleyaetheraudio"
         minSdk = 24
         targetSdk = 34
-        versionCode = 2          // Cambiado de 1 a 2
-        versionName = "2.0.0"    // Cambiado de "1.0.0" a "2.0.0"
+        versionCode = 4          // Incrementado para v2.2.0
+        versionName = "2.2.0"    // Versión oficial 2.2.0
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -62,6 +62,7 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended:1.7.6")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.navigation:navigation-compose:2.8.5")
+    implementation(libs.androidx.palette.ktx)
 
     // Base de datos local (Room con KSP)
     val roomVersion = "2.7.0-alpha13" // Versión de Room con soporte nativo para Kotlin 2.1+

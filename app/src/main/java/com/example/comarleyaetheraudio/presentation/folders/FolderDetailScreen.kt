@@ -1,11 +1,12 @@
 package com.example.comarleyaetheraudio.presentation.folders
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -13,74 +14,51 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.comarleyaetheraudio.domain.model.Song
 import com.example.comarleyaetheraudio.presentation.components.SongItem
+import com.example.comarleyaetheraudio.ui.theme.ElectricPurple
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FolderDetailScreen(
     folderName: String,
     songs: List<Song>,
+    onBackClick: () -> Unit,
     onSongClick: (Song) -> Unit,
-    onBackClick: () -> Unit
+    onCreatePlaylistFromFolder: (String, List<Song>) -> Unit = { _, _ -> }
 ) {
-    // Limpieza de nombre dentro del cuerpo de la función
-    val cleanFolderName = folderName.substringAfterLast(":").trim()
-
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text(
-                        text = if (cleanFolderName.isEmpty()) "Carpeta" else cleanFolderName,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                },
+                title = { Text(folderName, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Volver",
-                            tint = MaterialTheme.colorScheme.onBackground
-                        )
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+                }
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { paddingValues ->
-        if (songs.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentAlignment = androidx.compose.ui.Alignment.Center
-            ) {
-                Text(
-                    text = "No hay canciones en esta carpeta",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+        floatingActionButton = {
+            if (songs.isNotEmpty()) {
+                ExtendedFloatingActionButton(
+                    onClick = { onCreatePlaylistFromFolder(folderName, songs) },
+                    icon = { Icon(Icons.Default.PlaylistAdd, contentDescription = null) },
+                    text = { Text("Crear Playlist") },
+                    containerColor = ElectricPurple,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    shape = RoundedCornerShape(16.dp)
                 )
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .background(MaterialTheme.colorScheme.background),
-                contentPadding = PaddingValues(bottom = 100.dp)
-            ) {
-                items(
-                    items = songs,
-                    key = { song -> song.id },
-                    contentType = { "song_item" }
-                ) { song ->
-                    SongItem(
-                        song = song,
-                        onClick = { onSongClick(song) }
-                    )
-                }
+        }
+    ) { paddingValues ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            items(songs, key = { it.id }) { song ->
+                SongItem(
+                    song = song,
+                    onClick = { onSongClick(song) }
+                )
             }
         }
     }

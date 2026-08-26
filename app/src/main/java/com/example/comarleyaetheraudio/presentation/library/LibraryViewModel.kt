@@ -8,11 +8,12 @@ import com.example.comarleyaetheraudio.data.local.PlaylistSongCrossRef
 import com.example.comarleyaetheraudio.data.local.dao.PlaylistDao
 import com.example.comarleyaetheraudio.data.local.entity.FolderEntity
 import com.example.comarleyaetheraudio.data.player.AudioPlayerHandler
+import com.example.comarleyaetheraudio.data.repository.SettingsRepository
 import com.example.comarleyaetheraudio.domain.model.AudioPlayerState
 import com.example.comarleyaetheraudio.domain.model.Playlist
 import com.example.comarleyaetheraudio.domain.model.Song
-import com.example.comarleyaetheraudio.data.repository.SettingsRepository
 import com.example.comarleyaetheraudio.domain.repository.AudioRepository
+import com.example.comarleyaetheraudio.ui.theme.AppTheme
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -30,6 +31,19 @@ class LibraryViewModel(
             initialValue = true
         )
 
+    val currentTheme: StateFlow<AppTheme> = settingsRepository.selectedTheme
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = AppTheme.PRINCIPAL
+        )
+
+    fun onSelectTheme(theme: AppTheme) {
+        viewModelScope.launch {
+            settingsRepository.setAppThemeStyle(theme)
+        }
+    }
+
     val songs: StateFlow<List<Song>> = repository.getSongsFlow()
         .stateIn(
             scope = viewModelScope,
@@ -44,42 +58,26 @@ class LibraryViewModel(
             initialValue = emptyList()
         )
 
-    // Lista de canciones recientes procesada en segundo plano
-    val recentSongs: StateFlow<List<Song>> = songs
-        .map { allSongs ->
-            allSongs.sortedByDescending { it.id }.take(15)
+    val playerState: StateFlow<AudioPlayerState> = playerHandler.playerState
+
+    val playlists: StateFlow<List<Playlist>> = playlistDao.getAllPlaylists()
+        .combine(songs) { entities, allSongs ->
+            entities.map { entity ->
+                val songIdsInPlaylist = playlistDao.getSongIdsForPlaylist(entity.id)
+                val playlistSongs = allSongs.filter { song -> songIdsInPlaylist.contains(song.id) }
+                Playlist(
+                    id = entity.id,
+                    name = entity.name,
+                    songs = playlistSongs
+                )
+            }
         }
+        .catch { emit(emptyList()) }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
-
-    val playerState: StateFlow<AudioPlayerState> = playerHandler.playerState
-
-    val playlists: StateFlow<List<Playlist>> = combine(
-        playlistDao.getAllPlaylists(),
-        songs,
-        playlistDao.getAllPlaylistSongsFlow()
-    ) { entities, allSongs, crossRefs ->
-        entities.map { entity ->
-            val songIdsInPlaylist = crossRefs
-                .filter { it.playlistId == entity.id }
-                .map { it.songId }
-            val playlistSongs = allSongs.filter { song -> songIdsInPlaylist.contains(song.id) }
-            Playlist(
-                id = entity.id,
-                name = entity.name,
-                songs = playlistSongs
-            )
-        }
-    }
-    .catch { emit(emptyList()) }
-    .stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
-    )
 
     fun createPlaylist(name: String) {
         if (name.isBlank()) return
