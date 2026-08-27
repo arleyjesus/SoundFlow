@@ -12,7 +12,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -50,21 +49,26 @@ fun SongItem(
             modifier = Modifier
                 .size(50.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFF1E1E1E)),
+                .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center
         ) {
             if (coverFile != null) {
                 AsyncImage(
                     model = ImageRequest.Builder(context)
                         .data(coverFile)
-                        .crossfade(false) // Desactivar el crossfade evita el parpadeo
+                        .crossfade(false)
                         .build(),
                     contentDescription = "Carátula",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
             } else {
-                PlaceholderIcon()
+                Icon(
+                    imageVector = Icons.Rounded.MusicNote,
+                    contentDescription = null,
+                    tint = LightLavender,
+                    modifier = Modifier.size(24.dp)
+                )
             }
         }
 
@@ -83,7 +87,7 @@ fun SongItem(
             Text(
                 text = song.artist,
                 style = MaterialTheme.typography.bodyMedium,
-                color = LightLavender,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -99,14 +103,4 @@ fun SongItem(
             }
         }
     }
-}
-
-@Composable
-private fun PlaceholderIcon() {
-    Icon(
-        imageVector = Icons.Rounded.MusicNote,
-        contentDescription = null,
-        tint = LightLavender,
-        modifier = Modifier.size(24.dp)
-    )
 }

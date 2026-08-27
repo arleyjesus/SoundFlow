@@ -62,7 +62,7 @@ fun FoldersScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                items(folders) { folder ->
+                items(folders, key = { it.path }) { folder ->
                     ListItem(
                         modifier = Modifier.clickable { onFolderClick(folder.path) },
                         leadingContent = {
@@ -75,7 +75,7 @@ fun FoldersScreen(
                         },
                         headlineContent = {
                             Text(
-                                text = folder.name.ifEmpty { folder.path.substringAfterLast("/").ifEmpty { folder.path } },
+                                text = folder.path.substringAfterLast("/").ifEmpty { folder.path },
                                 fontWeight = FontWeight.Bold,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -83,14 +83,14 @@ fun FoldersScreen(
                         },
                         supportingContent = {
                             Text(
-                                text = "${folder.songCount} canciones • ${folder.path}",
+                                text = folder.path,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         },
                         trailingContent = {
-                            IconButton(onClick = { onRemoveFolder(folder.uriString) }) {
+                            IconButton(onClick = { onRemoveFolder(folder.path) }) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
                                     contentDescription = "Eliminar carpeta",

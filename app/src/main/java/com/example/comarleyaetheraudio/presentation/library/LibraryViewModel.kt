@@ -31,24 +31,22 @@ class LibraryViewModel(
             initialValue = true
         )
 
-    val currentTheme: StateFlow<AppTheme> = settingsRepository.selectedTheme
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = AppTheme.PRINCIPAL
-        )
-
-    fun onSelectTheme(theme: AppTheme) {
-        viewModelScope.launch {
-            settingsRepository.setAppThemeStyle(theme)
-        }
-    }
-
     val songs: StateFlow<List<Song>> = repository.getSongsFlow()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
+        )
+
+    // Agrupamiento de artistas procesado en RAM (Cero latencia al abrir la biblioteca)
+    val artistGrouped: StateFlow<Map<String, List<Song>>> = songs
+        .map { allSongs ->
+            allSongs.groupBy { it.artist }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = emptyMap()
         )
 
     val folders: StateFlow<List<FolderEntity>> = repository.getFoldersFlow()
@@ -159,6 +157,30 @@ class LibraryViewModel(
             if (success) {
                 // Modificado exitosamente
             }
+        }
+    }
+    fun renamePlaylist(playlistId: Long, newName: String) {
+        if (newName.isBlank()) return
+        viewModelScope.launch {
+            playlistDao.insertPlaylist(
+                com.example.comarleyaetheraudio.data.local.PlaylistEntity(
+                    id = playlistId,
+                    name = newName.trim()
+                )
+            )
+        }
+    }
+
+    val currentTheme: StateFlow<AppTheme> = settingsRepository.selectedTheme
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = AppTheme.PRINCIPAL
+        )
+
+    fun onSelectTheme(theme: AppTheme) {
+        viewModelScope.launch {
+            settingsRepository.setSelectedTheme(theme)
         }
     }
 }

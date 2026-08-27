@@ -1,39 +1,31 @@
 package com.example.comarleyaetheraudio
 
-import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.example.comarleyaetheraudio.data.local.FolderScanner
 import com.example.comarleyaetheraudio.data.local.MusicDatabase
 import com.example.comarleyaetheraudio.data.player.AudioPlayerHandler
-import com.example.comarleyaetheraudio.data.remote.UpdateChecker
-import com.example.comarleyaetheraudio.data.remote.UpdateInfo
 import com.example.comarleyaetheraudio.data.repository.AudioRepositoryImpl
 import com.example.comarleyaetheraudio.data.repository.SettingsRepository
-import com.example.comarleyaetheraudio.domain.model.Song
 import com.example.comarleyaetheraudio.presentation.Screen
-import com.example.comarleyaetheraudio.presentation.components.ChangelogDialog
-import com.example.comarleyaetheraudio.presentation.components.CreatePlaylistDialog
 import com.example.comarleyaetheraudio.presentation.components.MiniPlayer
-import com.example.comarleyaetheraudio.presentation.folders.FolderDetailScreen
 import com.example.comarleyaetheraudio.presentation.home.HomeScreen
 import com.example.comarleyaetheraudio.presentation.library.LibraryScreen
 import com.example.comarleyaetheraudio.presentation.library.LibraryViewModel
@@ -43,12 +35,11 @@ import com.example.comarleyaetheraudio.presentation.search.SearchScreen
 import com.example.comarleyaetheraudio.presentation.settings.AudioFxScreen
 import com.example.comarleyaetheraudio.presentation.settings.SettingsScreen
 import com.example.comarleyaetheraudio.ui.theme.ComarleyjesusaetheraudioTheme
-import kotlinx.coroutines.launch
+import com.example.comarleyaetheraudio.ui.theme.getThemeColors
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var viewModel: LibraryViewModel
-    private lateinit var settingsRepository: SettingsRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,19 +48,28 @@ class MainActivity : ComponentActivity() {
         val scanner = FolderScanner(applicationContext)
         val repository = AudioRepositoryImpl(applicationContext, database.musicDao(), scanner)
         val playerHandler = AudioPlayerHandler(applicationContext)
-        settingsRepository = SettingsRepository(applicationContext)
+        val settingsRepository = SettingsRepository(applicationContext)
 
         viewModel = LibraryViewModel(repository, playerHandler, settingsRepository, database.playlistDao())
 
         setContent {
             val isDarkMode by viewModel.isDarkMode.collectAsState()
             val currentTheme by viewModel.currentTheme.collectAsState()
+            val themeColors = remember(currentTheme, isDarkMode) { getThemeColors(currentTheme, isDarkMode) }
 
-            ComarleyjesusaetheraudioTheme(darkTheme = isDarkMode, appTheme = currentTheme) {
-                MainAppStructure(
-                    viewModel = viewModel,
-                    settingsRepository = settingsRepository
-                )
+            ComarleyjesusaetheraudioTheme(darkTheme = isDarkMode) {
+                // Aplicamos los colores del tema dinámico al esquema del sistema
+                MaterialTheme(
+                    colorScheme = MaterialTheme.colorScheme.copy(
+                        primary = themeColors.primary,
+                        primaryContainer = themeColors.primaryContainer,
+                        background = themeColors.background,
+                        surface = themeColors.surface,
+                        surfaceVariant = themeColors.surfaceVariant
+                    )
+                ) {
+                    MainAppStructure(viewModel = viewModel)
+                }
             }
         }
     }
@@ -77,43 +77,23 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainAppStructure(
-    viewModel: LibraryViewModel,
-    settingsRepository: SettingsRepository
-) {
-    val context = LocalContext.current
+fun MainAppStructure(viewModel: LibraryViewModel) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
     val songs by viewModel.songs.collectAsState()
-    val folders by viewModel.folders.collectAsState()
+    val artistGrouped by viewModel.artistGrouped.collectAsState()
     val playlists by viewModel.playlists.collectAsState()
+    val folders by viewModel.folders.collectAsState()
+    val favoriteIds by viewModel.favoriteIds.collectAsState()
     val playerState by viewModel.playerState.collectAsState()
     val isDarkMode by viewModel.isDarkMode.collectAsState()
     val currentTheme by viewModel.currentTheme.collectAsState()
 
     var showFullPlayer by remember { mutableStateOf(false) }
-    var showChangelogDialog by remember { mutableStateOf(false) }
-    var updateInfoState by remember { mutableStateOf<UpdateInfo?>(null) }
 
-    val coroutineScope = rememberCoroutineScope()
-
-    LaunchedEffect(Unit) {
-        settingsRepository.showChangelog.collect { shouldShow ->
-            if (shouldShow) showChangelogDialog = true
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        val currentCode = 4
-        val info = UpdateChecker.checkForUpdates(currentCode)
-        if (info != null) {
-            updateInfoState = info
-        }
-    }
-
-    val screens = listOf(
+    val bottomNavigationScreens = listOf(
         Screen.Home,
         Screen.Library,
         Screen.Search,
@@ -121,7 +101,6 @@ fun MainAppStructure(
     )
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("SoundFlow") }) },
         bottomBar = {
             Column {
                 playerState.currentSong?.let { song ->
@@ -129,14 +108,19 @@ fun MainAppStructure(
                         MiniPlayer(
                             song = song,
                             isPlaying = playerState.isPlaying,
+                            isShuffleEnabled = playerState.isShuffleEnabled, // PASS DE ESTADO
                             artworkData = playerState.artworkData,
-                            onTogglePlayPause = { viewModel.onTogglePlayPause() }
+                            onTogglePlayPause = { viewModel.onTogglePlayPause() },
+                            onNext = { viewModel.playerHandler.playNext() },
+                            onPrevious = { viewModel.playerHandler.playPrevious() }
                         )
                     }
                 }
 
-                NavigationBar {
-                    screens.forEach { screen ->
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ) {
+                    bottomNavigationScreens.forEach { screen ->
                         NavigationBarItem(
                             icon = { Icon(screen.icon, contentDescription = screen.title) },
                             label = { Text(screen.title) },
@@ -160,66 +144,84 @@ fun MainAppStructure(
             NavHost(
                 navController = navController,
                 startDestination = Screen.Home.route,
-                enterTransition = { slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left) },
-                exitTransition = { fadeOut() },
-                popEnterTransition = { fadeIn() },
-                popExitTransition = { slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right) }
+                enterTransition = {
+                    fadeIn(animationSpec = tween(280, easing = FastOutSlowInEasing)) +
+                            scaleIn(initialScale = 0.95f, animationSpec = tween(280, easing = FastOutSlowInEasing))
+                },
+                exitTransition = {
+                    fadeOut(animationSpec = tween(220, easing = FastOutSlowInEasing)) +
+                            scaleOut(targetScale = 1.03f, animationSpec = tween(220, easing = FastOutSlowInEasing))
+                },
+                popEnterTransition = {
+                    fadeIn(animationSpec = tween(280, easing = FastOutSlowInEasing)) +
+                            scaleIn(initialScale = 1.03f, animationSpec = tween(280, easing = FastOutSlowInEasing))
+                },
+                popExitTransition = {
+                    fadeOut(animationSpec = tween(220, easing = FastOutSlowInEasing)) +
+                            scaleOut(targetScale = 0.95f, animationSpec = tween(220, easing = FastOutSlowInEasing))
+                }
             ) {
+                // 1. INICIO
                 composable(Screen.Home.route) {
-                    val favoriteIds by viewModel.favoriteIds.collectAsState()
-
                     HomeScreen(
                         playerState = playerState,
                         allSongs = songs,
+                        playlists = playlists,
                         favoriteIds = favoriteIds,
                         onSongClick = { selectedSong ->
                             viewModel.playerHandler.playSong(selectedSong, songs)
                         },
                         onFavoritesClick = {
                             navController.navigate(Screen.Library.route)
-                        }
+                        },
+                        onCreatePlaylist = { name -> viewModel.createPlaylist(name) },
+                        onDeletePlaylist = { playlist -> viewModel.deletePlaylist(playlist) }
                     )
                 }
 
+                // 2. BIBLIOTECA
                 composable(Screen.Library.route) {
-                    val favoriteIds by viewModel.favoriteIds.collectAsState()
-
                     LibraryScreen(
                         songs = songs,
+                        artistGrouped = artistGrouped,
                         playlists = playlists,
-                        folders = folders,
                         favoriteIds = favoriteIds,
-                        onSongClick = { selectedSong -> viewModel.playerHandler.playSong(selectedSong, songs) },
+                        onSongClick = { song -> viewModel.playerHandler.playSong(song, songs) },
                         onToggleFavorite = { song -> viewModel.toggleFavorite(song.id) },
                         onAddToPlaylist = { playlistId, songId -> viewModel.addSongToPlaylist(playlistId, songId) },
-                        onFolderClick = { folderPath -> navController.navigate(Screen.FolderDetail.createRoute(folderPath)) },
-                        onAddFolder = { uri -> viewModel.onAddFolder(uri) },
-                        onRemoveFolder = { uriString -> viewModel.onRemoveFolder(uriString) },
-                        onPlaylistClick = { playlist -> navController.navigate(Screen.PlaylistDetail.createRoute(playlist.id)) },
-                        onCreatePlaylistClick = { /* Diálogo de crear */ }
+                        onCreatePlaylist = { name -> viewModel.createPlaylist(name) },
+                        onRenamePlaylist = { playlist, newName -> viewModel.renamePlaylist(playlist.id, newName) },
+                        onDeletePlaylist = { playlist -> viewModel.deletePlaylist(playlist) }
                     )
                 }
 
+                // 3. BUSCAR
                 composable(Screen.Search.route) {
                     SearchScreen(
                         songs = songs,
-                        onSongClick = { selectedSong -> viewModel.playerHandler.playSong(selectedSong, songs) }
+                        onSongClick = { song -> viewModel.playerHandler.playSong(song, songs) }
                     )
                 }
 
+                // 4. PERFIL
                 composable(Screen.Profile.route) {
                     ProfileScreen(
+                        currentTheme = currentTheme,
+                        isDarkMode = isDarkMode,
+                        folders = folders,
+                        onSelectTheme = { theme -> viewModel.onSelectTheme(theme) },
+                        onToggleDarkMode = { enabled -> viewModel.onToggleDarkMode(enabled) },
+                        onAddFolder = { uri -> viewModel.onAddFolder(uri) },
+                        onRemoveFolder = { path -> viewModel.onRemoveFolder(path) },
                         onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
                         onNavigateToAudioFx = { navController.navigate(Screen.AudioFx.route) }
                     )
                 }
 
+                // RUTAS SECUNDARIAS
+                // DENTRO DE MAINACTIVITY.KT EN composable(Screen.Settings.route):
                 composable(Screen.Settings.route) {
                     SettingsScreen(
-                        isDarkMode = isDarkMode,
-                        currentAppTheme = currentTheme,
-                        onToggleDarkMode = { viewModel.onToggleDarkMode(it) },
-                        onSelectTheme = { viewModel.onSelectTheme(it) },
                         onNavigateToAudioFx = { navController.navigate(Screen.AudioFx.route) }
                     )
                 }
@@ -230,39 +232,18 @@ fun MainAppStructure(
                         onBackClick = { navController.popBackStack() }
                     )
                 }
-
-                composable(
-                    route = Screen.FolderDetail.route,
-                    arguments = listOf(navArgument("folderPath") { type = NavType.StringType })
-                ) { backStackEntry ->
-                    val encodedPath = backStackEntry.arguments?.getString("folderPath") ?: ""
-                    val folderPath = Uri.decode(encodedPath) ?: ""
-                    val songsInFolder = remember(folderPath, songs) {
-                        songs.filter { song ->
-                            song.path.contains(folderPath) || song.contentUri.toString().contains(folderPath)
-                        }
-                    }
-
-                    FolderDetailScreen(
-                        folderName = folderPath.substringAfterLast("/").ifEmpty { "Carpeta" },
-                        songs = songsInFolder,
-                        onBackClick = { navController.popBackStack() },
-                        onSongClick = { selectedSong ->
-                            viewModel.playerHandler.playSong(selectedSong, songsInFolder)
-                        }
-                    )
-                }
             }
 
             if (showFullPlayer) {
-                val favoriteIds by viewModel.favoriteIds.collectAsState()
                 val currentSong = playerState.currentSong
                 val isCurrentFavorite = currentSong?.let { favoriteIds.contains(it.id) } ?: false
 
                 FullPlayerSheet(
                     playerState = playerState,
                     isFavorite = isCurrentFavorite,
-                    onToggleFavorite = { currentSong?.let { viewModel.toggleFavorite(it.id) } },
+                    onToggleFavorite = {
+                        currentSong?.let { song -> viewModel.toggleFavorite(song.id) }
+                    },
                     onDismiss = { showFullPlayer = false },
                     onTogglePlayPause = { viewModel.onTogglePlayPause() },
                     onSeekTo = { pos -> viewModel.playerHandler.seekTo(pos) },
@@ -274,42 +255,6 @@ fun MainAppStructure(
                     onEditTags = { newTitle, newArtist, newAlbum ->
                         currentSong?.let { song ->
                             viewModel.updateSongTags(song, newTitle, newArtist, newAlbum)
-                        }
-                    }
-                )
-            }
-
-            if (showChangelogDialog) {
-                ChangelogDialog(
-                    onDismiss = {
-                        showChangelogDialog = false
-                        coroutineScope.launch {
-                            settingsRepository.markChangelogAsShown()
-                        }
-                    }
-                )
-            }
-
-            updateInfoState?.let { update ->
-                AlertDialog(
-                    onDismissRequest = { updateInfoState = null },
-                    title = { Text("¡Nueva versión ${update.versionName} disponible! 🚀") },
-                    text = { Text(update.changelog) },
-                    confirmButton = {
-                        Button(onClick = {
-                            val intent = android.content.Intent(
-                                android.content.Intent.ACTION_VIEW,
-                                Uri.parse(update.apkUrl)
-                            )
-                            context.startActivity(intent)
-                            updateInfoState = null
-                        }) {
-                            Text("Descargar")
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { updateInfoState = null }) {
-                            Text("Más tarde")
                         }
                     }
                 )
