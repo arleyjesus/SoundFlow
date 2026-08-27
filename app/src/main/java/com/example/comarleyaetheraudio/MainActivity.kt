@@ -46,11 +46,15 @@ class MainActivity : ComponentActivity() {
 
         val database = MusicDatabase.getDatabase(applicationContext)
         val scanner = FolderScanner(applicationContext)
+
+        // 1. Aquí solo le pasamos 3 parámetros (sin playlistDao)
         val repository = AudioRepositoryImpl(applicationContext, database.musicDao(), scanner)
+
         val playerHandler = AudioPlayerHandler(applicationContext)
         val settingsRepository = SettingsRepository(applicationContext)
 
-        viewModel = LibraryViewModel(repository, playerHandler, settingsRepository, database.playlistDao())
+        // 2. Aquí también solo pasamos 3 parámetros
+        viewModel = LibraryViewModel(repository, playerHandler, settingsRepository)
 
         setContent {
             val isDarkMode by viewModel.isDarkMode.collectAsState()

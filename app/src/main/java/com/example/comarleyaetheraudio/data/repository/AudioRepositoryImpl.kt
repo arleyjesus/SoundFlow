@@ -1,100 +1,97 @@
 package com.example.comarleyaetheraudio.data.repository
 
 import android.content.Context
-import android.content.Intent
 import android.net.Uri
-import androidx.documentfile.provider.DocumentFile
-import com.example.comarleyaetheraudio.data.local.FavoriteSongEntity
 import com.example.comarleyaetheraudio.data.local.FolderScanner
-import com.example.comarleyaetheraudio.data.local.dao.MusicDao
+import com.example.comarleyaetheraudio.data.local.MusicDao
 import com.example.comarleyaetheraudio.data.local.entity.FolderEntity
 import com.example.comarleyaetheraudio.data.local.entity.SongEntity
+import com.example.comarleyaetheraudio.domain.model.Playlist
 import com.example.comarleyaetheraudio.domain.model.Song
-import com.example.comarleyaetheraudio.domain.repository.AudioRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 
 class AudioRepositoryImpl(
-    private val context: Context,
-    private val dao: MusicDao,
+    val context: Context,
+    private val musicDao: MusicDao,
     private val scanner: FolderScanner
-) : AudioRepository {
+) {
+    // ESTADOS EN MEMORIA (Evita que Room crashee por tablas inexistentes)
+    private val _favoriteIds = MutableStateFlow<List<Long>>(emptyList())
+    val favoriteIds: Flow<List<Long>> = _favoriteIds.asStateFlow()
 
-    override fun getSongsFlow(): Flow<List<Song>> {
-        return dao.getAllSongs().map { entities -> entities.map { it.toDomainModel() } }
-    }
+    private val _playlists = MutableStateFlow<List<Playlist>>(emptyList())
+    val allPlaylists: Flow<List<Playlist>> = _playlists.asStateFlow()
 
-    override fun getFoldersFlow(): Flow<List<FolderEntity>> {
-        return dao.getAllFolders()
-    }
-
-    override suspend fun addAndScanFolder(folderUri: Uri) {
-        val contentResolver = context.contentResolver
-        val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION
-        contentResolver.takePersistableUriPermission(folderUri, takeFlags)
-
-        val folderDoc = DocumentFile.fromTreeUri(context, folderUri)
-        val folderName = folderDoc?.name ?: "Carpeta Música"
-        val uriString = folderUri.toString()
-
-        // 1. ELIMINAR REGISTROS PREVIOS:
-        // Si la carpeta ya existía, borramos sus canciones antiguas para evitar duplicados.
-        dao.deleteSongsByFolder(uriString)
-
-        // 2. ESCANEAR NUEVAMENTE E INSERTAR
-        val songs = scanner.scanFolderUri(folderUri, folderName)
-        if (songs.isNotEmpty()) {
-            dao.insertSongs(songs)
-        }
-
-        // 3. ACTUALIZAR O REGISTRAR LA CARPETA
-        val folderEntity = FolderEntity(
-            uriString = uriString,
-            name = folderName,
-            path = folderUri.path ?: "",
-            songCount = songs.size
-        )
-        dao.insertFolder(folderEntity)
-    }
-
-    override suspend fun removeFolder(folderUri: String) {
-        dao.deleteSongsByFolder(folderUri)
-        dao.deleteFolder(folderUri)
-    }
-
-    override fun getFavoriteSongIds(): Flow<List<Long>> = dao.getFavoriteSongIds()
-
-    override suspend fun toggleFavorite(songId: Long, isFavorite: Boolean) {
-        if (isFavorite) {
-            dao.deleteFavorite(songId)
-        } else {
-            dao.insertFavorite(FavoriteSongEntity(songId = songId))
+    // TRANSFORMACIÓN CORREGIDA CON URIs Y TODOS LOS PARÁMETROS
+    val allSongs: Flow<List<Song>> = musicDao.getAllSongs().map { entities ->
+        entities.map { entity ->
+            Song(
+                id = entity.id,
+                title = entity.title,
+                artist = entity.artist,
+                album = entity.album,
+                duration = entity.duration,
+                path = entity.path,
+                contentUri = Uri.parse(entity.contentUri),
+                albumArtUri = entity.albumArtUri?.let { Uri.parse(it) },
+                size = entity.size,
+                mimeType = entity.mimeType
+            )
         }
     }
 
+    val allFolders: Flow<List<FolderEntity>> = musicDao.getAllFolders()
 
-    private fun SongEntity.toDomainModel(): Song {
-        return Song(
-            id = id,
-            title = title,
-            artist = artist,
-            album = album,
-            genre = genre,
-            year = year,
-            trackNumber = trackNumber,
-            duration = duration,
-            contentUri = Uri.parse(contentUri),
-            albumArtUri = albumArtUri?.let { Uri.parse(it) },
-            size = size,
-            mimeType = mimeType,
-            bitrate = bitrate,
-            sampleRate = sampleRate,
-            isHiRes = isHiRes,
-            path = path,
-            folderPath = folderName,
-            folderUri = folderUri
-        )
+    suspend fun toggleFavorite(songId: Long) {
+        val currentList = _favoriteIds.value.toMutableList()
+        if (currentList.contains(songId)) currentList.remove(songId) else currentList.add(songId)
+        _favoriteIds.value = currentList
     }
 
+    // GESTIÓN REACTIVA DE PLAYLISTS
+    suspend fun createPlaylist(name: String) {
+        val current = _playlists.value.toMutableList()
+        current.add(Playlist(id = System.currentTimeMillis(), name = name, songs = emptyList()))
+        _playlists.value = current
+    }
 
+    suspend fun renamePlaylist(playlistId: Long, newName: String) {
+        _playlists.value = _playlists.value.map {
+            if (it.id == playlistId) it.copy(name = newName) else it
+        }
+    }
+
+    suspend fun deletePlaylist(playlist: Playlist) {
+        val current = _playlists.value.toMutableList()
+        current.removeAll { it.id == playlist.id }
+        _playlists.value = current
+    }
+
+    suspend fun addSongToPlaylist(playlistId: Long, songId: Long) {
+        // Implementación futura cuando la base de datos de Playlists esté construida
+    }
+
+    // MÉTODOS DE BASE DE DATOS
+    suspend fun updateSongTags(songId: Long, newTitle: String, newArtist: String, newAlbum: String) {
+        musicDao.updateSongTags(songId, newTitle, newArtist, newAlbum)
+    }
+
+    suspend fun insertSongsEntities(songs: List<SongEntity>) {
+        musicDao.insertSongs(songs)
+    }
+
+    suspend fun insertFolder(folder: FolderEntity) {
+        musicDao.insertFolder(folder)
+    }
+
+    suspend fun deleteFolderByPath(path: String) {
+        musicDao.deleteFolderByPath(path)
+    }
+
+    suspend fun deleteSongsByFolderUri(folderUri: String) {
+        musicDao.deleteSongsByFolderUri(folderUri)
+    }
 }

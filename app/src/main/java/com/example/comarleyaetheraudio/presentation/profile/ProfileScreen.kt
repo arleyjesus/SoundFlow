@@ -105,23 +105,32 @@ fun ProfileScreen(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
         ) {
+            // DENTRO DE ProfileScreen.kt
             Row(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .clickable { onToggleDarkMode(!isDarkMode) },
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween // 👈 ESTO EMPUJA EL SWITCH A LA DERECHA
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = if (isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
+                        imageVector = Icons.Default.DarkMode,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary
                     )
-                    Spacer(modifier = Modifier.width(14.dp))
-                    Text("Modo Oscuro", fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        text = "Modo Oscuro",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
+
                 Switch(
                     checked = isDarkMode,
-                    onCheckedChange = onToggleDarkMode
+                    onCheckedChange = { onToggleDarkMode(it) }
                 )
             }
         }

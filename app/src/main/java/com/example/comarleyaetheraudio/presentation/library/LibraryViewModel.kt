@@ -3,184 +3,120 @@ package com.example.comarleyaetheraudio.presentation.library
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.comarleyaetheraudio.data.local.PlaylistEntity
-import com.example.comarleyaetheraudio.data.local.PlaylistSongCrossRef
-import com.example.comarleyaetheraudio.data.local.dao.PlaylistDao
+import com.example.comarleyaetheraudio.data.local.FolderScanner
 import com.example.comarleyaetheraudio.data.local.entity.FolderEntity
 import com.example.comarleyaetheraudio.data.player.AudioPlayerHandler
+import com.example.comarleyaetheraudio.data.repository.AudioRepositoryImpl
 import com.example.comarleyaetheraudio.data.repository.SettingsRepository
-import com.example.comarleyaetheraudio.domain.model.AudioPlayerState
 import com.example.comarleyaetheraudio.domain.model.Playlist
 import com.example.comarleyaetheraudio.domain.model.Song
-import com.example.comarleyaetheraudio.domain.repository.AudioRepository
 import com.example.comarleyaetheraudio.ui.theme.AppTheme
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class LibraryViewModel(
-    private val repository: AudioRepository,
+    private val repository: AudioRepositoryImpl,
     val playerHandler: AudioPlayerHandler,
-    private val settingsRepository: SettingsRepository,
-    private val playlistDao: PlaylistDao
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
+    val songs: StateFlow<List<Song>> = repository.allSongs
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val artistGrouped: StateFlow<Map<String, List<Song>>> = songs.map { list ->
+        list.groupBy { it.artist }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
+    val playlists: StateFlow<List<Playlist>> = repository.allPlaylists
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val folders: StateFlow<List<FolderEntity>> = repository.allFolders
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val favoriteIds: StateFlow<List<Long>> = repository.favoriteIds
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val playerState = playerHandler.playerState
+
     val isDarkMode: StateFlow<Boolean> = settingsRepository.isDarkMode
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = true
-        )
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
-    val songs: StateFlow<List<Song>> = repository.getSongsFlow()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+    val currentTheme: StateFlow<AppTheme> = settingsRepository.selectedTheme
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AppTheme.PRINCIPAL)
 
-    // Agrupamiento de artistas procesado en RAM (Cero latencia al abrir la biblioteca)
-    val artistGrouped: StateFlow<Map<String, List<Song>>> = songs
-        .map { allSongs ->
-            allSongs.groupBy { it.artist }
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.Eagerly,
-            initialValue = emptyMap()
-        )
-
-    val folders: StateFlow<List<FolderEntity>> = repository.getFoldersFlow()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
-
-    val playerState: StateFlow<AudioPlayerState> = playerHandler.playerState
-
-    val playlists: StateFlow<List<Playlist>> = playlistDao.getAllPlaylists()
-        .combine(songs) { entities, allSongs ->
-            entities.map { entity ->
-                val songIdsInPlaylist = playlistDao.getSongIdsForPlaylist(entity.id)
-                val playlistSongs = allSongs.filter { song -> songIdsInPlaylist.contains(song.id) }
-                Playlist(
-                    id = entity.id,
-                    name = entity.name,
-                    songs = playlistSongs
-                )
-            }
-        }
-        .catch { emit(emptyList()) }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
-
-    fun createPlaylist(name: String) {
-        if (name.isBlank()) return
-        viewModelScope.launch {
-            playlistDao.insertPlaylist(
-                PlaylistEntity(name = name.trim())
-            )
-        }
+    fun onToggleDarkMode(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setDarkMode(enabled) }
     }
 
-    fun addSongToPlaylist(playlistId: Long, songId: Long) {
-        viewModelScope.launch {
-            playlistDao.insertSongToPlaylist(
-                PlaylistSongCrossRef(playlistId = playlistId, songId = songId)
-            )
-        }
-    }
-
-    fun removeSongFromPlaylist(playlistId: Long, songId: Long) {
-        viewModelScope.launch {
-            playlistDao.removeSongFromPlaylist(playlistId, songId)
-        }
-    }
-
-    fun deletePlaylist(playlist: Playlist) {
-        viewModelScope.launch {
-            playlistDao.deletePlaylist(
-                PlaylistEntity(id = playlist.id, name = playlist.name)
-            )
-        }
-    }
-
-    fun onAddFolder(folderUri: Uri) {
-        viewModelScope.launch {
-            repository.addAndScanFolder(folderUri)
-        }
-    }
-
-    fun onRemoveFolder(folderUriString: String) {
-        viewModelScope.launch {
-            repository.removeFolder(folderUriString)
-        }
-    }
-
-    fun onSongClick(song: Song) {
-        playerHandler.playSong(song)
+    fun onSelectTheme(theme: AppTheme) {
+        viewModelScope.launch { settingsRepository.setSelectedTheme(theme) }
     }
 
     fun onTogglePlayPause() {
         playerHandler.togglePlayPause()
     }
 
-    fun onToggleDarkMode(enabled: Boolean) {
-        viewModelScope.launch {
-            settingsRepository.setDarkMode(enabled)
-        }
+    fun toggleFavorite(songId: Long) {
+        viewModelScope.launch { repository.toggleFavorite(songId) }
     }
 
-    val favoriteIds: StateFlow<List<Long>> = repository.getFavoriteSongIds()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.Eagerly,
-            initialValue = emptyList()
-        )
+    fun createPlaylist(name: String) {
+        viewModelScope.launch { repository.createPlaylist(name) }
+    }
 
-    fun toggleFavorite(songId: Long) {
-        viewModelScope.launch {
-            val currentFavorites = favoriteIds.value
-            val isFav = currentFavorites.contains(songId)
-            repository.toggleFavorite(songId, isFav)
-        }
+    fun renamePlaylist(playlistId: Long, newName: String) {
+        viewModelScope.launch { repository.renamePlaylist(playlistId, newName) }
+    }
+
+    fun deletePlaylist(playlist: Playlist) {
+        viewModelScope.launch { repository.deletePlaylist(playlist) }
+    }
+
+    fun addSongToPlaylist(playlistId: Long, songId: Long) {
+        viewModelScope.launch { repository.addSongToPlaylist(playlistId, songId) }
     }
 
     fun updateSongTags(song: Song, newTitle: String, newArtist: String, newAlbum: String) {
-        viewModelScope.launch {
-            val success = com.example.comarleyaetheraudio.data.local.TagEditorUtil.editSongTags(
-                song, newTitle, newArtist, newAlbum
-            )
-            if (success) {
-                // Modificado exitosamente
+        viewModelScope.launch { repository.updateSongTags(song.id, newTitle, newArtist, newAlbum) }
+    }
+
+    // 1. AGREGA ESTA VARIABLE ARRIBA EN TU VIEWMODEL:
+    private var isScanningFolder = false
+
+    // 2. REEMPLAZA TU FUNCIÓN onAddFolder POR ESTA:
+    fun onAddFolder(uri: Uri) {
+        // Si ya está escaneando, ignoramos el toque extra para no sobrecargar el celular
+        if (isScanningFolder) return
+
+        viewModelScope.launch(Dispatchers.IO) {
+            isScanningFolder = true // Bloqueamos nuevas peticiones
+
+            try {
+                val folderPath = uri.toString()
+                val folderName = uri.lastPathSegment?.substringAfterLast(":") ?: "Carpeta"
+
+                repository.insertFolder(FolderEntity(
+                    path = folderPath,
+                    name = folderName,
+                    uriString = folderPath
+                ))
+
+                val scanner = FolderScanner(repository.context)
+                val scannedSongs = scanner.scanFolderUri(uri, folderName)
+
+                repository.insertSongsEntities(scannedSongs)
+            } finally {
+                // Siempre liberamos el bloqueo al terminar, aunque haya error
+                isScanningFolder = false
             }
         }
     }
-    fun renamePlaylist(playlistId: Long, newName: String) {
-        if (newName.isBlank()) return
-        viewModelScope.launch {
-            playlistDao.insertPlaylist(
-                com.example.comarleyaetheraudio.data.local.PlaylistEntity(
-                    id = playlistId,
-                    name = newName.trim()
-                )
-            )
-        }
-    }
 
-    val currentTheme: StateFlow<AppTheme> = settingsRepository.selectedTheme
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = AppTheme.PRINCIPAL
-        )
-
-    fun onSelectTheme(theme: AppTheme) {
-        viewModelScope.launch {
-            settingsRepository.setSelectedTheme(theme)
+    fun onRemoveFolder(folderPath: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.deleteSongsByFolderUri(folderPath)
+            repository.deleteFolderByPath(folderPath)
         }
     }
 }

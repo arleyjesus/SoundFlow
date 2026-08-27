@@ -14,37 +14,45 @@ class FolderScanner(private val context: Context) {
         val songEntities = mutableListOf<SongEntity>()
         val rootDocument = DocumentFile.fromTreeUri(context, folderUri) ?: return@withContext emptyList()
 
-        // Recorremos los archivos dentro de la carpeta
-        val files = rootDocument.listFiles()
-        for (file in files) {
-            if (file.isFile && isAudioFile(file.type, file.name)) {
-                val fileUri = file.uri
-                val metadata = extractMetadata(context, fileUri, file.name ?: "Desconocido")
+        // Recorrido recursivo seguro para escanear carpetas y subcarpetas
+        fun traverseDirectory(dir: DocumentFile) {
+            val files = dir.listFiles()
+            for (file in files) {
+                if (file.isDirectory) {
+                    traverseDirectory(file)
+                } else if (file.isFile && isAudioFile(file.type, file.name)) {
+                    val fileUri = file.uri
+                    val metadata = extractMetadata(context, fileUri, file.name ?: "Desconocido")
 
-                songEntities.add(
-                    SongEntity(
-                        title = metadata.title,
-                        artist = metadata.artist,
-                        album = metadata.album,
-                        genre = metadata.genre,
-                        year = metadata.year,
-                        trackNumber = metadata.trackNumber,
-                        duration = metadata.duration,
-                        contentUri = fileUri.toString(),
-                        albumArtUri = fileUri.toString(), // ExoPlayer/Coil extraerán la portada directamente del Uri
-                        size = file.length(),
-                        mimeType = file.type ?: "audio/*",
-                        bitrate = metadata.bitrate,
-                        sampleRate = metadata.sampleRate,
-                        isHiRes = metadata.isHiRes,
-                        path = fileUri.path ?: "",
-                        folderUri = folderUri.toString(),
-                        folderName = folderName
+                    songEntities.add(
+                        SongEntity(
+                            title = metadata.title,
+                            artist = metadata.artist,
+                            album = metadata.album,
+                            genre = metadata.genre,
+                            year = metadata.year,
+                            trackNumber = metadata.trackNumber,
+                            duration = metadata.duration,
+                            contentUri = fileUri.toString(),
+                            albumArtUri = fileUri.toString(), // ExoPlayer y CoverCacheManager extraen la portada directamente del Uri
+                            size = file.length(),
+                            mimeType = file.type ?: "audio/*",
+                            bitrate = metadata.bitrate,
+                            sampleRate = metadata.sampleRate,
+                            isHiRes = metadata.isHiRes,
+                            path = fileUri.toString(),
+                            folderUri = folderUri.toString(),
+                            folderName = folderName
+                        )
                     )
-                )
+                }
             }
         }
-        return@withContext songEntities
+
+        traverseDirectory(rootDocument)
+
+        // Filtro antipánico: elimina duplicados exactos por ruta antes de tocar la base de datos
+        return@withContext songEntities.distinctBy { it.contentUri }
     }
 
     private fun isAudioFile(mimeType: String?, fileName: String?): Boolean {
@@ -93,6 +101,7 @@ class FolderScanner(private val context: Context) {
             retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_SAMPLERATE)?.toIntOrNull()?.let { sampleRate = it }
 
         } catch (_: Exception) {
+            // Manejo silencioso en archivos con etiquetas corruptas
         } finally {
             try { retriever.release() } catch (_: Exception) {}
         }
