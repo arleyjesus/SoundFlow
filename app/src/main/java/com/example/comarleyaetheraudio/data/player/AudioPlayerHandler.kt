@@ -29,8 +29,6 @@ import kotlinx.coroutines.launch
 
 class AudioPlayerHandler(private val context: Context) {
 
-
-
     private var player: Player? = null
     private val _playerState = MutableStateFlow(AudioPlayerState())
     val playerState: StateFlow<AudioPlayerState> = _playerState.asStateFlow()
@@ -39,6 +37,10 @@ class AudioPlayerHandler(private val context: Context) {
     private var progressJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main)
 
+    var equalizer: Equalizer? = null
+    private var bassBoost: BassBoost? = null
+    private var virtualizer: Virtualizer? = null
+
     init {
         val sessionToken = SessionToken(context, ComponentName(context, SoundFlowMediaService::class.java))
         val controllerFuture = MediaController.Builder(context, sessionToken).buildAsync()
@@ -46,11 +48,14 @@ class AudioPlayerHandler(private val context: Context) {
         controllerFuture.addListener({
             player = controllerFuture.get()
 
-            // 1. MEJORA: Pausa inteligente y Audio Focus (Llamadas, WhatsApp, Desconexión de auriculares)
+            // 🎧 CONFIGURACIÓN COMPLETA PARA COMPATIBILIDAD CON AUDÍFONOS BLUETOOTH / INALÁMBRICOS
             val audioAttributes = AudioAttributes.Builder()
                 .setUsage(C.USAGE_MEDIA)
                 .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+                .setAllowedCapturePolicy(C.ALLOW_CAPTURE_BY_ALL)
                 .build()
+
+            // Activa el Audio Focus y el enrutamiento dinámico a Bluetooth/Auriculares
             player?.setAudioAttributes(audioAttributes, true)
 
             setupPlayerListener()
@@ -69,7 +74,6 @@ class AudioPlayerHandler(private val context: Context) {
                 val songId = mediaItem?.mediaId?.toLongOrNull()
                 val newSong = currentPlaylist.find { it.id == songId }
                 if (newSong != null) {
-                    // Extraer carátula nativamente del archivo local
                     val artBytes = extractArtworkBytes(newSong.contentUri)
                     _playerState.update {
                         it.copy(
@@ -85,12 +89,16 @@ class AudioPlayerHandler(private val context: Context) {
             override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
                 _playerState.update { it.copy(isShuffleEnabled = shuffleModeEnabled) }
             }
+
+            // Manejo de errores de salida o desconexión de audio Bluetooth
+            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                super.onPlayerError(error)
+                // Reintenta preparar la reproducción si se perdió la salida Bluetooth
+                player?.prepare()
+            }
         })
     }
 
-    /**
-     * Extractor directo de carátulas nativo para etiquetas ID3 / FLAC / MP3
-     */
     private fun extractArtworkBytes(contentUri: Uri): ByteArray? {
         val mmr = MediaMetadataRetriever()
         return try {
@@ -188,10 +196,9 @@ class AudioPlayerHandler(private val context: Context) {
         progressJob?.cancel()
     }
 
-    var equalizer: Equalizer? = null
-    private var bassBoost: BassBoost? = null
-    private var virtualizer: Virtualizer? = null
-
+    // ==========================================
+    // SECCIÓN DE EFECTOS AUDIO Y ECUALIZADOR
+    // ==========================================
     fun setupAudioEffects(audioSessionId: Int) {
         if (audioSessionId != android.media.audiofx.AudioEffect.ERROR_BAD_VALUE) {
             try {
@@ -204,12 +211,37 @@ class AudioPlayerHandler(private val context: Context) {
         }
     }
 
-    // Configuración de Transiciones Suaves y Reproducción Continuada
-    fun enableSmoothTransitions() {
-        player?.repeatMode = Player.REPEAT_MODE_OFF // Asegura la continuidad normal de la lista sin pausas forzadas
+    fun setEqualizerBandLevel(bandIndex: Short, valueInDb: Int) {
+        equalizer?.let { eq ->
+            try {
+                if (!eq.enabled) eq.enabled = true
+                val milliBels = (valueInDb * 100).toShort()
+                val range = eq.bandLevelRange
+                if (range != null && range.size >= 2) {
+                    val clamped = milliBels.coerceIn(range[0], range[1])
+                    eq.setBandLevel(bandIndex, clamped)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
-    // Función para atenuación de volumen progresiva (Crossfade manual al pausar/cambiar)
+    fun setBassBoostLevel(strength: Int) {
+        bassBoost?.let { bb ->
+            try {
+                if (!bb.enabled) bb.enabled = true
+                bb.setStrength(strength.toShort().coerceIn(0, 1000))
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun enableSmoothTransitions() {
+        player?.repeatMode = Player.REPEAT_MODE_OFF
+    }
+
     fun fadeOutAndPause(durationMs: Long = 1000) {
         val p = player ?: return
         val initialVolume = p.volume
@@ -223,12 +255,12 @@ class AudioPlayerHandler(private val context: Context) {
                 Thread.sleep(stepDelay)
             }
             p.pause()
-            p.volume = initialVolume // Restablece el volumen original
+            p.volume = initialVolume
         }.start()
     }
 
     // ==========================================
-    // LÓGICA DEL TEMPORIZADOR DE APAGADO (SLEEP TIMER)
+    // LÓGICA DEL TEMPORIZADOR DE APAGADO
     // ==========================================
     private var sleepTimerJob: Job? = null
     private val _sleepTimerMinutes = MutableStateFlow(0)
@@ -239,7 +271,6 @@ class AudioPlayerHandler(private val context: Context) {
         _sleepTimerMinutes.value = minutes
 
         if (stopAfterCurrentSong) {
-            // Escucha cuando termina la canción actual para pausar
             player?.addListener(object : Player.Listener {
                 override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
                     if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) {
@@ -252,7 +283,6 @@ class AudioPlayerHandler(private val context: Context) {
             return
         }
 
-        // Timer por conteo regresivo en minutos
         sleepTimerJob = scope.launch {
             var remainingSeconds = minutes * 60
             while (remainingSeconds > 0) {
@@ -260,7 +290,6 @@ class AudioPlayerHandler(private val context: Context) {
                 remainingSeconds--
                 _sleepTimerMinutes.value = (remainingSeconds / 60) + 1
             }
-            // Atenúa el volumen suavemente durante 2 segundos y frena la música
             fadeOutAndPause(2000)
             cancelSleepTimer()
         }

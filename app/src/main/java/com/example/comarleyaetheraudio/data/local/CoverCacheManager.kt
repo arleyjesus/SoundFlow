@@ -46,11 +46,11 @@ object CoverCacheManager {
             val bitmapFromDisk = BitmapFactory.decodeFile(coverFile.absolutePath)
             if (bitmapFromDisk != null) {
                 memoryCache.put(songId, bitmapFromDisk)
+                return@withContext coverFile
             }
-            return@withContext coverFile
         }
 
-        // 3. Extracción asíncrona desde los metadatos del archivo de audio
+        // 3. Extracción asíncrona desde los metadatos del archivo de audio individual
         val retriever = MediaMetadataRetriever()
         try {
             if (uri != null) {
@@ -109,4 +109,14 @@ object CoverCacheManager {
     }
 
     fun getMemoryBitmap(songId: Long): Bitmap? = memoryCache.get(songId)
+
+    // Método para limpiar memoria caché si se actualizan etiquetas de canciones
+    fun clearCacheForSong(songId: Long, context: Context) {
+        memoryCache.remove(songId)
+        val coverDir = File(context.cacheDir, COVER_DIR)
+        val coverFile = File(coverDir, "cover_$songId.jpg")
+        if (coverFile.exists()) {
+            coverFile.delete()
+        }
+    }
 }

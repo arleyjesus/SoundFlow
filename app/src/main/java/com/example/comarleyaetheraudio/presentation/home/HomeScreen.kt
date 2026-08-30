@@ -7,38 +7,33 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
-import com.example.comarleyaetheraudio.data.local.CoverCacheManager
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.comarleyaetheraudio.domain.model.AudioPlayerState
 import com.example.comarleyaetheraudio.domain.model.Playlist
 import com.example.comarleyaetheraudio.domain.model.Song
+import com.example.comarleyaetheraudio.presentation.home.components.ArtistCircleCard
+import com.example.comarleyaetheraudio.presentation.home.components.PlaylistMosaicCard
+import com.example.comarleyaetheraudio.presentation.home.components.PlaylistsBottomSheet
+import com.example.comarleyaetheraudio.presentation.home.components.RecentPosterCard
 import com.example.comarleyaetheraudio.presentation.library.ArtistDetailBottomSheet
 import com.example.comarleyaetheraudio.ui.theme.ElectricPurple
 import com.example.comarleyaetheraudio.ui.theme.SoftPink
-import java.io.File
 
 @Composable
 fun HomeScreen(
@@ -49,7 +44,8 @@ fun HomeScreen(
     onSongClick: (Song) -> Unit,
     onFavoritesClick: () -> Unit,
     onCreatePlaylist: (String) -> Unit,
-    onDeletePlaylist: (Playlist) -> Unit
+    onDeletePlaylist: (Playlist) -> Unit,
+    onAddSongsToPlaylist: (Long, List<Long>) -> Unit = { _, _ -> }
 ) {
     var showFavoritesSheet by remember { mutableStateOf(false) }
     var showPlaylistsSheet by remember { mutableStateOf(false) }
@@ -83,9 +79,8 @@ fun HomeScreen(
     val isDark = isSystemInDarkTheme()
     val baseBgColor = MaterialTheme.colorScheme.background
 
-    // MANCHAS CON TAMAÑO E INTENSIDAD LIGERAMENTE REDUCIDOS
-    val topBlobColor = if (isDark) SoftPink.copy(alpha = 0.20f) else Color(0xFFFFD1DC).copy(alpha = 0.50f)
-    val midBlobColor = if (isDark) ElectricPurple.copy(alpha = 0.16f) else Color(0xFFFFF2D6).copy(alpha = 0.55f)
+    val topBlobColor = if (isDark) SoftPink.copy(alpha = 0.03f) else Color(0xFFFFD1DC).copy(alpha = 0.35f)
+    val midBlobColor = if (isDark) ElectricPurple.copy(alpha = 0.02f) else Color(0xFFFFF2D6).copy(alpha = 0.40f)
 
     Box(
         modifier = Modifier
@@ -96,19 +91,19 @@ fun HomeScreen(
                     brush = Brush.radialGradient(
                         colors = listOf(topBlobColor, Color.Transparent),
                         center = Offset(size.width * 0.85f, size.height * 0.04f),
-                        radius = size.width * 0.55f // Tamaño reducido de 0.7f a 0.55f
+                        radius = size.width * 0.40f
                     ),
                     center = Offset(size.width * 0.85f, size.height * 0.04f),
-                    radius = size.width * 0.55f
+                    radius = size.width * 0.40f
                 )
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(midBlobColor, Color.Transparent),
                         center = Offset(size.width * 0.12f, size.height * 0.28f),
-                        radius = size.width * 0.50f // Tamaño reducido de 0.65f a 0.50f
+                        radius = size.width * 0.35f
                     ),
                     center = Offset(size.width * 0.12f, size.height * 0.28f),
-                    radius = size.width * 0.50f
+                    radius = size.width * 0.35f
                 )
             }
     ) {
@@ -140,6 +135,7 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(4.dp))
 
+            // RECIENTES
             if (recentSongs.isNotEmpty()) {
                 Text(
                     text = "Recently Played",
@@ -161,6 +157,7 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(20.dp))
             }
 
+            // TOP ARTISTAS
             if (topArtists.isNotEmpty()) {
                 Text(
                     text = "Top Artists",
@@ -186,43 +183,32 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(20.dp))
             }
 
-            Text(
-                text = "Colecciones",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
-            )
-
+            // SECCIÓN TUS PLAYLISTS EN EL INICIO
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Card(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { showFavoritesSheet = true },
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.Favorite, contentDescription = null, tint = Color.Red)
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text("Favoritos", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                            Text("${favoriteIds.size} temas", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
+                Text(
+                    text = "Tus Playlists",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                TextButton(onClick = { showPlaylistsSheet = true }) {
+                    Text("Ver todas")
                 }
+            }
 
+            if (playlists.isEmpty()) {
                 Card(
                     modifier = Modifier
-                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
                         .clickable { showPlaylistsSheet = true },
+                    shape = RoundedCornerShape(18.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
                 ) {
                     Row(
@@ -232,28 +218,82 @@ fun HomeScreen(
                         Icon(Icons.AutoMirrored.Filled.QueueMusic, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            Text("Playlists", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                            Text("${playlists.size} listas", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Crear Playlist", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                            Text("Toca para añadir una lista de reproducción", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
+                    }
+                }
+            } else {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    items(playlists, key = { it.id }) { playlist ->
+                        PlaylistMosaicCard(
+                            playlist = playlist,
+                            onClick = { showPlaylistsSheet = true }
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // FAVORITOS
+            Text(
+                text = "Colecciones",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+            )
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .clickable { showFavoritesSheet = true },
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Favorite, contentDescription = null, tint = Color.Red)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text("Favoritos", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                        Text("${favoriteIds.size} temas", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
         }
 
-        if (showFavoritesSheet) {
-            FavoritesBottomSheet(
-                favoriteSongs = favoriteSongs,
-                onDismiss = { showFavoritesSheet = false },
-                onSongClick = { song -> onSongClick(song) }
-            )
-        }
-
+        // ⚡ LLAMADA CORREGIDA USANDO LOS CALLBACKS NATIVOS DE HOMESCREEN
         if (showPlaylistsSheet) {
             PlaylistsBottomSheet(
                 playlists = playlists,
+                allAvailableSongs = allSongs,
                 onDismiss = { showPlaylistsSheet = false },
                 onCreatePlaylist = onCreatePlaylist,
                 onDeletePlaylist = onDeletePlaylist,
+                onAddSongsToPlaylist = onAddSongsToPlaylist,
+                onSongClick = onSongClick
+            )
+        }
+
+        // ⚡ CONECTAR EL GUARDADO REAL DE CANCIONES A LA PLAYLIST
+        if (showPlaylistsSheet) {
+            PlaylistsBottomSheet(
+                playlists = playlists,
+                allAvailableSongs = allSongs,
+                onDismiss = { showPlaylistsSheet = false },
+                onCreatePlaylist = onCreatePlaylist,
+                onDeletePlaylist = onDeletePlaylist,
+                onAddSongsToPlaylist = { playlistId, songIds ->
+                    onAddSongsToPlaylist(playlistId, songIds) // 👈 Llama al ViewModel para guardar en Room
+                },
                 onSongClick = onSongClick
             )
         }
@@ -267,141 +307,5 @@ fun HomeScreen(
                 onSongClick = onSongClick
             )
         }
-    }
-}
-
-@Composable
-fun RecentPosterCard(song: Song, onClick: () -> Unit) {
-    val context = LocalContext.current
-    var coverFile by remember(song.id) { mutableStateOf<File?>(null) }
-
-    LaunchedEffect(song.id) {
-        coverFile = CoverCacheManager.getOrFetchCover(context, song.id, song.albumArtUri, song.path)
-    }
-
-    // TARJETA DE RECIENTES CON ALTA TRANSPARENCIA (0.28f)
-    Card(
-        modifier = Modifier
-            .width(135.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f))
-    ) {
-        Column(modifier = Modifier.padding(8.dp)) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(110.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.4f)),
-                contentAlignment = Alignment.Center
-            ) {
-                if (coverFile != null) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(coverFile)
-                            .crossfade(false)
-                            .build(),
-                        contentDescription = "Portada",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Surface(
-                        modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Default.MusicNote,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
-                                modifier = Modifier.size(32.dp)
-                            )
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = song.title,
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = song.artist,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    }
-}
-
-@Composable
-fun ArtistCircleCard(artistName: String, sampleSong: Song?, onClick: () -> Unit) {
-    val context = LocalContext.current
-    var artistCoverFile by remember(artistName) { mutableStateOf<File?>(null) }
-
-    LaunchedEffect(artistName, sampleSong) {
-        sampleSong?.let { song ->
-            artistCoverFile = CoverCacheManager.getOrFetchCover(context, song.id, song.albumArtUri, song.path)
-        }
-    }
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .width(80.dp)
-            .clickable { onClick() }
-    ) {
-        Box(
-            modifier = Modifier
-                .size(70.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
-            contentAlignment = Alignment.Center
-        ) {
-            if (artistCoverFile != null) {
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(artistCoverFile)
-                        .crossfade(false)
-                        .build(),
-                    contentDescription = artistName,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = artistName.take(1).uppercase(),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                }
-            }
-        }
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = artistName,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onBackground,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
     }
 }

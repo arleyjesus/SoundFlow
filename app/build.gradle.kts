@@ -7,14 +7,14 @@ plugins {
 
 android {
     namespace = "com.arleyaetheraudio"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.example.comarleyaetheraudio"
         minSdk = 24
-        targetSdk = 34
-        versionCode = 4          // Incrementado para v2.2.0
-        versionName = "2.2.0"    // Versión oficial 2.2.0
+        targetSdk = 35
+        versionCode = 6          // Incrementado para v2.2.0
+        versionName = "3.1.0"    // Versión oficial 2.2.0
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -51,6 +51,7 @@ dependencies {
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("androidx.activity:activity-compose:1.10.0")
+    implementation(libs.androidx.compose.animation)
     implementation(libs.androidx.documentfile)
 
     // Jetpack Compose UI
@@ -92,4 +93,22 @@ dependencies {
 
     // Librería para leer y editar etiquetas ID3 de MP3/FLAC
     implementation("net.jthink:jaudiotagger:3.0.1")
+
+    configurations.all {
+        resolutionStrategy {
+            force("androidx.core:core-ktx:1.12.0")
+            force("androidx.annotation:annotation:1.7.0")
+        }
+    }
+
+    android {
+        // ... tu configuración actual ...
+
+        // Desactiva el fallo por conflicto de AAR Metadata
+        dependenciesInfo {
+            includeInApk = false
+            includeInBundle = false
+        }
+    }
+
 }

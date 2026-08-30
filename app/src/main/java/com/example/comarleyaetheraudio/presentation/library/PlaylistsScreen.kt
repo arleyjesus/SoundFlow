@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.example.comarleyaetheraudio.domain.model.Playlist
 import com.example.comarleyaetheraudio.domain.model.Song
 import com.example.comarleyaetheraudio.presentation.components.SongItem
+import com.example.comarleyaetheraudio.presentation.playlist.AddSongsToPlaylistDialog // ⚡ IMPORTACIÓN DEL NUEVO DIÁLOGO
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -33,13 +34,15 @@ fun PlaylistsScreen(
     onCreatePlaylistClick: (String) -> Unit,
     onRenamePlaylist: (Playlist, String) -> Unit,
     onDeletePlaylist: (Playlist) -> Unit,
-    onAddSongToPlaylist: (Long, Long) -> Unit
+    onAddSongsToPlaylist: (Long, List<Long>) -> Unit // ⚡ ACTUALIZADO A SELECCIÓN MÚLTIPLE
 ) {
     var selectedPlaylistForDetail by remember { mutableStateOf<Playlist?>(null) }
     var playlistMenuTarget by remember { mutableStateOf<Playlist?>(null) }
     var playlistToRename by remember { mutableStateOf<Playlist?>(null) }
     var showCreateDialog by remember { mutableStateOf(false) }
-    var showImportSongsSheet by remember { mutableStateOf(false) }
+
+    // ⚡ CONTROLADOR DEL NUEVO DIÁLOGO MÚLTIPLE
+    var playlistIdToAddSongs by remember { mutableStateOf<Long?>(null) }
 
     var renameText by remember { mutableStateOf("") }
     var createText by remember { mutableStateOf("") }
@@ -244,7 +247,7 @@ fun PlaylistsScreen(
                         Text(playlist.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                         Text("${playlist.songs.size} canciones", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    Button(onClick = { showImportSongsSheet = true }) {
+                    Button(onClick = { playlistIdToAddSongs = playlist.id }) { // ⚡ ABRE EL DIÁLOGO DE SELECCIÓN MÚLTIPLE
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Añadir")
@@ -274,42 +277,19 @@ fun PlaylistsScreen(
         }
     }
 
-    // PANEL PARA IMPORTAR CANCIONES A LA PLAYLIST SELECCIONADA
-    if (showImportSongsSheet && selectedPlaylistForDetail != null) {
-        val currentPlaylist = selectedPlaylistForDetail!!
-        ModalBottomSheet(
-            onDismissRequest = { showImportSongsSheet = false },
-            containerColor = MaterialTheme.colorScheme.surface
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp)
-            ) {
-                Text(
-                    text = "Añadir a '${currentPlaylist.name}'",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(vertical = 12.dp)
-                )
-                LazyColumn {
-                    items(allSongs, key = { it.id }) { song ->
-                        val isAlreadyInPlaylist = currentPlaylist.songs.any { it.id == song.id }
-                        SongItem(
-                            song = song,
-                            onClick = {
-                                if (!isAlreadyInPlaylist) {
-                                    onAddSongToPlaylist(currentPlaylist.id, song.id)
-                                }
-                            },
-                            modifier = Modifier.background(
-                                if (isAlreadyInPlaylist) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                                else MaterialTheme.colorScheme.surface
-                            )
-                        )
-                    }
-                }
+    // ⚡ NUEVO DIÁLOGO PARA IMPORTAR CANCIONES CON VIBRACIÓN, CONTADOR Y COLOR INSTANTÁNEO
+    playlistIdToAddSongs?.let { playlistId ->
+        val currentPlaylist = playlists.find { it.id == playlistId }
+        val existingIds = currentPlaylist?.songs?.map { it.id } ?: emptyList()
+
+        AddSongsToPlaylistDialog(
+            availableSongs = allSongs,
+            alreadyAddedSongIds = existingIds,
+            onDismiss = { playlistIdToAddSongs = null },
+            onAddSongsConfirmed = { selectedIds ->
+                onAddSongsToPlaylist(playlistId, selectedIds)
+                playlistIdToAddSongs = null
             }
-        }
+        )
     }
 }

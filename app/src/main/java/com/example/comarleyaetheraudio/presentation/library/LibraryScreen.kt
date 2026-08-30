@@ -42,6 +42,7 @@ fun LibraryScreen(
     onSongClick: (Song) -> Unit,
     onToggleFavorite: (Song) -> Unit,
     onAddToPlaylist: (Long, Long) -> Unit,
+    onAddSongsToPlaylist: (Long, List<Long>) -> Unit,
     onCreatePlaylist: (String) -> Unit,
     onRenamePlaylist: (Playlist, String) -> Unit,
     onDeletePlaylist: (Playlist) -> Unit
@@ -186,7 +187,7 @@ fun LibraryScreen(
                         onCreatePlaylistClick = onCreatePlaylist,
                         onRenamePlaylist = onRenamePlaylist,
                         onDeletePlaylist = onDeletePlaylist,
-                        onAddSongToPlaylist = onAddToPlaylist
+                        onAddSongsToPlaylist = onAddSongsToPlaylist
                     )
                 }
             }

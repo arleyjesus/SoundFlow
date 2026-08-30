@@ -47,13 +47,17 @@ class MainActivity : ComponentActivity() {
         val database = MusicDatabase.getDatabase(applicationContext)
         val scanner = FolderScanner(applicationContext)
 
-        // 1. Aquí solo le pasamos 3 parámetros (sin playlistDao)
-        val repository = AudioRepositoryImpl(applicationContext, database.musicDao(), scanner)
+// Instanciación con los 4 parámetros requeridos:
+        val repository = AudioRepositoryImpl(
+            applicationContext,
+            database.musicDao(),
+            database.playlistDao(),
+            scanner
+        )
 
         val playerHandler = AudioPlayerHandler(applicationContext)
         val settingsRepository = SettingsRepository(applicationContext)
 
-        // 2. Aquí también solo pasamos 3 parámetros
         viewModel = LibraryViewModel(repository, playerHandler, settingsRepository)
 
         setContent {
@@ -179,7 +183,10 @@ fun MainAppStructure(viewModel: LibraryViewModel) {
                             navController.navigate(Screen.Library.route)
                         },
                         onCreatePlaylist = { name -> viewModel.createPlaylist(name) },
-                        onDeletePlaylist = { playlist -> viewModel.deletePlaylist(playlist) }
+                        onDeletePlaylist = { playlist -> viewModel.deletePlaylist(playlist) },
+                        onAddSongsToPlaylist = { playlistId, songIds ->
+                            viewModel.addSongsToPlaylist(playlistId, songIds) // 👈 ESTO FALTABA PARA GUARDAR EN INICIO
+                        }
                     )
                 }
 
@@ -190,12 +197,27 @@ fun MainAppStructure(viewModel: LibraryViewModel) {
                         artistGrouped = artistGrouped,
                         playlists = playlists,
                         favoriteIds = favoriteIds,
-                        onSongClick = { song -> viewModel.playerHandler.playSong(song, songs) },
-                        onToggleFavorite = { song -> viewModel.toggleFavorite(song.id) },
-                        onAddToPlaylist = { playlistId, songId -> viewModel.addSongToPlaylist(playlistId, songId) },
-                        onCreatePlaylist = { name -> viewModel.createPlaylist(name) },
-                        onRenamePlaylist = { playlist, newName -> viewModel.renamePlaylist(playlist.id, newName) },
-                        onDeletePlaylist = { playlist -> viewModel.deletePlaylist(playlist) }
+                        onSongClick = { song ->
+                            viewModel.playerHandler.playSong(song, songs)
+                        },
+                        onToggleFavorite = { song ->
+                            viewModel.toggleFavorite(song.id)
+                        },
+                        onAddToPlaylist = { playlistId, songId ->
+                            viewModel.addSongsToPlaylist(playlistId, listOf(songId))
+                        },
+                        onAddSongsToPlaylist = { playlistId, songIds ->
+                            viewModel.addSongsToPlaylist(playlistId, songIds)
+                        },
+                        onCreatePlaylist = { name ->
+                            viewModel.createPlaylist(name)
+                        },
+                        onRenamePlaylist = { playlist, newName ->
+                            viewModel.renamePlaylist(playlist.id, newName)
+                        },
+                        onDeletePlaylist = { playlist ->
+                            viewModel.deletePlaylist(playlist)
+                        }
                     )
                 }
 

@@ -4,6 +4,9 @@ import android.content.Context
 import android.net.Uri
 import com.example.comarleyaetheraudio.data.local.FolderScanner
 import com.example.comarleyaetheraudio.data.local.MusicDao
+import com.example.comarleyaetheraudio.data.local.PlaylistEntity
+import com.example.comarleyaetheraudio.data.local.PlaylistSongCrossRef
+import com.example.comarleyaetheraudio.data.local.dao.PlaylistDao
 import com.example.comarleyaetheraudio.data.local.entity.FolderEntity
 import com.example.comarleyaetheraudio.data.local.entity.SongEntity
 import com.example.comarleyaetheraudio.domain.model.Playlist
@@ -11,21 +14,20 @@ import com.example.comarleyaetheraudio.domain.model.Song
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 
 class AudioRepositoryImpl(
     val context: Context,
     private val musicDao: MusicDao,
+    private val playlistDao: PlaylistDao,
     private val scanner: FolderScanner
 ) {
-    // ESTADOS EN MEMORIA (Evita que Room crashee por tablas inexistentes)
+    // FAVORITOS EN MEMORIA
     private val _favoriteIds = MutableStateFlow<List<Long>>(emptyList())
     val favoriteIds: Flow<List<Long>> = _favoriteIds.asStateFlow()
 
-    private val _playlists = MutableStateFlow<List<Playlist>>(emptyList())
-    val allPlaylists: Flow<List<Playlist>> = _playlists.asStateFlow()
-
-    // TRANSFORMACIÓN CORREGIDA CON URIs Y TODOS LOS PARÁMETROS
+    // TRANSFORMACIÓN CORREGIDA DE CANCIONES CON URIs
     val allSongs: Flow<List<Song>> = musicDao.getAllSongs().map { entities ->
         entities.map { entity ->
             Song(
@@ -43,6 +45,27 @@ class AudioRepositoryImpl(
         }
     }
 
+    // OBTENER PLAYLISTS DESDE ROOM (PERSISTENCIA REAL EN BASE DE DATOS)
+    val allPlaylists: Flow<List<Playlist>> = combine(
+        playlistDao.getAllPlaylists(),
+        playlistDao.getAllPlaylistSongsFlow(),
+        allSongs
+    ) { playlistEntities, crossRefs, songs ->
+        playlistEntities.map { pEntity ->
+            val songIdsInPlaylist = crossRefs
+                .filter { it.playlistId == pEntity.id }
+                .map { it.songId }
+
+            val playlistSongs = songs.filter { songIdsInPlaylist.contains(it.id) }
+
+            Playlist(
+                id = pEntity.id,
+                name = pEntity.name,
+                songs = playlistSongs
+            )
+        }
+    }
+
     val allFolders: Flow<List<FolderEntity>> = musicDao.getAllFolders()
 
     suspend fun toggleFavorite(songId: Long) {
@@ -51,30 +74,46 @@ class AudioRepositoryImpl(
         _favoriteIds.value = currentList
     }
 
-    // GESTIÓN REACTIVA DE PLAYLISTS
+    // GESTIÓN PERSISTENTE DE PLAYLISTS (ROOM)
     suspend fun createPlaylist(name: String) {
-        val current = _playlists.value.toMutableList()
-        current.add(Playlist(id = System.currentTimeMillis(), name = name, songs = emptyList()))
-        _playlists.value = current
+        val newEntity = PlaylistEntity(name = name, createdAt = System.currentTimeMillis())
+        playlistDao.insertPlaylist(newEntity)
     }
 
     suspend fun renamePlaylist(playlistId: Long, newName: String) {
-        _playlists.value = _playlists.value.map {
-            if (it.id == playlistId) it.copy(name = newName) else it
-        }
+        val entity = PlaylistEntity(id = playlistId, name = newName, createdAt = System.currentTimeMillis())
+        playlistDao.insertPlaylist(entity)
     }
 
     suspend fun deletePlaylist(playlist: Playlist) {
-        val current = _playlists.value.toMutableList()
-        current.removeAll { it.id == playlist.id }
-        _playlists.value = current
+        val entity = PlaylistEntity(id = playlist.id, name = playlist.name)
+        playlistDao.deletePlaylist(entity)
     }
 
     suspend fun addSongToPlaylist(playlistId: Long, songId: Long) {
-        // Implementación futura cuando la base de datos de Playlists esté construida
+        playlistDao.insertSongToPlaylist(PlaylistSongCrossRef(playlistId = playlistId, songId = songId))
     }
 
-    // MÉTODOS DE BASE DE DATOS
+    suspend fun addSongsToPlaylist(playlistId: Long, songIds: List<Long>) {
+        // 1. Obtenemos los IDs de las canciones que actualmente tiene la playlist
+        val currentSongIds = playlistDao.getSongIdsForPlaylist(playlistId)
+
+        // 2. Calculamos cuáles son nuevas y cuáles han sido desmarcadas
+        val toAdd = songIds - currentSongIds.toSet()
+        val toRemove = currentSongIds - songIds.toSet()
+
+        // 3. Insertamos las canciones nuevas
+        toAdd.forEach { songId ->
+            playlistDao.insertSongToPlaylist(PlaylistSongCrossRef(playlistId = playlistId, songId = songId))
+        }
+
+        // 4. Eliminamos las canciones que desmarcaste
+        toRemove.forEach { songId ->
+            playlistDao.removeSongFromPlaylist(playlistId = playlistId, songId = songId)
+        }
+    }
+
+    // MÉTODOS DE BASE DE DATOS PARA CANCIONES Y CARPETAS
     suspend fun updateSongTags(songId: Long, newTitle: String, newArtist: String, newAlbum: String) {
         musicDao.updateSongTags(songId, newTitle, newArtist, newAlbum)
     }

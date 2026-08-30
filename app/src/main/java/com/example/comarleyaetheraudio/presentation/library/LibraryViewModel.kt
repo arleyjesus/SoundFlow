@@ -1,5 +1,6 @@
 package com.example.comarleyaetheraudio.presentation.library
 
+import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -86,13 +87,19 @@ class LibraryViewModel(
 
     // 2. REEMPLAZA TU FUNCIÓN onAddFolder POR ESTA:
     fun onAddFolder(uri: Uri) {
-        // Si ya está escaneando, ignoramos el toque extra para no sobrecargar el celular
         if (isScanningFolder) return
 
         viewModelScope.launch(Dispatchers.IO) {
-            isScanningFolder = true // Bloqueamos nuevas peticiones
-
+            isScanningFolder = true
             try {
+                // 🔒 CONCEDER PERMISOS PERSISTENTES COMPLETOS (LECTURA Y ESCRITURA DE URI)
+                val takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                try {
+                    repository.context.contentResolver.takePersistableUriPermission(uri, takeFlags)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+
                 val folderPath = uri.toString()
                 val folderName = uri.lastPathSegment?.substringAfterLast(":") ?: "Carpeta"
 
@@ -106,10 +113,17 @@ class LibraryViewModel(
                 val scannedSongs = scanner.scanFolderUri(uri, folderName)
 
                 repository.insertSongsEntities(scannedSongs)
+            } catch (e: Exception) {
+                e.printStackTrace()
             } finally {
-                // Siempre liberamos el bloqueo al terminar, aunque haya error
                 isScanningFolder = false
             }
+        }
+    }
+
+    fun addSongsToPlaylist(playlistId: Long, songIds: List<Long>) {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.addSongsToPlaylist(playlistId, songIds)
         }
     }
 
