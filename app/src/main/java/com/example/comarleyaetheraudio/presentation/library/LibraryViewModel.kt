@@ -4,7 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.comarleyaetheraudio.data.local.FolderScanner
+import com.example.comarleyaetheraudio.data.local.util.FolderScanner
 import com.example.comarleyaetheraudio.data.local.entity.FolderEntity
 import com.example.comarleyaetheraudio.data.player.AudioPlayerHandler
 import com.example.comarleyaetheraudio.data.repository.AudioRepositoryImpl

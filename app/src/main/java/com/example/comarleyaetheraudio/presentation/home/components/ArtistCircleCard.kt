@@ -16,7 +16,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.example.comarleyaetheraudio.data.local.ArtistImageFetcher
+import com.example.comarleyaetheraudio.data.local.util.ArtistImageFetcher
 import com.example.comarleyaetheraudio.domain.model.Song
 import java.io.File
 

@@ -5,8 +5,8 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import com.example.comarleyaetheraudio.data.local.PlaylistEntity
-import com.example.comarleyaetheraudio.data.local.PlaylistSongCrossRef
+import com.example.comarleyaetheraudio.data.local.entity.PlaylistEntity
+import com.example.comarleyaetheraudio.data.local.entity.PlaylistSongCrossRef
 import kotlinx.coroutines.flow.Flow
 
 @Dao

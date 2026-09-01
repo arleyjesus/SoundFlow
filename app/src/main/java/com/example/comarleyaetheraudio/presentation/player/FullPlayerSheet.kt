@@ -3,12 +3,12 @@ package com.example.comarleyaetheraudio.presentation.player
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,12 +25,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.comarleyaetheraudio.data.local.LrcParser
+import com.example.comarleyaetheraudio.data.local.util.LrcParser
 import com.example.comarleyaetheraudio.data.remote.LrcLibService
 import com.example.comarleyaetheraudio.domain.model.AudioPlayerState
 import com.example.comarleyaetheraudio.domain.model.LyricLine
-import com.example.comarleyaetheraudio.presentation.components.SleepTimerDialog
-import com.example.comarleyaetheraudio.presentation.components.TagEditorDialog
+import com.example.comarleyaetheraudio.presentation.components.dialogs.SleepTimerDialog
+import com.example.comarleyaetheraudio.presentation.components.dialogs.TagEditorDialog
 import com.example.comarleyaetheraudio.ui.theme.DynamicThemeExtractor
 import com.example.comarleyaetheraudio.ui.theme.ElectricPurple
 import com.example.comarleyaetheraudio.ui.theme.LightLavender
@@ -38,6 +38,7 @@ import com.example.comarleyaetheraudio.ui.theme.LightLavender
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FullPlayerSheet(
+    isDarkMode: Boolean = false, // ⚡ AHORA RECIBE DIRECTAMENTE EL ESTADO
     currentTimerMinutes: Int = 0,
     onStartTimer: (Int, Boolean) -> Unit = { _, _ -> },
     onCancelTimer: () -> Unit = {},
@@ -90,8 +91,9 @@ fun FullPlayerSheet(
         DynamicThemeExtractor.extractDominantColor(bitmap, ElectricPurple)
     }
 
-    val isDark = isSystemInDarkTheme()
-    val baseBgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
+    // ⚡ COLOR DE FONDO 100% GARANTIZADO BLANCO EN MODO CLARO
+    val baseBgColor = if (isDarkMode) Color(0xFF121212) else Color.White
+    val textColor = if (isDarkMode) Color.White else Color(0xFF111111)
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -102,31 +104,31 @@ fun FullPlayerSheet(
         modifier = Modifier.fillMaxSize()
     ) {
         Box(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .background(baseBgColor)
         ) {
-            // 1. CARÁTULA EN SEGUNDO PLANO (EFECTO ATMÓSFERA RESTAURADO)
             if (bitmap != null) {
                 Image(
                     bitmap = bitmap.asImageBitmap(),
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxSize()
-                        .blur(35.dp)
-                        .background(baseBgColor.copy(alpha = if (isDark) 0.45f else 0.2f)),
+                        .blur(40.dp)
+                        .background(baseBgColor.copy(alpha = if (isDarkMode) 0.50f else 0.88f)),
                     contentScale = ContentScale.Crop,
-                    alpha = if (isDark) 0.35f else 0.25f
+                    alpha = if (isDarkMode) 0.35f else 0.10f
                 )
             }
 
-            // GRADIENTE ADAPTATIVO
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                dominantColor.copy(alpha = if (isDark) 0.35f else 0.15f),
-                                baseBgColor.copy(alpha = 0.85f),
+                                dominantColor.copy(alpha = if (isDarkMode) 0.35f else 0.08f),
+                                baseBgColor.copy(alpha = 0.90f),
                                 baseBgColor
                             )
                         )
@@ -139,7 +141,6 @@ fun FullPlayerSheet(
                     .padding(horizontal = 24.dp, vertical = 4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // BARRA SUPERIOR (Boton Volver + Opciones)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -150,11 +151,16 @@ fun FullPlayerSheet(
                     Surface(
                         onClick = onDismiss,
                         shape = CircleShape,
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        color = if (isDarkMode) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.05f),
                         modifier = Modifier.size(38.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Volver", modifier = Modifier.size(18.dp))
+                            Icon(
+                                Icons.Default.ArrowBack,
+                                contentDescription = "Volver",
+                                tint = textColor,
+                                modifier = Modifier.size(18.dp)
+                            )
                         }
                     }
 
@@ -162,11 +168,16 @@ fun FullPlayerSheet(
                         Surface(
                             onClick = { showMenuOptions = true },
                             shape = CircleShape,
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            color = if (isDarkMode) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.05f),
                             modifier = Modifier.size(38.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.MoreHoriz, contentDescription = "Opciones", modifier = Modifier.size(20.dp))
+                                Icon(
+                                    Icons.Default.MoreHoriz,
+                                    contentDescription = "Opciones",
+                                    tint = textColor,
+                                    modifier = Modifier.size(20.dp)
+                                )
                             }
                         }
 
@@ -188,9 +199,7 @@ fun FullPlayerSheet(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // 2. MODO LETRAS / MODO REPRODUCTOR NORMAL
                 if (showLyrics) {
-                    // CARÁTULA REDONDA LIGERAMENTE CONTENIDA EN MODO LETRAS
                     Box(
                         modifier = Modifier
                             .fillMaxWidth(0.48f)
@@ -233,7 +242,6 @@ fun FullPlayerSheet(
                         }
                     }
                 } else {
-                    // CARÁTULA PRINCIPAL MÁS GRANDE EN MODO NORMAL
                     Box(
                         modifier = Modifier
                             .fillMaxWidth(0.82f)
@@ -260,7 +268,6 @@ fun FullPlayerSheet(
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    // 3. TÍTULO Y ARTISTA LIMPIOS (SIN BURBUJA DE FONDO Y TIPOGRAFÍA AUMENTADA)
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -273,7 +280,7 @@ fun FullPlayerSheet(
                                 fontSize = 22.sp,
                                 fontWeight = FontWeight.Bold
                             ),
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color = textColor,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             textAlign = TextAlign.Center
@@ -285,7 +292,7 @@ fun FullPlayerSheet(
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Medium
                             ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = MaterialTheme.colorScheme.primary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             textAlign = TextAlign.Center
@@ -295,7 +302,6 @@ fun FullPlayerSheet(
                     Spacer(modifier = Modifier.weight(1f))
                 }
 
-                // 4. BARRAS SECUNDARIAS (FAVORITOS AL LADO IZQUIERDO Y LETRAS/TIMER A LA DERECHA)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -308,7 +314,7 @@ fun FullPlayerSheet(
                         modifier = Modifier.size(34.dp)
                     ) {
                         Icon(
-                            imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            imageVector = if (isFavorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                             contentDescription = "Favorito",
                             tint = if (isFavorite) dominantColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                             modifier = Modifier.size(24.dp)
@@ -321,7 +327,7 @@ fun FullPlayerSheet(
                             modifier = Modifier.size(34.dp)
                         ) {
                             Icon(
-                                Icons.Default.Timer,
+                                Icons.Rounded.Timer,
                                 contentDescription = "Timer",
                                 tint = if (currentTimerMinutes > 0) dominantColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                 modifier = Modifier.size(20.dp)
@@ -342,7 +348,6 @@ fun FullPlayerSheet(
                     }
                 }
 
-                // 5. LÍNEA DE TIEMPO DELGADA Y ESPECTRO AUDIO-REACTIVO
                 Column(modifier = Modifier.fillMaxWidth()) {
                     AudioVisualizerView(
                         isPlaying = playerState.isPlaying,
@@ -388,7 +393,6 @@ fun FullPlayerSheet(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // 6. FILA DE REPETICIÓN Y ALEATORIO (ELEVADOS)
                 Row(
                     modifier = Modifier.fillMaxWidth(0.55f),
                     horizontalArrangement = Arrangement.SpaceEvenly,
@@ -396,7 +400,7 @@ fun FullPlayerSheet(
                 ) {
                     IconButton(onClick = onToggleShuffle) {
                         Icon(
-                            Icons.Default.Shuffle,
+                            Icons.Rounded.Shuffle,
                             contentDescription = "Aleatorio",
                             tint = if (playerState.isShuffleEnabled) dominantColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                             modifier = Modifier.size(20.dp)
@@ -405,7 +409,7 @@ fun FullPlayerSheet(
 
                     IconButton(onClick = onRewind) {
                         Icon(
-                            Icons.Default.Repeat,
+                            Icons.Rounded.Repeat,
                             contentDescription = "Repetir",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                             modifier = Modifier.size(20.dp)
@@ -415,7 +419,6 @@ fun FullPlayerSheet(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // 7. CONTROLES PRINCIPALES SUBIDOS Y ESTILIZADOS
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -424,7 +427,7 @@ fun FullPlayerSheet(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onPrevious) {
-                        Icon(Icons.Default.SkipPrevious, contentDescription = "Anterior", modifier = Modifier.size(38.dp))
+                        Icon(Icons.Rounded.SkipPrevious, contentDescription = "Anterior", tint = textColor, modifier = Modifier.size(38.dp))
                     }
 
                     Surface(
@@ -437,7 +440,7 @@ fun FullPlayerSheet(
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
-                                imageVector = if (playerState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                imageVector = if (playerState.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                                 contentDescription = null,
                                 modifier = Modifier.size(34.dp),
                                 tint = Color.White
@@ -446,7 +449,7 @@ fun FullPlayerSheet(
                     }
 
                     IconButton(onClick = onNext) {
-                        Icon(Icons.Default.SkipNext, contentDescription = "Siguiente", modifier = Modifier.size(38.dp))
+                        Icon(Icons.Rounded.SkipNext, contentDescription = "Siguiente", tint = textColor, modifier = Modifier.size(38.dp))
                     }
                 }
             }

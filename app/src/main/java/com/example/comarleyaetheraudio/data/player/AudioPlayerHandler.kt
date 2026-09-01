@@ -5,6 +5,7 @@ import android.content.Context
 import android.media.MediaMetadataRetriever
 import android.media.audiofx.BassBoost
 import android.media.audiofx.Equalizer
+import android.media.audiofx.LoudnessEnhancer
 import android.media.audiofx.Virtualizer
 import android.net.Uri
 import androidx.core.content.ContextCompat
@@ -37,9 +38,14 @@ class AudioPlayerHandler(private val context: Context) {
     private var progressJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main)
 
+    // Ecosistema de efectos de audio de Android (AudioFX)
     var equalizer: Equalizer? = null
     private var bassBoost: BassBoost? = null
     private var virtualizer: Virtualizer? = null
+    private var loudnessEnhancer: LoudnessEnhancer? = null
+
+    // Configuración de transición (Crossfade en milisegundos)
+    private var crossfadeDurationMs: Long = 2000L
 
     init {
         val sessionToken = SessionToken(context, ComponentName(context, SoundFlowMediaService::class.java))
@@ -48,16 +54,13 @@ class AudioPlayerHandler(private val context: Context) {
         controllerFuture.addListener({
             player = controllerFuture.get()
 
-            // 🎧 CONFIGURACIÓN COMPLETA PARA COMPATIBILIDAD CON AUDÍFONOS BLUETOOTH / INALÁMBRICOS
             val audioAttributes = AudioAttributes.Builder()
                 .setUsage(C.USAGE_MEDIA)
                 .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
                 .setAllowedCapturePolicy(C.ALLOW_CAPTURE_BY_ALL)
                 .build()
 
-            // Activa el Audio Focus y el enrutamiento dinámico a Bluetooth/Auriculares
             player?.setAudioAttributes(audioAttributes, true)
-
             setupPlayerListener()
         }, ContextCompat.getMainExecutor(context))
     }
@@ -90,10 +93,8 @@ class AudioPlayerHandler(private val context: Context) {
                 _playerState.update { it.copy(isShuffleEnabled = shuffleModeEnabled) }
             }
 
-            // Manejo de errores de salida o desconexión de audio Bluetooth
             override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
                 super.onPlayerError(error)
-                // Reintenta preparar la reproducción si se perdió la salida Bluetooth
                 player?.prepare()
             }
         })
@@ -112,9 +113,8 @@ class AudioPlayerHandler(private val context: Context) {
     }
 
     fun playSong(song: Song, playlist: List<Song> = emptyList()) {
-        if (playlist.isNotEmpty()) {
-            currentPlaylist = playlist
-        }
+        // Asignación de la lista exacta como contexto único de reproducción
+        currentPlaylist = if (playlist.isNotEmpty()) playlist else listOf(song)
 
         val mediaItems = currentPlaylist.map { s ->
             MediaItem.Builder()
@@ -131,9 +131,19 @@ class AudioPlayerHandler(private val context: Context) {
         }
 
         val startIndex = currentPlaylist.indexOfFirst { it.id == song.id }.coerceAtLeast(0)
-        player?.setMediaItems(mediaItems, startIndex, 0L)
-        player?.prepare()
-        player?.play()
+
+        player?.let { p ->
+            p.stop()
+            p.clearMediaItems() // Limpia colas de reproducción anteriores
+            p.setMediaItems(mediaItems, startIndex, 0L)
+
+            // ⚡ Mantiene la reproducción cíclica infinita dentro de la playlist
+            p.repeatMode = Player.REPEAT_MODE_ALL
+
+            p.prepare()
+            p.volume = 1.0f
+            p.play()
+        }
     }
 
     fun togglePlayPause() {
@@ -159,20 +169,47 @@ class AudioPlayerHandler(private val context: Context) {
         }
     }
 
+    fun toggleShuffle() {
+        player?.let { it.shuffleModeEnabled = !it.shuffleModeEnabled }
+    }
+
     fun playNext() {
         if (player?.hasNextMediaItem() == true) {
-            player?.seekToNextMediaItem()
+            applyCrossfadeAndSwitch { player?.seekToNextMediaItem() }
         }
     }
 
     fun playPrevious() {
         if (player?.hasPreviousMediaItem() == true) {
-            player?.seekToPreviousMediaItem()
+            applyCrossfadeAndSwitch { player?.seekToPreviousMediaItem() }
         }
     }
 
-    fun toggleShuffle() {
-        player?.let { it.shuffleModeEnabled = !it.shuffleModeEnabled }
+    /**
+     * Aplica atenuación de volumen ultrarrápida para cambios manuales (300ms)
+     * eliminando el retraso/lag al presionar siguiente o anterior.
+     */
+    private fun applyCrossfadeAndSwitch(action: () -> Unit) {
+        val p = player ?: run { action(); return }
+        if (!p.isPlaying) {
+            action()
+            return
+        }
+
+        scope.launch(Dispatchers.Main) {
+            val manualSkipFadeMs = 300L
+            val steps = 5
+            val stepDelay = manualSkipFadeMs / steps
+            val volumeStep = p.volume / steps
+
+            for (i in 1..steps) {
+                p.volume = (1.0f - (i * volumeStep)).coerceAtLeast(0f)
+                delay(stepDelay)
+            }
+
+            action()
+            p.volume = 1.0f
+        }
     }
 
     private fun startProgressUpdate() {
@@ -196,15 +233,31 @@ class AudioPlayerHandler(private val context: Context) {
         progressJob?.cancel()
     }
 
-    // ==========================================
-    // SECCIÓN DE EFECTOS AUDIO Y ECUALIZADOR
-    // ==========================================
+    // =========================================================================
+    // MÓDULO DE EFECTOS DSP (Equalizer, BassBoost, Virtualizer, LoudnessEnhancer)
+    // =========================================================================
     fun setupAudioEffects(audioSessionId: Int) {
         if (audioSessionId != android.media.audiofx.AudioEffect.ERROR_BAD_VALUE) {
             try {
                 equalizer = Equalizer(0, audioSessionId).apply { enabled = true }
                 bassBoost = BassBoost(0, audioSessionId).apply { enabled = true }
                 virtualizer = Virtualizer(0, audioSessionId).apply { enabled = true }
+
+                loudnessEnhancer = LoudnessEnhancer(audioSessionId).apply {
+                    setTargetGain(800)
+                    enabled = true
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun setLoudnessEnhancerGain(gainMb: Int) {
+        loudnessEnhancer?.let { le ->
+            try {
+                if (!le.enabled) le.enabled = true
+                le.setTargetGain(gainMb.coerceIn(0, 2000))
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -238,8 +291,8 @@ class AudioPlayerHandler(private val context: Context) {
         }
     }
 
-    fun enableSmoothTransitions() {
-        player?.repeatMode = Player.REPEAT_MODE_OFF
+    fun setCrossfadeDuration(durationMs: Long) {
+        this.crossfadeDurationMs = durationMs
     }
 
     fun fadeOutAndPause(durationMs: Long = 1000) {
@@ -249,19 +302,19 @@ class AudioPlayerHandler(private val context: Context) {
         val stepDelay = durationMs / steps
         val volumeStep = initialVolume / steps
 
-        Thread {
+        scope.launch(Dispatchers.Main) {
             for (i in 1..steps) {
                 p.volume = (initialVolume - (i * volumeStep)).coerceAtLeast(0f)
-                Thread.sleep(stepDelay)
+                delay(stepDelay)
             }
             p.pause()
             p.volume = initialVolume
-        }.start()
+        }
     }
 
-    // ==========================================
-    // LÓGICA DEL TEMPORIZADOR DE APAGADO
-    // ==========================================
+    // =========================================================================
+    // TEMPORIZADOR DE APAGADO (Sleep Timer)
+    // =========================================================================
     private var sleepTimerJob: Job? = null
     private val _sleepTimerMinutes = MutableStateFlow(0)
     val sleepTimerMinutes: StateFlow<Int> = _sleepTimerMinutes.asStateFlow()

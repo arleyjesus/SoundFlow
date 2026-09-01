@@ -19,7 +19,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.comarleyaetheraudio.domain.model.Song
-import com.example.comarleyaetheraudio.presentation.components.SongItem
+import com.example.comarleyaetheraudio.presentation.components.items.SongItem
+import com.example.comarleyaetheraudio.presentation.library.components.ArtistDetailBottomSheet
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)

@@ -97,7 +97,7 @@ fun ComarleyjesusaetheraudioTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
+        typography = Typography, // ⚡ Inyecta la jerarquía tipográfica global
         content = content
     )
 }

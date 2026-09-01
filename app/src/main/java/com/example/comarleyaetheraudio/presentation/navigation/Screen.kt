@@ -1,4 +1,4 @@
-package com.example.comarleyaetheraudio.presentation
+package com.example.comarleyaetheraudio.presentation.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Equalizer

@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.comarleyaetheraudio.domain.model.Song
-import com.example.comarleyaetheraudio.presentation.components.SongItem
+import com.example.comarleyaetheraudio.presentation.components.items.SongItem
 import com.example.comarleyaetheraudio.ui.theme.ElectricPurple
 
 @OptIn(ExperimentalMaterial3Api::class)

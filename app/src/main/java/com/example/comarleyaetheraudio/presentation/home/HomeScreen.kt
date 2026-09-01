@@ -1,8 +1,8 @@
 package com.example.comarleyaetheraudio.presentation.home
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -18,12 +18,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.comarleyaetheraudio.domain.model.AudioPlayerState
 import com.example.comarleyaetheraudio.domain.model.Playlist
 import com.example.comarleyaetheraudio.domain.model.Song
@@ -31,9 +31,8 @@ import com.example.comarleyaetheraudio.presentation.home.components.ArtistCircle
 import com.example.comarleyaetheraudio.presentation.home.components.PlaylistMosaicCard
 import com.example.comarleyaetheraudio.presentation.home.components.PlaylistsBottomSheet
 import com.example.comarleyaetheraudio.presentation.home.components.RecentPosterCard
-import com.example.comarleyaetheraudio.presentation.library.ArtistDetailBottomSheet
-import com.example.comarleyaetheraudio.ui.theme.ElectricPurple
-import com.example.comarleyaetheraudio.ui.theme.SoftPink
+import com.example.comarleyaetheraudio.presentation.library.components.ArtistDetailBottomSheet
+import com.example.comarleyaetheraudio.presentation.playlist.PlaylistDetailScreen
 
 @Composable
 fun HomeScreen(
@@ -41,7 +40,9 @@ fun HomeScreen(
     allSongs: List<Song>,
     playlists: List<Playlist>,
     favoriteIds: List<Long>,
+    isDarkMode: Boolean = false, // ⚡ RECIBE EL MODO REAL DE LA APP
     onSongClick: (Song) -> Unit,
+    onSongClickWithPlaylist: (Song, List<Song>) -> Unit = { song, _ -> onSongClick(song) },
     onFavoritesClick: () -> Unit,
     onCreatePlaylist: (String) -> Unit,
     onDeletePlaylist: (Playlist) -> Unit,
@@ -50,6 +51,7 @@ fun HomeScreen(
     var showFavoritesSheet by remember { mutableStateOf(false) }
     var showPlaylistsSheet by remember { mutableStateOf(false) }
     var selectedArtistName by remember { mutableStateOf<String?>(null) }
+    var selectedPlaylistForDetail by remember { mutableStateOf<Playlist?>(null) }
 
     val greetings = remember {
         listOf(
@@ -63,9 +65,6 @@ fun HomeScreen(
     val randomGreeting = remember { greetings.random() }
 
     val recentSongs = remember(allSongs) { allSongs.take(8) }
-    val favoriteSongs = remember(allSongs, favoriteIds) {
-        allSongs.filter { favoriteIds.contains(it.id) }
-    }
 
     val artistGrouped = remember(allSongs) {
         allSongs.groupBy { it.artist }
@@ -76,34 +75,54 @@ fun HomeScreen(
         }
     }
 
-    val isDark = isSystemInDarkTheme()
-    val baseBgColor = MaterialTheme.colorScheme.background
+    // 🎨 EVALUACIÓN ESTRICTA DEL FONDO DE INICIO SEGÚN EL MODO SELECCIONADO
+    val baseBgColor = if (isDarkMode) Color(0xFF09090B) else Color(0xFFFAFAFC)
 
-    val topBlobColor = if (isDark) SoftPink.copy(alpha = 0.03f) else Color(0xFFFFD1DC).copy(alpha = 0.35f)
-    val midBlobColor = if (isDark) ElectricPurple.copy(alpha = 0.02f) else Color(0xFFFFF2D6).copy(alpha = 0.40f)
+    val topBlobCenterColor = if (isDarkMode) {
+        Color(0xFF8E24AA).copy(alpha = 0.10f)
+    } else {
+        Color(0xFFFDE68A).copy(alpha = 0.28f)
+    }
+
+    val midBlobCenterColor = if (isDarkMode) {
+        Color(0xFFD32F2F).copy(alpha = 0.07f)
+    } else {
+        Color(0xFFE9D5FF).copy(alpha = 0.25f)
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(baseBgColor)
             .drawBehind {
-                drawCircle(
+                drawOval(
                     brush = Brush.radialGradient(
-                        colors = listOf(topBlobColor, Color.Transparent),
-                        center = Offset(size.width * 0.85f, size.height * 0.04f),
-                        radius = size.width * 0.40f
+                        colorStops = arrayOf(
+                            0.0f to topBlobCenterColor,
+                            0.4f to topBlobCenterColor.copy(alpha = topBlobCenterColor.alpha * 0.4f),
+                            0.8f to topBlobCenterColor.copy(alpha = topBlobCenterColor.alpha * 0.1f),
+                            1.0f to Color.Transparent
+                        ),
+                        center = Offset(size.width * 0.85f, size.height * 0.05f),
+                        radius = size.width * 0.75f
                     ),
-                    center = Offset(size.width * 0.85f, size.height * 0.04f),
-                    radius = size.width * 0.40f
+                    topLeft = Offset(size.width * 0.20f, -size.height * 0.10f),
+                    size = Size(size.width * 1.0f, size.height * 0.35f)
                 )
-                drawCircle(
+
+                drawOval(
                     brush = Brush.radialGradient(
-                        colors = listOf(midBlobColor, Color.Transparent),
-                        center = Offset(size.width * 0.12f, size.height * 0.28f),
-                        radius = size.width * 0.35f
+                        colorStops = arrayOf(
+                            0.0f to midBlobCenterColor,
+                            0.4f to midBlobCenterColor.copy(alpha = midBlobCenterColor.alpha * 0.4f),
+                            0.8f to midBlobCenterColor.copy(alpha = midBlobCenterColor.alpha * 0.1f),
+                            1.0f to Color.Transparent
+                        ),
+                        center = Offset(size.width * 0.10f, size.height * 0.30f),
+                        radius = size.width * 0.70f
                     ),
-                    center = Offset(size.width * 0.12f, size.height * 0.28f),
-                    radius = size.width * 0.35f
+                    topLeft = Offset(-size.width * 0.30f, size.height * 0.15f),
+                    size = Size(size.width * 0.90f, size.height * 0.38f)
                 )
             }
     ) {
@@ -135,10 +154,9 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // RECIENTES
             if (recentSongs.isNotEmpty()) {
                 Text(
-                    text = "Recently Played",
+                    text = "Reproducidas Recientemente",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground,
@@ -157,10 +175,9 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(20.dp))
             }
 
-            // TOP ARTISTAS
             if (topArtists.isNotEmpty()) {
                 Text(
-                    text = "Top Artists",
+                    text = "Artistas Principales",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground,
@@ -183,7 +200,6 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(20.dp))
             }
 
-            // SECCIÓN TUS PLAYLISTS EN EL INICIO
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -209,7 +225,9 @@ fun HomeScreen(
                         .padding(horizontal = 20.dp)
                         .clickable { showPlaylistsSheet = true },
                     shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isDarkMode) Color(0xFF141417) else Color(0xFFF1F1F5)
+                    )
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
@@ -231,7 +249,7 @@ fun HomeScreen(
                     items(playlists, key = { it.id }) { playlist ->
                         PlaylistMosaicCard(
                             playlist = playlist,
-                            onClick = { showPlaylistsSheet = true }
+                            onClick = { selectedPlaylistForDetail = playlist }
                         )
                     }
                 }
@@ -239,7 +257,6 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // FAVORITOS
             Text(
                 text = "Colecciones",
                 style = MaterialTheme.typography.titleMedium,
@@ -252,9 +269,11 @@ fun HomeScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp)
-                    .clickable { showFavoritesSheet = true },
+                    .clickable { onFavoritesClick() },
                 shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                colors = CardDefaults.cardColors(
+                    containerColor = if (isDarkMode) Color(0xFF141417) else Color(0xFFF1F1F5)
+                )
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -270,11 +289,12 @@ fun HomeScreen(
             }
         }
 
-        // ⚡ LLAMADA CORREGIDA USANDO LOS CALLBACKS NATIVOS DE HOMESCREEN
         if (showPlaylistsSheet) {
             PlaylistsBottomSheet(
                 playlists = playlists,
                 allAvailableSongs = allSongs,
+                playerState = playerState,
+                favoriteIds = favoriteIds,
                 onDismiss = { showPlaylistsSheet = false },
                 onCreatePlaylist = onCreatePlaylist,
                 onDeletePlaylist = onDeletePlaylist,
@@ -283,18 +303,37 @@ fun HomeScreen(
             )
         }
 
-        // ⚡ CONECTAR EL GUARDADO REAL DE CANCIONES A LA PLAYLIST
-        if (showPlaylistsSheet) {
-            PlaylistsBottomSheet(
-                playlists = playlists,
-                allAvailableSongs = allSongs,
-                onDismiss = { showPlaylistsSheet = false },
-                onCreatePlaylist = onCreatePlaylist,
-                onDeletePlaylist = onDeletePlaylist,
-                onAddSongsToPlaylist = { playlistId, songIds ->
-                    onAddSongsToPlaylist(playlistId, songIds) // 👈 Llama al ViewModel para guardar en Room
+        selectedPlaylistForDetail?.let { playlist ->
+            val currentPlaylist = playlists.find { it.id == playlist.id } ?: playlist
+
+            BackHandler {
+                selectedPlaylistForDetail = null
+            }
+
+            PlaylistDetailScreen(
+                playlist = currentPlaylist,
+                allSongs = allSongs,
+                playerState = playerState,
+                favoriteIds = favoriteIds,
+                isDarkMode = isDarkMode, // ⚡ LE PASA EL MODO EXACTO DE LA APLICACIÓN
+                onBackClick = { selectedPlaylistForDetail = null },
+                onAddSongsConfirmed = { selectedIds ->
+                    onAddSongsToPlaylist(currentPlaylist.id, selectedIds)
                 },
-                onSongClick = onSongClick
+                onPlayAllClick = { isShuffle ->
+                    if (currentPlaylist.songs.isNotEmpty()) {
+                        val targetSong = if (isShuffle) currentPlaylist.songs.shuffled().first() else currentPlaylist.songs.first()
+                        onSongClickWithPlaylist(targetSong, currentPlaylist.songs)
+                    }
+                },
+                onSongClick = { song ->
+                    onSongClickWithPlaylist(song, currentPlaylist.songs)
+                },
+                onRemoveSongClick = { songToRemove ->
+                    val updatedIds = currentPlaylist.songs.map { it.id }.toMutableList()
+                    updatedIds.remove(songToRemove.id)
+                    onAddSongsToPlaylist(currentPlaylist.id, updatedIds)
+                }
             )
         }
 

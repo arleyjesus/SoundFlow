@@ -6,29 +6,62 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-// Set of Material typography styles to start with
+// ⚡ TRÍO TIPOGRÁFICO ARMONIOSO Y MODERNO (SIN CURSIVAS NI MONOESPACIADAS)
+val DisplayFontFamily = FontFamily.SansSerif
+val MainFontFamily = FontFamily.SansSerif
+
 val Typography = Typography(
-    bodyLarge = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Normal,
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.5.sp
-    )
-    /* Other default text styles to override
+    // Títulos de Gran Impacto (Reproductor Pantalla Completa, SoundFlow, Nombre Playlist)
+    displaySmall = TextStyle(
+        fontFamily = DisplayFontFamily,
+        fontWeight = FontWeight.Black,
+        fontSize = 28.sp,
+        letterSpacing = (-0.5).sp
+    ),
+
+    // Nombres de Canción en Reproductor Abierto y Pantalla Principal
     titleLarge = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Normal,
+        fontFamily = DisplayFontFamily,
+        fontWeight = FontWeight.ExtraBold,
         fontSize = 22.sp,
-        lineHeight = 28.sp,
         letterSpacing = 0.sp
     ),
-    labelSmall = TextStyle(
-        fontFamily = FontFamily.Default,
+
+    // Encabezados de Secciones ("Recently Played", "Tus Playlists", etc.)
+    titleMedium = TextStyle(
+        fontFamily = MainFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 18.sp,
+        letterSpacing = 0.15.sp
+    ),
+
+    // Nombres de Canciones en Listados y MiniPlayer
+    bodyLarge = TextStyle(
+        fontFamily = MainFontFamily,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 15.sp,
+        letterSpacing = 0.15.sp
+    ),
+
+    // Nombres de Artistas y Textos Secundarios
+    bodyMedium = TextStyle(
+        fontFamily = MainFontFamily,
         fontWeight = FontWeight.Medium,
+        fontSize = 13.sp,
+        letterSpacing = 0.25.sp
+    ),
+
+    // Metadatos (Duración, Nro. Canciones, Subtextos)
+    labelMedium = TextStyle(
+        fontFamily = MainFontFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 12.sp,
+        letterSpacing = 0.4.sp
+    ),
+    labelSmall = TextStyle(
+        fontFamily = MainFontFamily,
+        fontWeight = FontWeight.Normal,
         fontSize = 11.sp,
-        lineHeight = 16.sp,
         letterSpacing = 0.5.sp
     )
-    */
 )

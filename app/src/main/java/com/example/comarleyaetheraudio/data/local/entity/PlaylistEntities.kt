@@ -1,4 +1,4 @@
-package com.example.comarleyaetheraudio.data.local
+package com.example.comarleyaetheraudio.data.local.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

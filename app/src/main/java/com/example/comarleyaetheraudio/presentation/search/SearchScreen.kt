@@ -10,17 +10,23 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.comarleyaetheraudio.domain.model.Song
-import com.example.comarleyaetheraudio.presentation.components.SongItem
+import com.example.comarleyaetheraudio.presentation.components.items.SongItem
 
 @Composable
 fun SearchScreen(
     songs: List<Song>,
+    isDarkMode: Boolean = false, // ⚡ PASO EXPLÍCITO DE MODO OSCURO / CLARO
     onSongClick: (Song) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
+
+    // 🎨 NEGRO CASI PURO Y BLANCO CASI PURO
+    val backgroundColor = if (isDarkMode) Color(0xFF09090B) else Color(0xFFFAFAFC)
+    val cardBgColor = if (isDarkMode) Color(0xFF141417) else Color(0xFFF1F1F5)
 
     val filteredSongs = remember(searchQuery, songs) {
         if (searchQuery.trim().isEmpty()) {
@@ -37,7 +43,7 @@ fun SearchScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(backgroundColor)
     ) {
         Text(
             text = "Buscar",
@@ -56,7 +62,13 @@ fun SearchScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp, vertical = 8.dp),
-            shape = MaterialTheme.shapes.medium
+            shape = MaterialTheme.shapes.medium,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = cardBgColor,
+                unfocusedContainerColor = cardBgColor,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = Color.Transparent
+            )
         )
 
         if (searchQuery.isEmpty()) {

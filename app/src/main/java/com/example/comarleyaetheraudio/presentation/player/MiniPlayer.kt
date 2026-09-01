@@ -1,201 +1,134 @@
 package com.example.comarleyaetheraudio.presentation.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.example.comarleyaetheraudio.data.local.CoverCacheManager
-import com.example.comarleyaetheraudio.domain.model.Song
+import com.example.comarleyaetheraudio.data.local.util.CoverCacheManager
+import com.example.comarleyaetheraudio.domain.model.AudioPlayerState
 import java.io.File
 
 @Composable
 fun MiniPlayer(
-    song: Song,
-    isPlaying: Boolean,
-    isShuffleEnabled: Boolean = false,
-    artworkData: ByteArray?,
+    playerState: AudioPlayerState,
     onTogglePlayPause: () -> Unit,
-    onNext: () -> Unit,
-    onPrevious: () -> Unit
+    onNextClick: () -> Unit,
+    onPlayerClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
+    val song = playerState.currentSong ?: return
     val context = LocalContext.current
-    val haptic = LocalHapticFeedback.current
-    var coverFile by remember(song.id) { mutableStateOf<File?>(null) }
+    var cachedCoverFile by remember(song.id) { mutableStateOf<File?>(null) }
 
     LaunchedEffect(song.id) {
-        coverFile = CoverCacheManager.getOrFetchCover(context, song.id, song.albumArtUri, song.path)
+        cachedCoverFile = CoverCacheManager.getOrFetchCover(
+            context = context,
+            songId = song.id,
+            uri = song.albumArtUri,
+            path = song.path
+        )
     }
 
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val surfaceColor = MaterialTheme.colorScheme.surfaceVariant
+    val progress = remember(playerState.currentPosition, playerState.duration) {
+        if (playerState.duration > 0) {
+            (playerState.currentPosition.toFloat() / playerState.duration.toFloat()).coerceIn(0f, 1f)
+        } else 0f
+    }
 
     Surface(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .height(64.dp)
-            .shadow(14.dp, RoundedCornerShape(18.dp)),
-        shape = RoundedCornerShape(18.dp),
-        color = Color.Transparent,
-        tonalElevation = 6.dp
+            .padding(horizontal = 8.dp, vertical = 2.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .clickable { onPlayerClick() },
+        color = Color(0xFF1E1E1E),
+        tonalElevation = 8.dp
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(surfaceColor.copy(alpha = 0.82f))
-                .drawBehind {
-                    drawRect(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                primaryColor.copy(alpha = 0.28f),
-                                Color.Transparent
-                            ),
-                            center = Offset(0f, size.height),
-                            radius = size.width * 0.75f
-                        )
-                    )
-                }
-        ) {
+        Column {
+            // ⚡ LÍNEA DE PROGRESO DE LA CANCIÓN ENTRE EL REPRODUCTOR Y LA NAVEGACIÓN
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(3.dp),
+                color = Color(0xFFBB86FC),
+                trackColor = Color.White.copy(alpha = 0.1f)
+            )
+
             Row(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 12.dp),
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // CARÁTULA CON INDICADOR LUMINOSO SI ALEATORIO ESTÁ ACTIVO
                 Box(
                     modifier = Modifier
-                        .size(46.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
-                    contentAlignment = Alignment.Center
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color(0xFF2C2C2C))
                 ) {
-                    if (coverFile != null) {
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(coverFile)
-                                .crossfade(false)
-                                .build(),
-                            contentDescription = "Portada",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.MusicNote,
-                            contentDescription = null,
-                            tint = primaryColor
-                        )
-                    }
-
-                    if (isShuffleEnabled) {
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(3.dp)
-                                .size(8.dp)
-                                .clip(CircleShape)
-                                .background(primaryColor)
-                        )
-                    }
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(cachedCoverFile ?: song.albumArtUri)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
                 }
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                // TÍTULO Y ARTISTA
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.Center
-                ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = song.title,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = Color.White,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = song.artist,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.6f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
 
-                // CONTROLES CON RESPUESTA HÁPTICA
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
-                    IconButton(
-                        onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onPrevious()
-                        }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.SkipPrevious,
-                            contentDescription = "Anterior",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+                IconButton(onClick = onTogglePlayPause) {
+                    Icon(
+                        imageVector = if (playerState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = "Play/Pause",
+                        tint = Color.White
+                    )
+                }
 
-                    IconButton(
-                        onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onTogglePlayPause()
-                        },
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                            contentDescription = "Play/Pausa",
-                            tint = primaryColor,
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-
-                    IconButton(
-                        onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onNext()
-                        }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.SkipNext,
-                            contentDescription = "Siguiente",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+                IconButton(onClick = onNextClick) {
+                    Icon(
+                        imageVector = Icons.Default.SkipNext,
+                        contentDescription = "Siguiente",
+                        tint = Color.White
+                    )
                 }
             }
         }

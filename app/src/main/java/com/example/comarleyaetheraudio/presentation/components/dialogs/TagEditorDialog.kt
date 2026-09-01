@@ -1,4 +1,4 @@
-package com.example.comarleyaetheraudio.presentation.components
+package com.example.comarleyaetheraudio.presentation.components.dialogs
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*

@@ -1,9 +1,10 @@
-package com.example.comarleyaetheraudio.data.local
+package com.example.comarleyaetheraudio.data.local.util
 
 import android.content.ContentUris
 import android.content.Context
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.os.Build
 import android.provider.MediaStore
 import com.example.comarleyaetheraudio.domain.model.Song
 import kotlinx.coroutines.Dispatchers
@@ -19,7 +20,7 @@ class MediaStoreAudioScanner(private val context: Context) {
         val songList = mutableListOf<Song>()
 
         // Colección de almacenamiento de audio público
-        val collection: Uri = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+        val collection: Uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
         } else {
             MediaStore.Audio.Media.EXTERNAL_CONTENT_URI

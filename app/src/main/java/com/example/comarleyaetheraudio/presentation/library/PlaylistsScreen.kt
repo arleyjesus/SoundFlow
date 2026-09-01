@@ -1,7 +1,6 @@
 package com.example.comarleyaetheraudio.presentation.library
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -20,28 +19,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.comarleyaetheraudio.domain.model.AudioPlayerState
 import com.example.comarleyaetheraudio.domain.model.Playlist
 import com.example.comarleyaetheraudio.domain.model.Song
-import com.example.comarleyaetheraudio.presentation.components.SongItem
-import com.example.comarleyaetheraudio.presentation.playlist.AddSongsToPlaylistDialog // ⚡ IMPORTACIÓN DEL NUEVO DIÁLOGO
+import com.example.comarleyaetheraudio.presentation.playlist.AddSongsToPlaylistDialog
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun PlaylistsScreen(
     playlists: List<Playlist>,
     allSongs: List<Song>,
+    playerState: AudioPlayerState,
+    favoriteIds: List<Long>,
     onPlaylistClick: (Playlist) -> Unit,
+    onSongClick: (Song, List<Song>) -> Unit,
+    onPlayAllPlaylist: (Playlist, Boolean) -> Unit,
     onCreatePlaylistClick: (String) -> Unit,
     onRenamePlaylist: (Playlist, String) -> Unit,
     onDeletePlaylist: (Playlist) -> Unit,
-    onAddSongsToPlaylist: (Long, List<Long>) -> Unit // ⚡ ACTUALIZADO A SELECCIÓN MÚLTIPLE
+    onAddSongsToPlaylist: (Long, List<Long>) -> Unit,
+    onMoreSongOptionsClick: (Song) -> Unit = {}
 ) {
-    var selectedPlaylistForDetail by remember { mutableStateOf<Playlist?>(null) }
     var playlistMenuTarget by remember { mutableStateOf<Playlist?>(null) }
     var playlistToRename by remember { mutableStateOf<Playlist?>(null) }
     var showCreateDialog by remember { mutableStateOf(false) }
 
-    // ⚡ CONTROLADOR DEL NUEVO DIÁLOGO MÚLTIPLE
     var playlistIdToAddSongs by remember { mutableStateOf<Long?>(null) }
 
     var renameText by remember { mutableStateOf("") }
@@ -75,20 +77,25 @@ fun PlaylistsScreen(
                 }
             }
         } else {
+            // ⚡ SE REDUCE EL PADDING HORIZONTAL PARA EXPANDIR LAS PLAYLISTS CASI HASTA EL BORDE DE PANTALLA
             LazyColumn(
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxSize()
             ) {
                 item {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
                             text = "Colección de Listas",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
                         )
                         IconButton(onClick = { showCreateDialog = true }) {
                             Icon(Icons.Default.Add, contentDescription = "Crear", tint = MaterialTheme.colorScheme.primary)
@@ -100,20 +107,22 @@ fun PlaylistsScreen(
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
+                            .clip(RoundedCornerShape(12.dp))
                             .combinedClickable(
-                                onClick = { selectedPlaylistForDetail = playlist },
+                                onClick = { onPlaylistClick(playlist) },
                                 onLongClick = { playlistMenuTarget = playlist }
                             ),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                        shape = RoundedCornerShape(14.dp)
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Row(
-                            modifier = Modifier.padding(14.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 10.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Surface(
-                                modifier = Modifier.size(48.dp),
+                                modifier = Modifier.size(50.dp),
                                 shape = RoundedCornerShape(10.dp),
                                 color = MaterialTheme.colorScheme.primaryContainer
                             ) {
@@ -126,14 +135,17 @@ fun PlaylistsScreen(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.width(14.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
 
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = playlist.name,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.Bold
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        fontWeight = FontWeight.Bold
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
+                                Spacer(modifier = Modifier.height(2.dp))
                                 Text(
                                     text = "${playlist.songs.size} canciones",
                                     style = MaterialTheme.typography.bodySmall,
@@ -143,7 +155,11 @@ fun PlaylistsScreen(
 
                             Box {
                                 IconButton(onClick = { playlistMenuTarget = playlist }) {
-                                    Icon(Icons.Default.MoreVert, contentDescription = "Opciones")
+                                    Icon(
+                                        Icons.Default.MoreVert,
+                                        contentDescription = "Opciones",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 }
 
                                 DropdownMenu(
@@ -227,57 +243,7 @@ fun PlaylistsScreen(
         )
     }
 
-    // PANEL DETALLE DE CANCIONES DE LA PLAYLIST TOCADA
-    selectedPlaylistForDetail?.let { playlist ->
-        ModalBottomSheet(
-            onDismissRequest = { selectedPlaylistForDetail = null },
-            containerColor = MaterialTheme.colorScheme.surface
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(playlist.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                        Text("${playlist.songs.size} canciones", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Button(onClick = { playlistIdToAddSongs = playlist.id }) { // ⚡ ABRE EL DIÁLOGO DE SELECCIÓN MÚLTIPLE
-                        Icon(Icons.Default.Add, contentDescription = null)
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Añadir")
-                    }
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                HorizontalDivider()
-
-                if (playlist.songs.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Esta playlist aún no tiene canciones.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                } else {
-                    LazyColumn(contentPadding = PaddingValues(vertical = 12.dp)) {
-                        items(playlist.songs, key = { it.id }) { song ->
-                            SongItem(
-                                song = song,
-                                onClick = {
-                                    onPlaylistClick(playlist)
-                                    selectedPlaylistForDetail = null
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // ⚡ NUEVO DIÁLOGO PARA IMPORTAR CANCIONES CON VIBRACIÓN, CONTADOR Y COLOR INSTANTÁNEO
+    // DIÁLOGO PARA IMPORTAR CANCIONES CON SELECCIÓN MÚLTIPLE
     playlistIdToAddSongs?.let { playlistId ->
         val currentPlaylist = playlists.find { it.id == playlistId }
         val existingIds = currentPlaylist?.songs?.map { it.id } ?: emptyList()

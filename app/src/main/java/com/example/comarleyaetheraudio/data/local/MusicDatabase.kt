@@ -4,9 +4,11 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.example.comarleyaetheraudio.data.local.MusicDao
 import com.example.comarleyaetheraudio.data.local.dao.PlaylistDao
+import com.example.comarleyaetheraudio.data.local.entity.FavoriteSongEntity
 import com.example.comarleyaetheraudio.data.local.entity.FolderEntity
+import com.example.comarleyaetheraudio.data.local.entity.PlaylistEntity
+import com.example.comarleyaetheraudio.data.local.entity.PlaylistSongCrossRef
 import com.example.comarleyaetheraudio.data.local.entity.SongEntity
 
 @Database(

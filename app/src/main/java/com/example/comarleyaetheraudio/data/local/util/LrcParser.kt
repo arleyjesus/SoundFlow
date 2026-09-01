@@ -1,4 +1,4 @@
-package com.example.comarleyaetheraudio.data.local
+package com.example.comarleyaetheraudio.data.local.util
 
 import com.example.comarleyaetheraudio.domain.model.LyricLine
 import org.jaudiotagger.audio.AudioFileIO

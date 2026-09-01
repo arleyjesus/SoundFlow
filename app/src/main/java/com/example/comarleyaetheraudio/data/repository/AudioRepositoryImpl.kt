@@ -2,10 +2,10 @@ package com.example.comarleyaetheraudio.data.repository
 
 import android.content.Context
 import android.net.Uri
-import com.example.comarleyaetheraudio.data.local.FolderScanner
+import com.example.comarleyaetheraudio.data.local.util.FolderScanner
 import com.example.comarleyaetheraudio.data.local.MusicDao
-import com.example.comarleyaetheraudio.data.local.PlaylistEntity
-import com.example.comarleyaetheraudio.data.local.PlaylistSongCrossRef
+import com.example.comarleyaetheraudio.data.local.entity.PlaylistEntity
+import com.example.comarleyaetheraudio.data.local.entity.PlaylistSongCrossRef
 import com.example.comarleyaetheraudio.data.local.dao.PlaylistDao
 import com.example.comarleyaetheraudio.data.local.entity.FolderEntity
 import com.example.comarleyaetheraudio.data.local.entity.SongEntity

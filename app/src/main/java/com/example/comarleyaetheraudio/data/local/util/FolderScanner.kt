@@ -1,4 +1,4 @@
-package com.example.comarleyaetheraudio.data.local
+package com.example.comarleyaetheraudio.data.local.util
 
 import android.content.Context
 import android.media.MediaMetadataRetriever

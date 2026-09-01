@@ -1,4 +1,4 @@
-package com.example.comarleyaetheraudio.presentation.home
+package com.example.comarleyaetheraudio.presentation.home.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,7 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.comarleyaetheraudio.domain.model.Song
-import com.example.comarleyaetheraudio.presentation.components.SongItem
+import com.example.comarleyaetheraudio.presentation.components.items.SongItem
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
