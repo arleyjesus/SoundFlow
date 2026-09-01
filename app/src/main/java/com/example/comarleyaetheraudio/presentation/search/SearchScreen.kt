@@ -4,14 +4,21 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.rounded.MusicOff
+import androidx.compose.material.icons.rounded.SearchOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.example.comarleyaetheraudio.domain.model.Song
 import com.example.comarleyaetheraudio.presentation.components.items.SongItem
@@ -19,12 +26,12 @@ import com.example.comarleyaetheraudio.presentation.components.items.SongItem
 @Composable
 fun SearchScreen(
     songs: List<Song>,
-    isDarkMode: Boolean = false, // ⚡ PASO EXPLÍCITO DE MODO OSCURO / CLARO
+    isDarkMode: Boolean = false,
     onSongClick: (Song) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
+    val focusManager = LocalFocusManager.current
 
-    // 🎨 NEGRO CASI PURO Y BLANCO CASI PURO
     val backgroundColor = if (isDarkMode) Color(0xFF09090B) else Color(0xFFFAFAFC)
     val cardBgColor = if (isDarkMode) Color(0xFF141417) else Color(0xFFF1F1F5)
 
@@ -58,7 +65,16 @@ fun SearchScreen(
             onValueChange = { searchQuery = it },
             placeholder = { Text("Canciones, artistas o álbumes...") },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            trailingIcon = {
+                if (searchQuery.isNotEmpty()) {
+                    IconButton(onClick = { searchQuery = "" }) {
+                        Icon(Icons.Default.Clear, contentDescription = "Limpiar Búsqueda")
+                    }
+                }
+            },
             singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp, vertical = 8.dp),
@@ -73,17 +89,19 @@ fun SearchScreen(
 
         if (searchQuery.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    text = "Escribe para empezar a buscar en tu música local",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(text = "Escribe para empezar a buscar", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
         } else if (filteredSongs.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    text = "Sin coincidencias para \"$searchQuery\"",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Rounded.SearchOff, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(text = "Sin coincidencias para \"$searchQuery\"", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
         } else {
             LazyColumn(
@@ -93,7 +111,10 @@ fun SearchScreen(
                 items(filteredSongs) { song ->
                     SongItem(
                         song = song,
-                        onClick = { onSongClick(song) }
+                        onClick = {
+                            focusManager.clearFocus()
+                            onSongClick(song)
+                        }
                     )
                 }
             }

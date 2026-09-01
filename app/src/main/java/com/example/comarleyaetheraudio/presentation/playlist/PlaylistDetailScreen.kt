@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.Favorite
@@ -46,7 +47,7 @@ fun PlaylistDetailScreen(
     allSongs: List<Song> = emptyList(),
     playerState: AudioPlayerState,
     favoriteIds: List<Long>,
-    isDarkMode: Boolean = false, // ⚡ RECIBE EL ESTADO REAL DE LA APLICACIÓN
+    isDarkMode: Boolean = false,
     onBackClick: () -> Unit,
     onAddSongsConfirmed: (List<Long>) -> Unit,
     onPlayAllClick: (Boolean) -> Unit,
@@ -61,7 +62,14 @@ fun PlaylistDetailScreen(
     var expandedMenuSongId by remember { mutableStateOf<Long?>(null) }
     var showAddSongsDialog by remember { mutableStateOf(false) }
 
-    // 🎨 ASIGNACIÓN GARANTIZADA SEGÚN EL MODO SELECCIONADO
+    // ⚡ Estado de ordenamiento para las canciones de la playlist
+    var sortDescending by remember { mutableStateOf(false) }
+
+    val sortedPlaylistSongs = remember(playlist.songs, sortDescending) {
+        if (sortDescending) playlist.songs.sortedByDescending { it.id }
+        else playlist.songs
+    }
+
     val backgroundColor = if (isDarkMode) Color(0xFF09090B) else Color(0xFFFAFAFC)
     val cardBgColor = if (isDarkMode) Color(0xFF141417) else Color(0xFFF1F1F5)
     val textColor = if (isDarkMode) Color.White else Color(0xFF111111)
@@ -140,7 +148,6 @@ fun PlaylistDetailScreen(
                         )
                     }
 
-                    // ⚡ DEGRADADO INFERIOR ASOCIADO AL COLOR DE FONDO
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -184,7 +191,25 @@ fun PlaylistDetailScreen(
                         textAlign = TextAlign.Center
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // ⚡ Botón de ordenamiento en la playlist
+                    TextButton(onClick = { sortDescending = !sortDescending }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Sort,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = if (sortDescending) "Más Recientes Primero" else "Orden Original",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
@@ -238,7 +263,8 @@ fun PlaylistDetailScreen(
                 }
             }
 
-            items(playlist.songs, key = { it.id }) { song ->
+            // ⚡ Usando la lista ordenada
+            items(sortedPlaylistSongs, key = { it.id }) { song ->
                 val isCurrentPlaying = playerState.currentSong?.id == song.id
                 val isFavorite = favoriteIds.contains(song.id)
 

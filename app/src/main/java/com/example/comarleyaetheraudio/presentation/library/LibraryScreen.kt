@@ -11,6 +11,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -43,7 +44,7 @@ fun LibraryScreen(
     playlists: List<Playlist>,
     favoriteIds: List<Long>,
     playerState: AudioPlayerState = AudioPlayerState(),
-    isDarkMode: Boolean = false, // ⚡ PASO EXPLÍCITO DE MODO OSCURO / CLARO
+    isDarkMode: Boolean = false,
     onSongClick: (Song) -> Unit,
     onSongClickWithPlaylist: (Song, List<Song>) -> Unit = { song, _ -> onSongClick(song) },
     onToggleFavorite: (Song) -> Unit,
@@ -60,6 +61,9 @@ fun LibraryScreen(
     var selectedArtistName by remember { mutableStateOf<String?>(null) }
     var songTargetForPlaylist by remember { mutableStateOf<String?>(null) }
     var selectedPlaylistForDetail by remember { mutableStateOf<Playlist?>(null) }
+
+    // ⚡ Estado para el filtro de ordenamiento en la pestaña de canciones
+    var sortDescending by remember { mutableStateOf(true) } // true = Más Recientes primero
 
     // 🎨 ASIGNACIÓN DE COLORES DE FONDO Y TARJETAS UNIFORMES
     val backgroundColor = if (isDarkMode) Color(0xFF09090B) else Color(0xFFFAFAFC)
@@ -114,21 +118,46 @@ fun LibraryScreen(
             ) { page ->
                 when (page) {
                     0 -> {
+                        // ⚡ Lista de canciones ordenada dinámicamente
+                        val sortedSongs = remember(songs, sortDescending) {
+                            if (sortDescending) songs.sortedByDescending { it.id }
+                            else songs.sortedBy { it.id }
+                        }
+
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             item(contentType = "header_stats") {
-                                Text(
-                                    text = totalStatsText,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
-                                )
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = totalStatsText,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    TextButton(onClick = { sortDescending = !sortDescending }) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.Sort,
+                                            contentDescription = "Ordenar",
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = if (sortDescending) "Más Recientes" else "Más Antiguas",
+                                            style = MaterialTheme.typography.labelSmall
+                                        )
+                                    }
+                                }
                             }
-                            items(songs, key = { song -> song.id }) { song ->
+                            items(sortedSongs, key = { song -> song.id }) { song ->
                                 Surface(
                                     shape = RoundedCornerShape(14.dp),
                                     color = cardBgColor,
@@ -195,7 +224,7 @@ fun LibraryScreen(
             }
         }
 
-        // DETALLE DE PLAYLIST A PANTALLA COMPLETA CON PROPAGACIÓN DEL MODO
+        // DETALLE DE PLAYLIST A PANTALLA COMPLETA
         selectedPlaylistForDetail?.let { playlist ->
             val currentPlaylist = playlists.find { it.id == playlist.id } ?: playlist
 
@@ -204,7 +233,7 @@ fun LibraryScreen(
                 allSongs = songs,
                 playerState = playerState,
                 favoriteIds = favoriteIds,
-                isDarkMode = isDarkMode, // ⚡ MANTIENE EL MODO CLARO O OSCURO EN LA PLAYLIST
+                isDarkMode = isDarkMode,
                 onBackClick = { selectedPlaylistForDetail = null },
                 onAddSongsConfirmed = { selectedIds ->
                     onAddSongsToPlaylist(currentPlaylist.id, selectedIds)
