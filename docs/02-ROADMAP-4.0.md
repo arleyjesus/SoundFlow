@@ -28,7 +28,7 @@ y comprobacion manual del ultimo ajuste de Room. No se afirma validacion complet
 - [x] Compilar app y APK de tests con la proteccion final de apertura
 - [ ] Comprobar manualmente el APK con la proteccion final de apertura
 - [x] Autorizar entrega de fase 1 con las limitaciones de validacion registradas
-- [ ] Cerrar fase y publicar en GitHub
+- [x] Entregar y publicar desarrollo de fase 1: commit 7c19fd4 en refactor/soundflow-4
 
 La instrumentacion permanece aplazada por preferencia del usuario; el cierre
 debe registrar esa limitacion. Commit y push requieren autorizacion separada.
@@ -79,17 +79,44 @@ requieren intervenciones posteriores aprobadas.
 
 ## Fase 2 - Biblioteca y escaneo
 
-Estado: no iniciada ni implementada en esta intervencion.
+Estado: iniciada por autorizacion del usuario el 2026-10-11.
+Se avanza con bloques pequenos de integridad y mejoras de interfaz del mismo
+recorrido. Primer bloque implementado y compilado desde la terminal del usuario;
+prueba manual satisfactoria reportada por el usuario, instrumentacion aplazada.
 
-- [ ] Detectar canciones existentes antes de insertar
-- [ ] Conservar IDs de canciones registradas
-- [ ] Evitar duplicados por URI o identidad estable
+- [x] Detectar canciones existentes por URI exacta antes de insertar
+- [x] Conservar IDs y etiquetas editadas al reimportar la misma URI
+- [x] Evitar duplicados nuevos de URI exacta dentro y entre importaciones
+- [ ] Resolver alias SAF/MediaStore y decidir tratamiento de duplicados historicos
 - [ ] Gestionar escaneos vacios, parciales y fallidos
-- [ ] Revisar eliminacion segura por carpeta
+- [x] Implementar retirada transaccional con limpieza de favoritos y relaciones
 - [ ] Revisar MediaStore y SAF
 - [ ] Probar permisos persistentes
 - [ ] Probar bibliotecas grandes
 - [ ] Publicar fase en GitHub
+
+### Primer bloque de fase 2 - 2026-10-11
+
+- Importacion atomica de canciones nuevas y registro/conteo de carpeta.
+  No se eliminan canciones ausentes de un escaneo vacio o parcial.
+- URI exacta como identidad minima: no se equiparan documentos SAF distintos
+  ni sus IDs con MediaStore. Duplicados preexistentes conservados.
+- Solapamiento de URI exacta entre carpetas: se rechaza la importacion,
+  conservando la pertenencia y el estado anterior; alias no detectados aun.
+- Lectura SAF fuera de la transaccion, validacion de acceso, listado explicito
+  del proveedor y cancelacion propagada. Algunos proveedores pueden omitir
+  entradas sin error; por eso no se usa la ausencia para borrar canciones.
+- Mutex y estado observable en ViewModel para importacion/retirada.
+- Pantalla de carpetas con progreso, resultado, conteo, actualizar y confirmar
+  retirada. Perfil muestra la version real desde BuildConfig.
+- Ocho tests Room y tres Compose escritos y compilados; no ejecutados.
+- El intento del agente fallo por loopback. El usuario confirma posteriormente
+  BUILD SUCCESSFUL in 42s, 77 tareas (15 ejecutadas, 62 actualizadas).
+  APK regenerado; XML unitario: 1 test de plantilla, sin fallos ni errores.
+- Sin cambios de entidades, version, nombre Room, dependencias o reproduccion.
+- El usuario reporta que el APK funciona correctamente tras los recorridos
+  propuestos. No se registraron dispositivo, API ni resultados individuales;
+  se conserva como aceptacion manual general del bloque, no de toda la fase 2.
 
 ## Fase 3 - Motor de audio
 

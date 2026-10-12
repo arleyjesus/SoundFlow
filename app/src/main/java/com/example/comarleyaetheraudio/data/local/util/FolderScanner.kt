@@ -3,21 +3,57 @@ package com.example.comarleyaetheraudio.data.local.util
 import android.content.Context
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.provider.DocumentsContract
 import androidx.documentfile.provider.DocumentFile
 import com.example.comarleyaetheraudio.data.local.entity.SongEntity
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
+import java.io.IOException
 
 class FolderScanner(private val context: Context) {
 
     suspend fun scanFolderUri(folderUri: Uri, folderName: String): List<SongEntity> = withContext(Dispatchers.IO) {
         val songEntities = mutableListOf<SongEntity>()
-        val rootDocument = DocumentFile.fromTreeUri(context, folderUri) ?: return@withContext emptyList()
+        val scanContext = currentCoroutineContext()
+        val rootDocument = DocumentFile.fromTreeUri(context, folderUri)
+            ?: throw IllegalArgumentException("Carpeta SAF no valida")
+        if (!rootDocument.exists() || !rootDocument.isDirectory || !rootDocument.canRead()) {
+            throw SecurityException("No se puede leer la carpeta seleccionada")
+        }
+        val visitedDirectories = hashSetOf<String>()
+
+        fun listChildren(dir: DocumentFile): List<DocumentFile> {
+            val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(
+                dir.uri, DocumentsContract.getDocumentId(dir.uri)
+            )
+            val cursor = context.contentResolver.query(
+                childrenUri, arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID), null, null, null
+            ) ?: throw IOException("El proveedor no pudo listar la carpeta")
+            return cursor.use {
+                val children = mutableListOf<DocumentFile>()
+                while (it.moveToNext()) {
+                    scanContext.ensureActive()
+                    val uri = DocumentsContract.buildDocumentUriUsingTree(dir.uri, it.getString(0))
+                    children.add(
+                        DocumentFile.fromSingleUri(context, uri)
+                            ?: throw IOException("Documento no disponible")
+                    )
+                }
+                children
+            }
+        }
 
         // Recorrido recursivo seguro para escanear carpetas y subcarpetas
         fun traverseDirectory(dir: DocumentFile) {
-            val files = dir.listFiles()
+            scanContext.ensureActive()
+            if (!visitedDirectories.add(dir.uri.toString())) return
+            if (!dir.canRead()) throw SecurityException("No se puede leer una subcarpeta")
+            val files = listChildren(dir)
             for (file in files) {
+                scanContext.ensureActive()
                 if (file.isDirectory) {
                     traverseDirectory(file)
                 } else if (file.isFile && isAudioFile(file.type, file.name)) {
@@ -50,6 +86,7 @@ class FolderScanner(private val context: Context) {
         }
 
         traverseDirectory(rootDocument)
+        scanContext.ensureActive()
 
         // Filtro antipánico: elimina duplicados exactos por ruta antes de tocar la base de datos
         return@withContext songEntities.distinctBy { it.contentUri }
@@ -100,6 +137,10 @@ class FolderScanner(private val context: Context) {
             retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)?.toIntOrNull()?.let { bitrate = it / 1000 }
             retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_SAMPLERATE)?.toIntOrNull()?.let { sampleRate = it }
 
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SecurityException) {
+            throw e
         } catch (_: Exception) {
             // Manejo silencioso en archivos con etiquetas corruptas
         } finally {

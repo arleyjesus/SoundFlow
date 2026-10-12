@@ -162,6 +162,16 @@ no se presenta como validacion exhaustiva ni compatibilidad historica resuelta.
 
 ## Riesgos por verificar
 
+Actualizacion de fase 2: el primer bloque previene nuevas inserciones de URI
+exacta ya registrada y hace atomica la retirada de carpeta y sus referencias.
+Los cambios estan locales, con compilacion posterior confirmada por el usuario
+(42s, 77 tareas) y prueba manual general satisfactoria reportada. Instrumentacion
+pendiente. No se declaran
+resueltos alias entre proveedores, duplicados antiguos ni solapamientos generales.
+El escaneo conserva las canciones ausentes; no es una reconciliacion completa.
+Las etiquetas de canciones ya registradas se conservan para no sobrescribir
+ediciones locales. Los cambios de metadatos externos quedan para otra revision.
+
 - Duplicados al reescanear carpetas.
 - Perdida de referencias de favoritos o playlists.
 - Registros huerfanos al eliminar canciones o carpetas.

@@ -1,10 +1,10 @@
 package com.example.comarleyaetheraudio.presentation.library
 
-import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.comarleyaetheraudio.data.local.util.FolderScanner
+import com.example.comarleyaetheraudio.data.local.FolderImportConflictException
 import com.example.comarleyaetheraudio.data.local.entity.FolderEntity
 import com.example.comarleyaetheraudio.data.player.AudioPlayerHandler
 import com.example.comarleyaetheraudio.data.repository.AudioRepositoryImpl
@@ -12,9 +12,12 @@ import com.example.comarleyaetheraudio.data.repository.SettingsRepository
 import com.example.comarleyaetheraudio.domain.model.Playlist
 import com.example.comarleyaetheraudio.domain.model.Song
 import com.example.comarleyaetheraudio.ui.theme.AppTheme
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.withContext
 
 class LibraryViewModel(
     private val repository: AudioRepositoryImpl,
@@ -82,42 +85,20 @@ class LibraryViewModel(
         viewModelScope.launch { repository.updateSongTags(song.id, newTitle, newArtist, newAlbum) }
     }
 
-    // 1. AGREGA ESTA VARIABLE ARRIBA EN TU VIEWMODEL:
-    private var isScanningFolder = false
+    private val folderMutex = Mutex()
+    private val _isUpdatingFolders = MutableStateFlow(false)
+    val isUpdatingFolders: StateFlow<Boolean> = _isUpdatingFolders.asStateFlow()
+    private val _folderMessage = MutableStateFlow<String?>(null)
+    val folderMessage: StateFlow<String?> = _folderMessage.asStateFlow()
 
-    // 2. REEMPLAZA TU FUNCIÓN onAddFolder POR ESTA:
+    fun clearFolderMessage() {
+        _folderMessage.value = null
+    }
+
     fun onAddFolder(uri: Uri) {
-        if (isScanningFolder) return
-
-        viewModelScope.launch(Dispatchers.IO) {
-            isScanningFolder = true
-            try {
-                // 🔒 CONCEDER PERMISOS PERSISTENTES COMPLETOS (LECTURA Y ESCRITURA DE URI)
-                val takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                try {
-                    repository.context.contentResolver.takePersistableUriPermission(uri, takeFlags)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-
-                val folderPath = uri.toString()
-                val folderName = uri.lastPathSegment?.substringAfterLast(":") ?: "Carpeta"
-
-                repository.insertFolder(FolderEntity(
-                    path = folderPath,
-                    name = folderName,
-                    uriString = folderPath
-                ))
-
-                val scanner = FolderScanner(repository.context)
-                val scannedSongs = scanner.scanFolderUri(uri, folderName)
-
-                repository.insertSongsEntities(scannedSongs)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                isScanningFolder = false
-            }
+        runFolderOperation {
+            val result = repository.importFolder(uri)
+            "${result.added} canciones nuevas; ${result.alreadyPresent} ya estaban en la biblioteca."
         }
     }
 
@@ -128,9 +109,32 @@ class LibraryViewModel(
     }
 
     fun onRemoveFolder(folderPath: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            repository.deleteSongsByFolderUri(folderPath)
-            repository.deleteFolderByPath(folderPath)
+        runFolderOperation {
+            repository.removeFolder(folderPath)
+            "Carpeta retirada de la biblioteca. Los archivos siguen en tu dispositivo."
+        }
+    }
+
+    private fun runFolderOperation(action: suspend () -> String) {
+        viewModelScope.launch {
+            if (!folderMutex.tryLock()) return@launch
+            _isUpdatingFolders.value = true
+            _folderMessage.value = null
+            try {
+                _folderMessage.value = withContext(Dispatchers.IO) { action() }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: FolderImportConflictException) {
+                _folderMessage.value = "Esta carpeta comparte canciones con otra registrada. No se importó para conservar sus referencias."
+            } catch (e: SecurityException) {
+                _folderMessage.value = "No hay acceso a la carpeta. Vuelve a seleccionarla y concede permiso de lectura."
+            } catch (e: Exception) {
+                Log.e("SoundFlowFolders", "Fallo en la operacion de carpeta", e)
+                _folderMessage.value = "No se pudo completar la operación. Se conservaron los datos anteriores; puedes intentarlo de nuevo."
+            } finally {
+                _isUpdatingFolders.value = false
+                folderMutex.unlock()
+            }
         }
     }
 }

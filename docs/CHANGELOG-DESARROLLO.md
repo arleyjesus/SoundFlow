@@ -40,7 +40,8 @@ Planificado:
 - Prevencion de duplicados.
 - Seguridad ante escaneos fallidos.
 
-Estado: no iniciada.
+Estado: primer bloque local compilado y prueba manual general satisfactoria
+reportada; instrumentacion y publicacion pendientes.
 
 ## 2026-10-10 - Fase 1A: favoritos y playlists
 
@@ -126,6 +127,55 @@ siguen pendientes. No se hicieron commits ni push. La fase 1 sigue abierta.
   Informes temporales .txt conservados localmente y excluidos de la entrega.
 - Fase 2 priorizara identidad y escaneo seguro, con mejoras concretas de
   comportamiento e interfaz del recorrido de carpetas; sin redisenos generales.
+
+## 2026-10-11 - Fase 1 publicada y primer bloque de fase 2
+
+- Commit de fase 1: 7c19fd4, fix(persistence): protect favorites, playlists and Room data.
+  Push confirmado a origin/refactor/soundflow-4. Se conservaron los tres
+  informes .txt locales sin incluirlos en Git.
+- Fase 2 autorizada: importacion por URI exacta que conserva IDs y etiquetas
+  editadas. Nuevas canciones y carpeta/conteo se confirman en una transaccion.
+- Retirada atomica de canciones, favoritos y relaciones de la carpeta sin
+  eliminar playlists ni archivos originales.
+- Solapamiento exacto entre carpetas rechazado. Duplicados historicos y alias
+  SAF/MediaStore no se fusionan; un escaneo no borra canciones ausentes.
+- Permiso de lectura validado, listado SAF explicito, cancelacion propagada
+  y operaciones de carpeta serializadas con Mutex en ViewModel.
+- Progreso y mensajes, conteo, boton de actualizar, confirmacion de retirada
+  y version real en Perfil. Sin redisenar otras pantallas.
+- Ocho pruebas Room y tres Compose nuevas, sin ejecutar. Compilacion intentada
+  offline sin configuration cache: fallo de loopback antes de tareas.
+  No hay APK nuevo de fase 2 ni se reutiliza el resultado de fase 1.
+- Cambios de fase 2 locales, sin commit ni push. Sin cambios de esquema,
+  dependencias, entorno global o motor de reproduccion.
+
+## 2026-10-11 - Compilacion confirmada del primer bloque de fase 2
+
+- El usuario confirma BUILD SUCCESSFUL in 42s, 77 tareas: 15 ejecutadas y
+  62 actualizadas. APK local regenerado a las 19:28 America/Bogota.
+- XML unitario revisado: 1 test addition_isCorrect, sin errores, fallos ni omitidos.
+- Las once pruebas instrumentadas de fase 2 compilaron; no se ejecutaron.
+  Total instrumentado nuevo de ambas fases: 27, ejecucion aplazada.
+- README, auditoria, roadmap y plan de pruebas actualizados. Sin cambios Kotlin
+  en esta intervencion. Comprobacion manual del APK de fase 2 pendiente.
+- Fase 1 publicada en 7c19fd4; fase 2 sigue local, sin commit ni push.
+
+## 2026-10-11 - Aceptacion manual del primer bloque de fase 2
+
+- El usuario reporta: funciona correctamente, tras los recorridos propuestos.
+  Se registra prueba manual general; no se inventan resultados por caso,
+  dispositivo o API. Las 27 pruebas instrumentadas siguen sin ejecutar.
+- Actualizados README, auditoria, roadmap y plan de pruebas. Solo documentacion
+  modificada en esta intervencion; fase 2 local, sin nuevo commit ni push.
+- Revision Git sin errores de espacios. Nuevas imagenes locales Icono.jpg y
+  soundflow_logo.png conservadas sin modificar ni incluir en la entrega del bloque.
+
+## 2026-10-11 - Publicacion del primer bloque de fase 2 autorizada
+
+- El usuario autoriza commit y push del bloque compilado y probado manualmente,
+  y continuar con identidad SAF entre arboles y permisos revocados.
+- Se preparan solo codigo, pruebas y documentacion del bloque. Imagenes e
+  informes locales conservados fuera de esta entrega. Instrumentacion aplazada.
 
 ## Regla de mantenimiento
 

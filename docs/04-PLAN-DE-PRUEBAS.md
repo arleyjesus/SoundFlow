@@ -213,6 +213,10 @@ No afirmar que se genero un APK actualizado ni reutilizar su prueba manual.
 
 Fase 2 sin iniciar. Politica detallada en 06-POLITICA-DE-PERSISTENCIA.md.
 
+La anotacion anterior describe el estado antes de la autorizacion posterior.
+La fase 1 se publico como entrega de desarrollo en 7c19fd4; sus limitaciones
+de validacion permanecen registradas. Fase 2 iniciada segun el bloque siguiente.
+
 ### Resultado posterior y entrega autorizada de fase 1
 
 El usuario confirma BUILD SUCCESSFUL in 1m 14s, 77 tareas (15 ejecutadas,
@@ -223,3 +227,47 @@ Las 16 pruebas instrumentadas siguen sin ejecutar; el exito de compilacion
 de androidTest no cambia ese estado. La comprobacion manual del ajuste final
 sigue pendiente. El usuario autoriza entregar/publicar el desarrollo de fase 1
 y avanzar a fase 2 con estas limitaciones explicitas.
+
+## Fase 2 - Primer bloque de biblioteca y carpetas
+
+FolderIntegrityTest: ocho pruebas instrumentadas con Room aislado:
+
+- Reimportacion conserva IDs, etiquetas editadas, favorito y playlist.
+- Nueva URI repetida se inserta una sola vez e ignora IDs del escaner.
+- Escaneos vacios y parciales conservan canciones y conteos previos.
+- Importaciones concurrentes no duplican la misma URI nueva.
+- Fallo SQL al registrar carpeta revierte canciones insertadas antes.
+- Retirada limpia solo sus canciones, favoritos y relaciones; conserva listas
+  y datos de otra carpeta.
+- Fallo SQL al retirar restaura canciones, favoritos y relaciones.
+- Solapamiento exacto entre carpetas se rechaza sin mover pertenencia.
+
+FolderActionsTest: tres pruebas Compose para confirmar/cancelar retirada,
+actualizar la URI elegida y mostrar conteo, y bloquear acciones con progreso.
+Las once pruebas nuevas ya compilaron; no se han ejecutado. Total instrumentado
+nuevo entre ambas fases: 27, compilados pero ninguno ejecutado.
+El intento del agente fallo por loopback. Posteriormente el usuario confirma
+BUILD SUCCESSFUL in 42s, 77 tareas: 15 ejecutadas, 62 actualizadas.
+APK de fase 2 regenerado el 2026-10-11 a las 19:28 America/Bogota.
+XML unitario inspeccionado: 1 test addition_isCorrect, sin errores ni fallos.
+El usuario reporta posteriormente funcionamiento correcto del APK. Se registra
+aceptacion manual general de este bloque, sin dispositivo/API ni desglose por
+caso. No implica ejecucion de instrumentacion ni validacion de toda la fase 2.
+
+Instalar el APK nuevo como actualizacion y completar estos recorridos:
+
+1. Preparar dos carpetas no superpuestas. Anadir A con dos canciones;
+   marcar una favorita y agregarla a una playlist. Editar su titulo en la app.
+2. Actualizar A dos veces: mismo conteo, titulo editado, favorito y playlist.
+   Anadir un archivo nuevo a A y actualizar: solo una cancion nueva.
+3. Retirar temporalmente acceso o almacenamiento y actualizar. Debe mostrarse
+   error y conservarse la biblioteca anterior. Restaurar permiso seleccionando A.
+4. Cancelar la confirmacion de retirada: nada cambia. Confirmar retirada de A:
+   desaparecen sus canciones y referencias; listas, B y archivos originales
+   siguen presentes. No usar datos valiosos para esta prueba.
+5. Verificar progreso, botones deshabilitados y mensajes en pantalla pequena,
+   tema claro/oscuro y tamanos de fuente grandes. Inspeccion visual pendiente.
+
+No confundir ausencia de borrado con escaneo completo: siguen pendientes
+alias de URI, solapamientos generales, permisos con proveedores reales,
+cancelacion durante lectura/escritura y mediciones con bibliotecas grandes.

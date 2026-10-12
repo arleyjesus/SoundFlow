@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.comarleyaetheraudio.BuildConfig
 import com.example.comarleyaetheraudio.data.local.entity.FolderEntity
 import com.example.comarleyaetheraudio.presentation.folders.FoldersScreen
 import com.example.comarleyaetheraudio.ui.theme.AppTheme
@@ -36,7 +37,10 @@ fun ProfileScreen(
     onAddFolder: (Uri) -> Unit,
     onRemoveFolder: (String) -> Unit,
     onNavigateToSettings: () -> Unit,
-    onNavigateToAudioFx: () -> Unit
+    onNavigateToAudioFx: () -> Unit,
+    isUpdatingFolders: Boolean = false,
+    folderMessage: String? = null,
+    onDismissFolderMessage: () -> Unit = {}
 ) {
     var showFoldersDialog by remember { mutableStateOf(false) }
 
@@ -67,7 +71,7 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
                     Text("Usuario SoundFlow", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text("SoundFlow v3.0 • Audio Hi-Fi", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("SoundFlow ${BuildConfig.VERSION_NAME} • Música local", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -195,7 +199,10 @@ fun ProfileScreen(
                     folders = folders,
                     onAddFolder = onAddFolder,
                     onRemoveFolder = onRemoveFolder,
-                    onFolderClick = { }
+                    onFolderClick = { },
+                    isUpdating = isUpdatingFolders,
+                    message = folderMessage,
+                    onDismissMessage = onDismissFolderMessage
                 )
             }
         }

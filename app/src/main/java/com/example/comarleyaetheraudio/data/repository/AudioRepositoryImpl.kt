@@ -2,8 +2,10 @@
 package com.example.comarleyaetheraudio.data.repository
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import com.example.comarleyaetheraudio.data.local.MusicDao
+import com.example.comarleyaetheraudio.data.local.SongImportResult
 import com.example.comarleyaetheraudio.data.local.dao.PlaylistDao
 import com.example.comarleyaetheraudio.data.local.entity.FolderEntity
 import com.example.comarleyaetheraudio.data.local.entity.PlaylistEntity
@@ -93,6 +95,24 @@ class AudioRepositoryImpl(
     val allFolders: Flow<List<FolderEntity>> =
         musicDao.getAllFolders()
 
+    suspend fun importFolder(uri: Uri): SongImportResult {
+        val resolver = context.contentResolver
+        if (resolver.persistedUriPermissions.none { it.uri == uri && it.isReadPermission }) {
+            resolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        val folderPath = uri.toString()
+        val folderName = uri.lastPathSegment?.substringAfterLast(":") ?: "Carpeta"
+        // El escaneo termina antes de abrir la transaccion de escritura.
+        val songs = scanner.scanFolderUri(uri, folderName)
+        return musicDao.importFolderSongs(
+            FolderEntity(uriString = folderPath, name = folderName, path = folderPath), songs
+        )
+    }
+
+    suspend fun removeFolder(path: String) {
+        musicDao.removeFolderAndRelations(path)
+    }
+
     suspend fun insertFolder(folder: FolderEntity) {
         musicDao.insertFolder(folder)
     }
@@ -181,14 +201,13 @@ class AudioRepositoryImpl(
     }
 
     // INSERCION DE CANCIONES
-    // La sincronizacion antiduplicados se abordara
-    // en la siguiente etapa de forma transaccional.
+    // Conservar el contrato existente sin volver a insertar URIs conocidas.
 
     suspend fun insertSongsEntities(
         songs: List<SongEntity>
     ) {
         if (songs.isEmpty()) return
 
-        musicDao.insertSongs(songs)
+        musicDao.insertSongsPreservingIds(songs)
     }
 }

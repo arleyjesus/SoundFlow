@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -125,6 +126,8 @@ fun AppNavigation(
         }
 
         composable(Screen.Profile.route) {
+            val isUpdatingFolders by viewModel.isUpdatingFolders.collectAsState()
+            val folderMessage by viewModel.folderMessage.collectAsState()
             ProfileScreen(
                 currentTheme = currentTheme,
                 isDarkMode = isDarkMode,
@@ -134,7 +137,10 @@ fun AppNavigation(
                 onAddFolder = { uri -> viewModel.onAddFolder(uri) },
                 onRemoveFolder = { path -> viewModel.onRemoveFolder(path) },
                 onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
-                onNavigateToAudioFx = { navController.navigate(Screen.AudioFx.route) }
+                onNavigateToAudioFx = { navController.navigate(Screen.AudioFx.route) },
+                isUpdatingFolders = isUpdatingFolders,
+                folderMessage = folderMessage,
+                onDismissFolderMessage = viewModel::clearFolderMessage
             )
         }
 

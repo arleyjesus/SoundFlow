@@ -25,6 +25,44 @@ interface MusicDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSongs(songs: List<SongEntity>)
 
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertNewSongs(songs: List<SongEntity>)
+
+    @Query("SELECT contentUri FROM songs")
+    suspend fun getSongUris(): List<String>
+
+    @Query("SELECT contentUri FROM songs WHERE folderUri != :folderUri")
+    suspend fun getSongUrisOutsideFolder(folderUri: String): List<String>
+
+    // Una URI exacta ya registrada conserva ID y metadatos editados en la app.
+    // No se fusionan alias SAF/MediaStore ni se eliminan duplicados historicos.
+    @Transaction
+    suspend fun insertSongsPreservingIds(songs: List<SongEntity>): SongImportResult {
+        require(songs.all { it.contentUri.isNotBlank() })
+        val uniqueSongs = songs.distinctBy { it.contentUri }
+        val existingUris = getSongUris().toHashSet()
+        val newSongs = uniqueSongs.filter { it.contentUri !in existingUris }
+        if (newSongs.isNotEmpty()) insertNewSongs(newSongs.map { it.copy(id = 0) })
+        return SongImportResult(newSongs.size, uniqueSongs.size - newSongs.size)
+    }
+
+    @Query("SELECT COUNT(*) FROM songs WHERE folderUri = :folderUri")
+    suspend fun countSongsForFolder(folderUri: String): Int
+
+    @Transaction
+    suspend fun importFolderSongs(folder: FolderEntity, songs: List<SongEntity>): SongImportResult {
+        require(songs.all { it.folderUri == folder.uriString })
+        val requestedUris = songs.mapTo(hashSetOf()) { it.contentUri }
+        if (getSongUrisOutsideFolder(folder.uriString).any { it in requestedUris }) {
+            throw FolderImportConflictException()
+        }
+
+        val result = insertSongsPreservingIds(songs)
+        // Un resultado vacio o parcial nunca retira canciones anteriores.
+        insertFolder(folder.copy(songCount = countSongsForFolder(folder.uriString)))
+        return result
+    }
+
     @Query("DELETE FROM songs WHERE folderUri = :folderUri")
     suspend fun deleteSongsByFolderUri(folderUri: String)
 
@@ -85,4 +123,22 @@ interface MusicDao {
 
     @Query("DELETE FROM folders WHERE path = :path")
     suspend fun deleteFolderByPath(path: String)
+
+    @Query("SELECT uriString FROM folders WHERE path = :path LIMIT 1")
+    suspend fun getFolderUriByPath(path: String): String?
+
+    @Query("DELETE FROM favorite_songs WHERE songId IN (SELECT id FROM songs WHERE folderUri = :folderUri)")
+    suspend fun deleteFavoritesForFolder(folderUri: String)
+
+    @Query("DELETE FROM playlist_song_cross_ref WHERE songId IN (SELECT id FROM songs WHERE folderUri = :folderUri)")
+    suspend fun deletePlaylistRelationsForFolder(folderUri: String)
+
+    @Transaction
+    suspend fun removeFolderAndRelations(path: String) {
+        val uri = getFolderUriByPath(path) ?: return
+        deleteFavoritesForFolder(uri)
+        deletePlaylistRelationsForFolder(uri)
+        deleteSongsByFolderUri(uri)
+        deleteFolderByPath(path)
+    }
 }

@@ -118,8 +118,11 @@ El detalle y los criterios de cierre están en [docs/02-ROADMAP-4.0.md](docs/02-
 - Pruebas instrumentadas escritas; ejecución aplazada.
 - Política de compatibilidad en [docs/06-POLITICA-DE-PERSISTENCIA.md](docs/06-POLITICA-DE-PERSISTENCIA.md).
 
-### Fase 2 — Biblioteca y escaneo (no iniciada)
-- [ ] Evitar duplicados y conservar identificadores entre escaneos.
+### Fase 2 — Biblioteca y escaneo (en curso)
+- Primer bloque implementado: reimportación por URI exacta sin cambiar IDs ni etiquetas editadas, y retirada transaccional de carpetas.
+- Carpetas: progreso, resultados, conteo, actualización y confirmación antes de retirar.
+- Compilación confirmada desde la terminal del usuario y prueba manual satisfactoria reportada; instrumentación aplazada.
+- [ ] Resolver alias SAF/MediaStore, duplicados históricos y solapamientos generales.
 - [ ] Gestionar escaneos vacíos, parciales o fallidos sin perder datos.
 - [ ] Revisar MediaStore, SAF y permisos persistentes.
 - [ ] Revisar la retirada de carpetas y sus relaciones.
@@ -173,7 +176,7 @@ Cualquier futura integración de red deberá documentar sus permisos, finalidad 
 
 **Próximo objetivo:** SoundFlow 4.0
 
-El APK de fase 1A compiló correctamente y el usuario reportó funcionamiento correcto al probarlo. El ajuste final de apertura de Room también compiló desde su terminal (BUILD SUCCESSFUL, 1m 14s, 77 tareas). Hay un test unitario de plantilla aprobado; las 16 pruebas instrumentadas están aplazadas. Falta comprobar manualmente el APK con el último ajuste de Room. El usuario autoriza entregar la fase 1 con estas limitaciones y comenzar la fase 2.
+Fase 1 entregada en el commit 7c19fd4 y publicada en refactor/soundflow-4. Compilación final correcta reportada por el usuario (BUILD SUCCESSFUL, 1m 14s, 77 tareas), un test unitario de plantilla aprobado y prueba manual satisfactoria del APK anterior de fase 1A. El primer bloque de fase 2 también compiló desde su terminal (42s, 77 tareas) y el usuario reportó funcionamiento correcto del APK. Las 27 pruebas instrumentadas nuevas siguen pendientes. Fase 2 local, sin publicar; quedan pendientes de identidad y permisos descritos en el roadmap.
 
 ## 🤝 Contribuciones
 

@@ -68,6 +68,11 @@ com.example.comarleyaetheraudio
   comparte configuracion con las pruebas aisladas. Ante incompatibilidad,
   conservar los datos y rechazar apertura hasta definir recuperacion.
 - Politica y limites de compatibilidad en 06-POLITICA-DE-PERSISTENCIA.md.
+- Fase 2: importacion y retirada en transacciones de MusicDao. El repositorio
+  valida permiso de lectura y escanea fuera de la transaccion. ViewModel
+  serializa operaciones de carpetas con Mutex y expone progreso/resultado.
+- Identidad minima por contentUri exacta: conservar IDs y metadatos existentes.
+  No fusionar alias ni duplicados historicos sin una politica aprobada.
 
 ## Decisiones pendientes
 

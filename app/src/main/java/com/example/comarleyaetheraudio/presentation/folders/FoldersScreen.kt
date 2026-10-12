@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,6 +21,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.example.comarleyaetheraudio.data.local.entity.FolderEntity
 
@@ -28,8 +32,12 @@ fun FoldersScreen(
     folders: List<FolderEntity>,
     onAddFolder: (Uri) -> Unit,
     onRemoveFolder: (String) -> Unit,
-    onFolderClick: (FolderEntity) -> Unit
+    onFolderClick: (FolderEntity) -> Unit,
+    isUpdating: Boolean = false,
+    message: String? = null,
+    onDismissMessage: () -> Unit = {}
 ) {
+    var folderToRemove by remember { mutableStateOf<FolderEntity?>(null) }
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
     ) { uri ->
@@ -47,7 +55,7 @@ fun FoldersScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "Carpetas de Música",
                     style = MaterialTheme.typography.titleLarge,
@@ -60,11 +68,13 @@ fun FoldersScreen(
                 )
             }
 
+            Spacer(modifier = Modifier.width(12.dp))
             FilledTonalButton(
                 onClick = { launcher.launch(null) },
+                enabled = !isUpdating,
                 shape = RoundedCornerShape(12.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
-                modifier = Modifier.height(40.dp)
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier.heightIn(min = 48.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
@@ -81,6 +91,30 @@ fun FoldersScreen(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+
+        if (isUpdating) {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            Text(
+                "Actualizando biblioteca…",
+                modifier = Modifier.padding(vertical = 8.dp).semantics { liveRegion = LiveRegionMode.Polite },
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+        message?.let { status ->
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite }
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text(status, style = MaterialTheme.typography.bodyMedium)
+                    TextButton(onClick = onDismissMessage, modifier = Modifier.align(Alignment.End)) {
+                        Text("Entendido")
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+        }
 
         // ESTADO SI NO HAY CARPETAS REGISTRADAS
         if (folders.isEmpty()) {
@@ -149,6 +183,11 @@ fun FoldersScreen(
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
+                                    text = "${folder.songCount} canciones en la biblioteca",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
                                     text = folder.path,
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -158,11 +197,18 @@ fun FoldersScreen(
                             }
 
                             IconButton(
-                                onClick = { onRemoveFolder(folder.path) }
+                                onClick = { onAddFolder(Uri.parse(folder.uriString)) },
+                                enabled = !isUpdating
+                            ) {
+                                Icon(Icons.Default.Refresh, contentDescription = "Actualizar ${folder.name}")
+                            }
+                            IconButton(
+                                onClick = { folderToRemove = folder },
+                                enabled = !isUpdating
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
-                                    contentDescription = "Eliminar carpeta",
+                                    contentDescription = "Retirar ${folder.name}",
                                     tint = MaterialTheme.colorScheme.error
                                 )
                             }
@@ -171,5 +217,26 @@ fun FoldersScreen(
                 }
             }
         }
+    }
+    folderToRemove?.let { folder ->
+        AlertDialog(
+            onDismissRequest = { folderToRemove = null },
+            title = { Text("¿Retirar ${folder.name}?") },
+            text = {
+                Text("Sus canciones se retirarán de la biblioteca, favoritos y playlists. Los archivos originales permanecerán en tu dispositivo.")
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !isUpdating,
+                    onClick = {
+                        folderToRemove = null
+                        onRemoveFolder(folder.path)
+                    }
+                ) { Text("Retirar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { folderToRemove = null }) { Text("Cancelar") }
+            }
+        )
     }
 }
