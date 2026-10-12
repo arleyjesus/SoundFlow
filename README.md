@@ -1,39 +1,190 @@
-# 🎵 Aether Audio Player
+# 🎵 SoundFlow
 
-Un reproductor de audio local enfocado en **alta fidelidad (Hi-Res Audio)** para Android. Diseñado bajo los principios de **Clean Architecture**, **MVVM** y componentes declarativos con **Jetpack Compose**.
+**Tu música. Tu sonido. Tu experiencia.**
 
-![Android](https://img.shields.io/badge/Platform-Android-green?logo=android)
-![Kotlin](https://img.shields.io/badge/Language-Kotlin-purple?logo=kotlin)
-![Architecture](https://img.shields.io/badge/Architecture-Clean%20%2B%20MVVM-blue)
-![Media3](https://img.shields.io/badge/Audio-Jetpack%20Media3%2FExoPlayer-orange)
-![License](https://img.shields.io/badge/License-MIT-yellow)
+SoundFlow es un reproductor de música local para Android, desarrollado en Kotlin con Jetpack Compose y Jetpack Media3 (ExoPlayer).
+
+Su objetivo es ofrecer una experiencia musical moderna, rápida, personalizable y enfocada en la privacidad, con especial atención a la reproducción de archivos de alta calidad.
+
+## 🚀 Características
+
+### 🎧 Reproducción musical
+- Reproducción de música almacenada localmente.
+- Compatibilidad con formatos de audio admitidos por Android y sus decodificadores.
+- Reproducción en segundo plano mediante Media3.
+- Controles multimedia en notificaciones y pantalla de bloqueo.
+- Gestión de la cola de reproducción.
+- Manejo de interrupciones y desconexión de auriculares.
+
+### 📂 Biblioteca musical
+- Exploración de archivos musicales mediante MediaStore.
+- Selección y escaneo de carpetas.
+- Organización por canciones, álbumes y artistas.
+- Creación y administración de playlists.
+- Funcionalidad de canciones favoritas.
+- Visualización de carátulas y metadatos.
+- Edición básica de etiquetas musicales.
+
+### 🎨 Experiencia visual
+- Interfaz desarrollada con Jetpack Compose.
+- Componentes basados en Material Design 3.
+- Reproductor expandido y minirreproductor.
+- Opciones de personalización.
+- Visualización de audio y letras musicales.
+
+### ⚙️ Herramientas de reproducción
+- Funcionalidades de ecualización.
+- Temporizador de apagado.
+- Opciones de transición entre canciones.
+- Consulta de información de archivos musicales.
+
+**Nota:** algunas funcionalidades están en proceso de revisión y estabilización. La presencia de una función en el código no garantiza que todos sus escenarios estén completamente validados.
+
+## 🛠️ Tecnologías
+
+| Tecnología | Uso |
+|---|---|
+| Kotlin | Lenguaje principal |
+| Jetpack Compose | Interfaz de usuario |
+| Material Design 3 | Componentes visuales |
+| Media3 / ExoPlayer | Motor multimedia |
+| Room | Persistencia local |
+| Kotlin Coroutines y Flow | Programación asíncrona |
+| MediaStore y SAF | Acceso a archivos musicales |
+| DataStore | Preferencias |
+| Gradle | Compilación y dependencias |
+
+## 🏗️ Arquitectura
+
+SoundFlow utiliza una organización por capas inspirada en Clean Architecture y el patrón MVVM.
+
+El código principal se encuentra bajo:
+
+`com.example.comarleyaetheraudio`
+
+**Data:** implementaciones de almacenamiento, escaneo de archivos, servicios multimedia y repositorios.
+
+**Domain:** modelos de negocio, contratos y casos de uso.
+
+**Presentation:** pantallas Compose, ViewModels, componentes y estado de la interfaz.
+
+La arquitectura continúa en revisión para mejorar la separación de responsabilidades, la facilidad de pruebas y el mantenimiento del proyecto.
+
+## 🎼 Alta fidelidad
+
+SoundFlow busca proporcionar información útil sobre la calidad de los archivos reproducidos, incluyendo formato, bitrate y frecuencia de muestreo cuando dichos metadatos estén disponibles.
+
+La reproducción efectiva depende de los decodificadores Android, la ruta de audio del dispositivo y el hardware conectado.
+
+**La detección de un archivo Hi-Res no constituye por sí sola una garantía de salida bit-perfect.**
+
+## 💻 Compilación local
+
+Requisitos generales:
+
+- Android Studio compatible con la configuración Gradle del proyecto.
+- Android SDK correspondiente a la versión de compilación configurada.
+- JDK compatible.
+- Dispositivo Android o emulador para pruebas.
+
+Clonar el repositorio:
+
+`git clone https://github.com/arleyjesus/SoundFlow.git`
+
+Entrar al proyecto:
+
+`cd SoundFlow`
+
+Compilar desde Windows:
+
+`.\gradlew.bat :app:assembleDebug`
+
+El APK de depuración se genera normalmente en:
+
+`app/build/outputs/apk/debug/`
+
+Antes de compilar, comprueba que Android Studio reconoce correctamente la ubicación del Android SDK.
+
+## 🗺️ Roadmap — SoundFlow 4.0
+
+Las siguientes características representan objetivos de desarrollo. **No deben interpretarse como funcionalidades terminadas.**
+
+El detalle y los criterios de cierre están en [docs/02-ROADMAP-4.0.md](docs/02-ROADMAP-4.0.md).
+
+### Fase 1 — Persistencia y estabilidad
+- Favoritos persistentes, renombrado de playlists y operaciones transaccionales implementados.
+- Compilación de fase 1A y prueba manual satisfactoria reportadas por el usuario.
+- Protección contra recreación destructiva de Room implementada y compilada.
+- Pruebas instrumentadas escritas; ejecución aplazada.
+- Política de compatibilidad en [docs/06-POLITICA-DE-PERSISTENCIA.md](docs/06-POLITICA-DE-PERSISTENCIA.md).
+
+### Fase 2 — Biblioteca y escaneo (no iniciada)
+- [ ] Evitar duplicados y conservar identificadores entre escaneos.
+- [ ] Gestionar escaneos vacíos, parciales o fallidos sin perder datos.
+- [ ] Revisar MediaStore, SAF y permisos persistentes.
+- [ ] Revisar la retirada de carpetas y sus relaciones.
+
+### Fase 3 — Motor de audio
+- [ ] Revisar Media3, MediaSession y reproducción en segundo plano.
+- [ ] Comprobar interrupciones, desconexión de auriculares y transiciones.
+- [ ] Validar efectos y limitaciones reales de salida de audio.
+
+### Fase 4 — Rendimiento y arquitectura
+- [ ] Mejorar la separación entre capas.
+- [ ] Optimizar consultas y flujos de datos.
+- [ ] Reducir consumo innecesario de memoria.
+- [ ] Mejorar carga y caché de carátulas.
+- [ ] Fortalecer el manejo de errores del reproductor.
+- [ ] Revisar dependencias y APIs obsoletas.
+
+### Fase 5 — Experiencia musical
+- [ ] Perfeccionar el ecualizador y sus perfiles.
+- [ ] Mejorar el manejo de letras sincronizadas.
+- [ ] Revisar transiciones musicales y crossfade.
+- [ ] Mejorar la gestión de playlists.
+- [ ] Ampliar las opciones de personalización.
+
+### Fase 6 — Innovación
+- [ ] **Audio Inspector Pro:** información avanzada de archivos y salida de audio.
+- [ ] **SoundFlow Smart DJ:** creación inteligente de sesiones musicales.
+- [ ] **SoundFlow Replay:** estadísticas privadas de escucha.
+- [ ] **Biblioteca inteligente:** detección de duplicados y herramientas de organización.
+- [ ] **Perfiles por dispositivo:** ajustes específicos para auriculares y salidas de audio.
+- [ ] **USB DAC Studio:** capacidades avanzadas para dispositivos de audio compatibles.
+- [ ] **Transferencia Wi-Fi:** intercambio local de archivos musicales.
+
+### Fase 7 — Lanzamiento
+- [ ] Regresión, compatibilidad Android, permisos y actualizaciones.
+- [ ] Validar artefactos y publicar SoundFlow 4.0 cuando esté listo.
+
+## 🔒 Privacidad
+
+SoundFlow está diseñado alrededor de una biblioteca musical local.
+
+El objetivo es que sus funciones esenciales no requieran una cuenta en la nube y que los datos musicales del usuario permanezcan bajo su control.
+
+Cualquier futura integración de red deberá documentar sus permisos, finalidad y tratamiento de datos.
+
+## 🧪 Estado del desarrollo
+
+**Versión base:** 3.7.0
+
+**Rama de modernización:** `refactor/soundflow-4`
+
+**Próximo objetivo:** SoundFlow 4.0
+
+El APK de fase 1A compiló correctamente y el usuario reportó funcionamiento correcto al probarlo. El ajuste final de apertura de Room también compiló desde su terminal (BUILD SUCCESSFUL, 1m 14s, 77 tareas). Hay un test unitario de plantilla aprobado; las 16 pruebas instrumentadas están aplazadas. Falta comprobar manualmente el APK con el último ajuste de Room. El usuario autoriza entregar la fase 1 con estas limitaciones y comenzar la fase 2.
+
+## 🤝 Contribuciones
+
+Las mejoras deben desarrollarse en ramas independientes y validarse antes de integrarse en la rama principal.
+
+Se recomienda acompañar las correcciones importantes con pruebas y documentación técnica.
+
+## 📄 Licencia
+
+Consultar el archivo `LICENSE` del repositorio para conocer los términos de distribución y uso.
 
 ---
 
-## 🚀 Características Principales
-
-* **Soporte Hi-Res Lossless:** Detección automática de tasa de muestreo (Sample Rate) y Bitrate en formatos FLAC, WAV, ALAC y MP3 con indicador visual en pantalla.
-* **Motor Multimedia Nacio:** Basado en `Jetpack Media3 (ExoPlayer)` optimizado para procesamiento de audio en bajo nivel.
-* **Reproducción en Segundo Plano:** Implementación de `MediaSessionService` con control multimedia interactivo en la barra de notificaciones y pantalla de bloqueo.
-* **Protección contra Interrupciones:** Pausa automática al desconectar auriculares (`Audio Becoming Noisy`).
-* **Interfaz Moderna:** Desarrollada 100% en `Jetpack Compose` siguiendo la guía de Material Design 3.
-
----
-
-## 🛠️ Arquitectura de Software
-
-El proyecto aplica estrictamente **Clean Architecture** dividido en tres capas fundamentales para garantizar la separación de responsabilidades, mantenibilidad y escalabilidad:
-
-```text
-com.arleyaetheraudio/
- ├── data/               # Implementación de escáner (MediaStore), ExoPlayer y Servicios
- │    ├── local/         # MediaStoreAudioScanner (Extracción de metadatos)
- │    ├── player/        # AudioPlayerHandler & AudioService (Media3)
- │    └── repository/    # AudioRepositoryImpl
- ├── domain/             # Reglas de negocio puras (Modelos e Interfaces)
- │    ├── model/         # Song & AudioPlayerState
- │    ├── repository/    # AudioRepository
- │    └── usecase/       # GetLocalAudioFilesUseCase
- └── presentation/       # Interfaz de Usuario (Jetpack Compose)
-      ├── library/       # LibraryScreen & LibraryViewModel
-      └── components/    # MiniPlayer & Widgets
+**SoundFlow — Una nueva forma de disfrutar tu biblioteca musical.**

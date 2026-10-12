@@ -64,11 +64,16 @@ com.example.comarleyaetheraudio
 - No mover paquetes solo para igualar carpetas fisicas.
 - Trabajar sobre C:\SoundFlow-Git.
 - No copiar archivos de la carpeta antigua.
+- Apertura sin recreacion destructiva de Room: MusicDatabase.buildDatabase
+  comparte configuracion con las pruebas aisladas. Ante incompatibilidad,
+  conservar los datos y rechazar apertura hasta definir recuperacion.
+- Politica y limites de compatibilidad en 06-POLITICA-DE-PERSISTENCIA.md.
 
 ## Decisiones pendientes
 
 - Identidad estable de canciones.
-- Estrategia de migraciones Room.
+- Implementacion de migraciones historicas con fixtures reales; estrategia
+  de preservacion definida en fase 1, compatibilidad historica no resuelta.
 - Uso de indices y restricciones de unicidad.
 - Manejo de referencias cuando desaparecen canciones.
 - Estrategia de cache y persistencia de preferencias.

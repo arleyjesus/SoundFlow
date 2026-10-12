@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -31,6 +32,7 @@ import com.example.comarleyaetheraudio.domain.model.AudioPlayerState
 import com.example.comarleyaetheraudio.domain.model.Playlist
 import com.example.comarleyaetheraudio.domain.model.Song
 import com.example.comarleyaetheraudio.presentation.components.items.SongItem
+import com.example.comarleyaetheraudio.presentation.components.items.SongOptionsMenuSheet
 import com.example.comarleyaetheraudio.presentation.library.components.ArtistDetailBottomSheet
 import com.example.comarleyaetheraudio.presentation.playlist.PlaylistDetailScreen
 import kotlinx.coroutines.launch
@@ -59,7 +61,7 @@ fun LibraryScreen(
     val scope = rememberCoroutineScope()
 
     var selectedArtistName by remember { mutableStateOf<String?>(null) }
-    var songTargetForPlaylist by remember { mutableStateOf<String?>(null) }
+    var songOptionsId by remember { mutableStateOf<Long?>(null) }
     var selectedPlaylistForDetail by remember { mutableStateOf<Playlist?>(null) }
 
     // ⚡ Estado para el filtro de ordenamiento en la pestaña de canciones
@@ -161,12 +163,12 @@ fun LibraryScreen(
                                 Surface(
                                     shape = RoundedCornerShape(14.dp),
                                     color = cardBgColor,
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth().testTag("library_song_${song.id}")
                                 ) {
                                     SongItem(
                                         song = song,
                                         onClick = { onSongClick(song) },
-                                        onMoreOptionsClick = { songTargetForPlaylist = song.title }
+                                        onMoreOptionsClick = { songOptionsId = song.id }
                                     )
                                 }
                             }
@@ -221,6 +223,19 @@ fun LibraryScreen(
                         )
                     }
                 }
+            }
+        }
+
+        songs.find { it.id == songOptionsId }?.let { song ->
+            key(song.id) {
+                SongOptionsMenuSheet(
+                    song = song,
+                    playlists = playlists,
+                    isFavorite = song.id in favoriteIds,
+                    onDismiss = { songOptionsId = null },
+                    onToggleFavorite = { onToggleFavorite(song) },
+                    onAddToPlaylist = { playlistId -> onAddToPlaylist(playlistId, song.id) }
+                )
             }
         }
 

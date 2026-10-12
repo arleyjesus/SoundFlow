@@ -99,7 +99,7 @@ fun AppNavigation(
                     viewModel.toggleFavorite(song.id)
                 },
                 onAddToPlaylist = { playlistId, songId ->
-                    viewModel.addSongsToPlaylist(playlistId, listOf(songId))
+                    viewModel.addSongToPlaylist(playlistId, songId)
                 },
                 onAddSongsToPlaylist = { playlistId, songIds ->
                     viewModel.addSongsToPlaylist(playlistId, songIds)

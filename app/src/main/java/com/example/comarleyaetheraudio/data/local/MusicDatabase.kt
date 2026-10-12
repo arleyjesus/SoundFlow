@@ -32,16 +32,22 @@ abstract class MusicDatabase : RoomDatabase() {
 
         fun getDatabase(context: Context): MusicDatabase {
             return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    MusicDatabase::class.java,
-                    "soundflow_database"
-                )
-                    .fallbackToDestructiveMigration()
-                    .build()
+                val instance = buildDatabase(context)
                 INSTANCE = instance
                 instance
             }
         }
+
+        // Una version o identidad incompatible debe conservar los datos y
+        // rechazar la apertura hasta disponer de una migracion verificada.
+        // Los tests usan esta misma configuracion con un nombre aislado.
+        internal fun buildDatabase(
+            context: Context,
+            name: String = "soundflow_database"
+        ): MusicDatabase = Room.databaseBuilder(
+            context.applicationContext,
+            MusicDatabase::class.java,
+            name
+        ).build()
     }
 }

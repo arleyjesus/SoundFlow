@@ -12,7 +12,8 @@ riesgos tecnicos y funcionalidades pendientes de probar.
 - La base de datos se llama soundflow_database.
 - MusicDatabase utiliza Room con version 2.
 - exportSchema esta desactivado.
-- Se utiliza fallbackToDestructiveMigration().
+- La configuracion inicial utilizaba fallbackToDestructiveMigration();
+  se retira en el ajuste de fase 1 del 2026-10-11, pendiente de validacion.
 - Existen tablas de canciones, carpetas, favoritos,
   playlists y relaciones entre playlist y cancion.
 - En la version inicial auditada, los favoritos se
@@ -73,7 +74,91 @@ riesgos tecnicos y funcionalidades pendientes de probar.
 - Se agrego eliminacion transaccional de playlist y relaciones.
 - El usuario reporto compilacion correcta.
 
-Estado: CAMBIOS COMPILADOS, PRUEBAS FUNCIONALES PENDIENTES.
+La compilacion anterior fue reportada por el usuario y corresponde a
+los cambios iniciales. No valida automaticamente las modificaciones posteriores.
+
+### Actualizacion de fase 1A - 2026-10-10
+
+Implementado sobre los cambios locales existentes:
+
+- PlaylistDao ejecuta lectura, inserciones y retiradas de la seleccion
+  completa dentro de `setPlaylistSongs`, anotado con `@Transaction`.
+- AudioRepositoryImpl conserva el contrato `addSongsToPlaylist` para
+  seleccion completa y delega en el DAO; `addSongToPlaylist` es aditivo.
+- Ambas operaciones comprueban dentro de la transaccion que la playlist
+  siga existiendo. No se han agregado claves foraneas ni cambiado entidades.
+- AppNavigation usa la adicion individual para el menu de una cancion.
+- LibraryScreen conserva el ID seleccionado, obtiene la cancion actual
+  y muestra SongOptionsMenuSheet con favoritos observados desde Room.
+- Se corrigio el applicationId esperado en el test de plantilla.
+- Se escribieron 12 pruebas instrumentadas nuevas: 10 de datos y 2 de UI.
+  Incluyen base en disco, reapertura, Flow, createdAt, adicion idempotente,
+  seleccion vacia, concurrencia y rollback ante fallos SQL controlados.
+
+Antecedente: el intento del agente no pudo compilar en este entorno.
+El primer intento de Gradle fue bloqueado por acceso a su cache.
+El intento con permisos y la repeticion con stacktrace fallaron antes de
+compilar por `Unable to establish loopback connection`, causado por
+`java.net.SocketException: Invalid argument: connect` en Java NIO.
+No se modifico la configuracion global del entorno ni las dependencias.
+
+Actualizacion de validacion - 2026-10-11:
+
+- El usuario compartio BUILD SUCCESSFUL desde su terminal para
+  :app:assembleDebug :app:testDebugUnitTest :app:assembleDebugAndroidTest
+  con --offline --console=plain. App y APK de tests compilados; tarea de
+  tests unitarios satisfactoria, sin registrar aqui cantidad de casos.
+- El usuario probo el APK y reporto funcionamiento correcto. Es un reporte
+  manual general; no se registraron dispositivo, API ni resultados por caso.
+- Las 12 pruebas instrumentadas no se ejecutaron. El intento conectado
+  offline fallo por una dependencia UTP ausente en cache. El usuario
+  prefiere probar el APK manualmente y aplaza la instrumentacion.
+
+Limites: las pruebas de UI montan LibraryScreen con Room y callbacks al
+repositorio; no arrancan el servicio multimedia ni prueban toda la navegacion.
+La conexion AppNavigation -> ViewModel se reviso en codigo; falta registrar
+el resultado manual especifico. Las pruebas de reapertura no sustituyen reinicio de proceso,
+actualizacion de APK ni pruebas de migraciones.
+
+Siguen pendientes identidad estable, duplicados, retirada de carpetas
+y referencias a canciones eliminadas (fase 2). La fase 1 no esta cerrada.
+
+### Revision de compatibilidad y proteccion de apertura - 2026-10-11
+
+- Se reviso el historial: 433008d usa aether_music_db version 1;
+  61ccd52 usa soundflow_database version 2 sin SongEntity.path;
+  c5c8101 agrega path conservando version 2. No hay una migracion generica
+  segura deducible solo del numero de version.
+- MusicDatabase retira la recreacion destructiva y centraliza el constructor
+  para que produccion y pruebas usen la misma politica de apertura.
+- Se mantienen nombre, version, entidades y dependencias. Una base incompatible
+  puede impedir la apertura; se preserva para una recuperacion posterior.
+- Se agregan cuatro pruebas instrumentadas de compatibilidad y conservacion
+  de filas: version actual, upgrade/downgrade no soportados e identidad
+  desconocida. Son casos sinteticos, no migraciones historicas verificadas.
+- El informe unitario anterior confirma un unico test de plantilla
+  (addition_isCorrect), sin fallos. No prueba integridad de Room.
+- Compilacion nueva bloqueada antes de tareas por loopback de Gradle;
+  acceso a cache concedido e IPv4 temporal no resolvieron el error.
+  Las 16 pruebas instrumentadas nuevas siguen sin ejecutarse.
+- El APK existente es anterior a este ajuste; la prueba manual del usuario
+  corresponde a fase 1A, no valida el cambio posterior en MusicDatabase.
+- Politica y matriz de compatibilidad: 06-POLITICA-DE-PERSISTENCIA.md.
+
+La revision de la estrategia de migraciones queda realizada. La implementacion
+de migraciones historicas requiere fixtures y otra intervencion aprobada;
+no se declara resuelta la compatibilidad de todas las versiones publicadas.
+
+### Entrega de desarrollo de fase 1 autorizada - 2026-10-11
+
+El usuario confirma compilacion posterior correcta: BUILD SUCCESSFUL in 1m 14s,
+77 tareas, 15 ejecutadas y 62 actualizadas. APK local regenerado a las 19:11
+(America/Bogota); informe unitario inspeccionado: 1 test, sin fallos ni errores.
+Esto supera el bloqueo de compilacion del agente para el ajuste final.
+La prueba manual satisfactoria anterior corresponde a fase 1A. Instrumentacion
+aplazada (16 tests) y comprobacion manual del ultimo APK siguen pendientes.
+El usuario autoriza guardar/publicar fase 1 y comenzar fase 2. La entrega
+no se presenta como validacion exhaustiva ni compatibilidad historica resuelta.
 
 ## Riesgos por verificar
 
