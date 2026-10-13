@@ -5,8 +5,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 
 /** Static colors: no screen capture, bitmap allocation or animated blur. */
-fun panelColors(scheme: ColorScheme, dark: Boolean, translucent: Boolean): List<Color> {
+fun panelColors(scheme: ColorScheme, dark: Boolean, translucent: Boolean): List<Color> =
+    panelColors(scheme, dark, translucent, subtle = false)
+
+fun panelColors(scheme: ColorScheme, dark: Boolean, translucent: Boolean, subtle: Boolean): List<Color> {
     if (!translucent) return listOf(scheme.surface, scheme.surface)
+    if (subtle) return listOf(
+        lerp(scheme.surface, scheme.primary, if (dark) 0.035f else 0.015f).copy(alpha = 0.99f),
+        scheme.surface.copy(alpha = 0.98f),
+        lerp(scheme.surface, scheme.primaryContainer, 0.04f).copy(alpha = 0.99f)
+    )
     return listOf(
         lerp(scheme.surface, scheme.primary, if (dark) 0.16f else 0.06f).copy(alpha = 0.97f),
         scheme.surface.copy(alpha = 0.95f),

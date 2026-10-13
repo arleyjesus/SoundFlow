@@ -59,6 +59,16 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var viewModel: LibraryViewModel
 
+    override fun onStart() {
+        super.onStart()
+        if (::viewModel.isInitialized) viewModel.playerHandler.setUiForeground(true)
+    }
+
+    override fun onStop() {
+        if (::viewModel.isInitialized) viewModel.playerHandler.setUiForeground(false)
+        super.onStop()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -173,10 +183,10 @@ fun MainAppStructure(viewModel: LibraryViewModel, isDarkMode: Boolean) {
                                 }
                             }
                         )
-                        if (index < navItems.lastIndex) Box(Modifier.width(1.dp).height(26.dp).background(
+                        if (index < navItems.lastIndex) Box(Modifier.width(0.5.dp).height(18.dp).background(
                             androidx.compose.ui.graphics.Brush.verticalGradient(listOf(
                                 MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.05f),
-                                MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
+                                MaterialTheme.colorScheme.outline.copy(alpha = 0.12f),
                                 MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.05f)))))
                     }
                 }

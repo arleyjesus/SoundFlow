@@ -526,3 +526,15 @@ Historial en DataStore separado, excluido de backups configurados; sin migracion
 Detalle y verificación: docs/19-IDENTIDAD-4.0-Y-ESCUCHA-LOCAL.md. Base anterior:
 114 JVM Gradle y Lint 0 errores/81 avisos. Nuevo bloque: 130 JVM directos y Kotlin
 local; Gradle actual bloqueado por loopback, APK/Lint nuevo pendientes.
+
+### 4.0.0-rc.1 — cristal más discreto y respuesta de reproducción
+
+Inicio con menos tinte y borde; iconos simplificados, separadores casi imperceptibles
+y onda de tres curvas animada solo al dibujar. Retirada espera manual de 300 ms
+al saltar; cola reutilizada cuando snapshot/timeline coinciden y reemplazo sin
+stop/clear redundantes. Aviso de preparación tras 450 ms; errores inmediatos.
+Sondeo visual suspendido en segundo plano, claves alfabéticas precalculadas y
+carátula retenida/publicada acotada. Sin cambios de Room/dependencias/versión.
+153 fuentes Kotlin y 137 JVM directos correctos; Gradle bloqueado por loopback.
+Validación Android al final según usuario, sin promesas de latencia/FPS medidos.
+Detalle, límites y pasos finales: docs/20-FLUIDEZ-Y-CRISTAL-SUTIL.md.

@@ -34,7 +34,8 @@ fun RecentPosterCard(song: Song, onClick: () -> Unit) {
     com.example.comarleyaetheraudio.presentation.components.SoundFlowPanel(
         modifier = Modifier
             .width(148.dp)
-            .clickable { onClick() }
+            .clickable { onClick() },
+        subtle = true
     ) {
         Column(modifier = Modifier.padding(8.dp)) {
             Box(

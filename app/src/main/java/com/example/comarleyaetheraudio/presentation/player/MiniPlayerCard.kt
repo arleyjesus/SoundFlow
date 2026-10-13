@@ -12,7 +12,8 @@ import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -26,9 +27,18 @@ import com.example.comarleyaetheraudio.presentation.components.SoundFlowPanel
 
 @Composable
 internal fun PlaybackStatusBanner(state: AudioPlayerState, onRetry: () -> Unit) {
+    // Short seeks and local track changes should not flash a banner or resize the player.
+    // Key the delay to preparation only, not the progress updates arriving every 500 ms.
+    val showBuffering by produceState(false, state.isBuffering, state.isConnecting, state.errorMessage) {
+        value = false
+        if (state.isBuffering && !state.isConnecting && state.errorMessage == null) {
+            delay(450)
+            value = true
+        }
+    }
     val message = state.errorMessage ?: when {
         state.isConnecting -> "Conectando reproductor…"
-        state.isBuffering -> "Preparando audio…"
+        state.isBuffering && showBuffering -> "Preparando audio…"
         else -> return
     }
     Surface(

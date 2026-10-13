@@ -127,7 +127,7 @@ fun HomeScreen(
             Box(Modifier.padding(horizontal = 20.dp)) {
                 com.example.comarleyaetheraudio.presentation.components.SettingsActionCard(
                     title = "Smart DJ y biblioteca inteligente", subtitle = "Redescubre tu música local",
-                    icon = SoundFlowIcons.SmartDJ, onClick = onNavigateToSmartLibrary)
+                    icon = SoundFlowIcons.SmartDJ, subtle = true, onClick = onNavigateToSmartLibrary)
             }
 
             if (recentSongs.isNotEmpty()) {

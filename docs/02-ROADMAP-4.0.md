@@ -356,3 +356,7 @@ Implementada identidad propia, presentación de playlists, fondo personal y rank
 opt-in de escuchas. Ver docs/19. Mantener la única validación APK al finalizar.
 Listas por ánimo propuestas mediante etiquetas personales, todavía sin implementar.
 No confundir commit/push de la rama con lanzamiento público firmado de 4.0.0.
+
+Pulido posterior solicitado: cristal de Inicio más tenue, iconos limpios, nueva
+onda y reducción de trabajo/esperas evitables de reproducción. Ver docs/20.
+137 JVM directos; Gradle/APK final aún pendiente por bloqueo del agente.

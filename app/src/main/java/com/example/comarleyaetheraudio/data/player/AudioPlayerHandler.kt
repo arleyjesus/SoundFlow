@@ -22,6 +22,10 @@ import com.example.comarleyaetheraudio.domain.model.Song
 import com.example.comarleyaetheraudio.domain.playback.playbackDuration
 import com.example.comarleyaetheraudio.domain.playback.boundedPlaybackPosition
 import com.example.comarleyaetheraudio.domain.playback.shiftedPlaybackPosition
+import com.example.comarleyaetheraudio.domain.playback.canReusePlaybackQueue
+import com.example.comarleyaetheraudio.data.local.util.ArtworkDecoder
+import android.graphics.Bitmap
+import java.io.ByteArrayOutputStream
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.Futures
 import kotlinx.coroutines.CancellationException
@@ -50,6 +54,7 @@ class AudioPlayerHandler(private val context: Context) {
 
     private var currentPlaylist: List<Song> = emptyList()
     private var progressJob: Job? = null
+    private var uiForeground = true
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var released = false
@@ -240,7 +245,16 @@ class AudioPlayerHandler(private val context: Context) {
         val mmr = MediaMetadataRetriever()
         return try {
             mmr.setDataSource(context, contentUri)
-            mmr.embeddedPicture
+            val bytes = mmr.embeddedPicture ?: return null
+            val bitmap = ArtworkDecoder.decode(bytes, 1024) ?: return null
+            try {
+                ByteArrayOutputStream().use { output ->
+                    if (bitmap.compress(Bitmap.CompressFormat.JPEG, 82, output) && output.size() <= 512 * 1024)
+                        output.toByteArray() else null
+                }
+            } finally {
+                bitmap.recycle()
+            }
         } catch (_: Exception) {
             null
         } finally {
@@ -264,7 +278,21 @@ class AudioPlayerHandler(private val context: Context) {
         // Asignación de la lista exacta como contexto único de reproducción
         val request = com.example.comarleyaetheraudio.domain.playback.playbackRequest(song.id, playlist.map { it.id }, shuffle)
         val byId = playlist.associateBy { it.id } + (song.id to song)
-        currentPlaylist = request.ids.map { byId.getValue(it) }
+        val requestedPlaylist = request.ids.map { byId.getValue(it) }
+        val p = player ?: return
+        val reuseQueue = canReusePlaybackQueue(requestedPlaylist, currentPlaylist, p.mediaItemCount,
+            Song::id) { index -> p.getMediaItemAt(index).mediaId.toLongOrNull() }
+        currentPlaylist = requestedPlaylist
+
+        if (reuseQueue) {
+            p.shuffleModeEnabled = request.shuffle
+            p.repeatMode = Player.REPEAT_MODE_ALL
+            p.seekTo(request.startIndex, 0L)
+            if (p.playbackState == Player.STATE_IDLE || p.playerError != null) p.prepare()
+            p.volume = 1f
+            p.play()
+            return
+        }
 
         val mediaItems = currentPlaylist.map { s ->
             MediaItem.Builder()
@@ -284,8 +312,7 @@ class AudioPlayerHandler(private val context: Context) {
         val startIndex = request.startIndex
 
         player?.let { p ->
-            p.stop()
-            p.clearMediaItems() // Limpia colas de reproducción anteriores
+            // setMediaItems already replaces the queue; stop/clear added redundant transitions.
             p.setMediaItems(mediaItems, startIndex, 0L)
             p.shuffleModeEnabled = request.shuffle
 
@@ -332,48 +359,16 @@ class AudioPlayerHandler(private val context: Context) {
     }
 
     fun playNext() {
+        cancelTransition()
         if (player?.hasNextMediaItem() == true) {
-            applyCrossfadeAndSwitch { player?.seekToNextMediaItem() }
+            player?.seekToNextMediaItem()
         }
     }
 
     fun playPrevious() {
-        if (player?.hasPreviousMediaItem() == true) {
-            applyCrossfadeAndSwitch { player?.seekToPreviousMediaItem() }
-        }
-    }
-
-    /**
-     * Atenúa el volumen durante un cambio manual (300 ms).
-     * No mezcla audio de dos pistas ni implementa crossfade automático.
-     */
-    private fun applyCrossfadeAndSwitch(action: () -> Unit) {
         cancelTransition()
-        val p = player ?: run { action(); return }
-        if (!p.isPlaying) {
-            action()
-            return
-        }
-
-        val generation = transitionGeneration
-        val initialVolume = p.volume
-        transitionVolume = initialVolume
-        transitionJob = scope.launch {
-            val manualSkipFadeMs = 300L
-            val steps = 5
-            val stepDelay = manualSkipFadeMs / steps
-            try {
-                for (i in 1..steps) {
-                    p.volume = initialVolume * (1f - i.toFloat() / steps)
-                    delay(stepDelay)
-                }
-                action()
-            } finally {
-                if (generation == transitionGeneration) {
-                    p.volume = initialVolume
-                    transitionVolume = null
-                }
-            }
+        if (player?.hasPreviousMediaItem() == true) {
+            player?.seekToPreviousMediaItem()
         }
     }
 
@@ -385,7 +380,17 @@ class AudioPlayerHandler(private val context: Context) {
         transitionVolume = null
     }
 
+    /** Suspend presentation polling only; MediaSession, playback and sleep timer stay active. */
+    fun setUiForeground(foreground: Boolean) {
+        uiForeground = foreground
+        if (!foreground) stopProgressUpdate() else {
+            refreshPlayerState()
+            if (player?.isPlaying == true) startProgressUpdate()
+        }
+    }
+
     private fun startProgressUpdate() {
+        if (!uiForeground) return
         stopProgressUpdate()
         progressJob = scope.launch {
             while (true) {
@@ -404,6 +409,7 @@ class AudioPlayerHandler(private val context: Context) {
 
     private fun stopProgressUpdate() {
         progressJob?.cancel()
+        progressJob = null
     }
 
     fun setAudioEffectsEnabled(enabled: Boolean) = requestAudioEffects(AudioEffectsProtocol.ENABLE) {

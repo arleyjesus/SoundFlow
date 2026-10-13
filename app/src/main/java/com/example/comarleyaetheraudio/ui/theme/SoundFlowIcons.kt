@@ -20,31 +20,29 @@ object SoundFlowIcons {
         moveTo(3f, 10f); lineTo(12f, 3f); lineTo(21f, 10f)
         moveTo(5f, 9f); lineTo(5f, 19f); quadTo(5f,21f,7f,21f)
         lineTo(17f,21f); quadTo(19f,21f,19f,19f); lineTo(19f,9f)
-        moveTo(9f,15f); lineTo(9f,17f); moveTo(12f,12f); lineTo(12f,18f); moveTo(15f,14f); lineTo(15f,17f)
+        moveTo(9f,21f); lineTo(9f,14f); lineTo(15f,14f); lineTo(15f,21f)
     } }
     val Library by lazy { glyph("FlowLibrary") {
-        moveTo(4f,5f); lineTo(4f,20f); moveTo(8f,3f); lineTo(8f,20f)
-        moveTo(12f,6f); lineTo(18f,4f); lineTo(21f,18f); lineTo(15f,20f); close()
-        moveTo(16f,9f); lineTo(17f,14f)
+        moveTo(6f,3f); lineTo(20f,3f); lineTo(20f,17f); lineTo(6f,17f); close()
+        moveTo(3f,7f); lineTo(3f,21f); lineTo(17f,21f)
+        moveTo(10f,7f); lineTo(16f,7f); moveTo(10f,11f); lineTo(14f,11f)
     } }
     val Search by lazy { glyph("FlowSearch") {
         moveTo(17f,10f); curveTo(17f,14f,14f,17f,10f,17f); curveTo(6f,17f,3f,14f,3f,10f)
         curveTo(3f,6f,6f,3f,10f,3f); curveTo(14f,3f,17f,6f,17f,10f); close()
         moveTo(15.5f,15.5f); lineTo(21f,21f)
-        moveTo(7f,10f); lineTo(7f,12f); moveTo(10f,7f); lineTo(10f,13f); moveTo(13f,9f); lineTo(13f,11f)
     } }
     val Profile by lazy { glyph("FlowProfile") {
         moveTo(16f,7f); curveTo(16f,12f,8f,12f,8f,7f); curveTo(8f,2f,16f,2f,16f,7f); close()
         moveTo(4f,21f); lineTo(4f,19f); curveTo(4f,12f,20f,12f,20f,19f); lineTo(20f,21f)
-        moveTo(9f,19f); lineTo(15f,19f)
     } }
     val Play by lazy { glyph("FlowPlay") {
         moveTo(8f,4f); quadTo(6f,3f,6f,6f); lineTo(6f,18f)
         quadTo(6f,21f,8f,20f); lineTo(19f,13f); quadTo(21f,12f,19f,11f); close()
     } }
     val Pause by lazy { glyph("FlowPause") {
-        moveTo(7f,4f); lineTo(7f,20f); moveTo(10f,4f); lineTo(10f,20f)
-        moveTo(15f,4f); lineTo(15f,20f); moveTo(18f,4f); lineTo(18f,20f)
+        moveTo(8f,5f); lineTo(8f,19f)
+        moveTo(16f,5f); lineTo(16f,19f)
     } }
     val Next by lazy { glyph("FlowNext") {
         moveTo(5f,5f); lineTo(15f,12f); lineTo(5f,19f); close()

@@ -14,7 +14,7 @@ import com.example.comarleyaetheraudio.presentation.components.SoundFlowPanel
 
 @Composable
 fun PlaylistMosaicCard(playlist: Playlist, onClick: () -> Unit) {
-    SoundFlowPanel(Modifier.width(156.dp).clickable(onClick = onClick)) {
+    SoundFlowPanel(Modifier.width(156.dp).clickable(onClick = onClick), subtle = true) {
         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             PlaylistCover(playlist.songs, Modifier.fillMaxWidth().height(132.dp))
             Text(playlist.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold,

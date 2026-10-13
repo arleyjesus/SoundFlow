@@ -19,22 +19,31 @@ import com.example.comarleyaetheraudio.ui.theme.LocalAppearance
 import com.example.comarleyaetheraudio.ui.theme.panelColors
 
 @Composable
-fun SoundFlowPanel(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+fun SoundFlowPanel(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) =
+    SoundFlowPanel(modifier, subtle = false, content = content)
+
+@Composable
+fun SoundFlowPanel(modifier: Modifier = Modifier, subtle: Boolean, content: @Composable ColumnScope.() -> Unit) {
     val colors = MaterialTheme.colorScheme
     val appearance = LocalAppearance.current
-    val brush = remember(colors, appearance.isDarkMode, appearance.transparenciesEnabled) {
-        Brush.linearGradient(panelColors(colors, appearance.isDarkMode, appearance.transparenciesEnabled))
+    val brush = remember(colors, appearance.isDarkMode, appearance.transparenciesEnabled, subtle) {
+        Brush.linearGradient(panelColors(colors, appearance.isDarkMode, appearance.transparenciesEnabled, subtle))
     }
     val shape = RoundedCornerShape(24.dp)
     CompositionLocalProvider(LocalContentColor provides colors.onSurface) {
         Column(modifier.clip(shape).background(brush)
-            .border(1.dp, colors.outlineVariant, shape), content = content)
+            .border(if (subtle) 0.5.dp else 1.dp,
+                colors.outlineVariant.copy(alpha = if (subtle) 0.35f else 1f), shape), content = content)
     }
 }
 
 @Composable
-fun SettingsActionCard(title: String, subtitle: String, icon: ImageVector, onClick: () -> Unit) {
-    SoundFlowPanel(Modifier.fillMaxWidth()) {
+fun SettingsActionCard(title: String, subtitle: String, icon: ImageVector, onClick: () -> Unit) =
+    SettingsActionCard(title, subtitle, icon, subtle = false, onClick = onClick)
+
+@Composable
+fun SettingsActionCard(title: String, subtitle: String, icon: ImageVector, subtle: Boolean, onClick: () -> Unit) {
+    SoundFlowPanel(Modifier.fillMaxWidth(), subtle = subtle) {
         Row(Modifier.fillMaxWidth().clickable(onClick = onClick).heightIn(min = 72.dp).padding(18.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.primaryContainer) {

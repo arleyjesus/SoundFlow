@@ -17,7 +17,7 @@ class ThemeContrastTest {
     fun glassPanelsKeepTextReadableOverSupportedSurfaces() {
         for (theme in AppTheme.entries) for (dark in listOf(false, true)) {
             val scheme = soundFlowColorScheme(theme, dark)
-            for (color in panelColors(scheme, dark, true)) {
+            for (color in panelColors(scheme, dark, true) + panelColors(scheme, dark, true, subtle = true)) {
                 for (underlay in listOf(scheme.background, scheme.surface)) {
                     val actual = color.compositeOver(underlay)
                     assertTrue("$theme / $dark / panel text", contrast(actual, scheme.onSurface) >= 4.5f)
