@@ -2,27 +2,22 @@ package com.example.comarleyaetheraudio.presentation.profile
 
 import android.net.Uri
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.Equalizer
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.LightMode
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.example.comarleyaetheraudio.BuildConfig
-import com.example.comarleyaetheraudio.data.local.entity.FolderEntity
+import com.example.comarleyaetheraudio.domain.model.LibraryFolder
+import com.example.comarleyaetheraudio.presentation.components.SettingsActionCard
+import com.example.comarleyaetheraudio.presentation.components.SoundFlowPanel
 import com.example.comarleyaetheraudio.presentation.folders.FoldersScreen
 import com.example.comarleyaetheraudio.ui.theme.AppTheme
 
@@ -31,7 +26,7 @@ import com.example.comarleyaetheraudio.ui.theme.AppTheme
 fun ProfileScreen(
     currentTheme: AppTheme,
     isDarkMode: Boolean,
-    folders: List<FolderEntity>,
+    folders: List<LibraryFolder>,
     onSelectTheme: (AppTheme) -> Unit,
     onToggleDarkMode: (Boolean) -> Unit,
     onAddFolder: (Uri) -> Unit,
@@ -40,171 +35,48 @@ fun ProfileScreen(
     onNavigateToAudioFx: () -> Unit,
     isUpdatingFolders: Boolean = false,
     folderMessage: String? = null,
-    onDismissFolderMessage: () -> Unit = {}
+    onDismissFolderMessage: () -> Unit = {},
+    folderAccessToRestore: String? = null,
+    onRestoreFolderAccess: (String, Uri) -> Unit = { _, _ -> },
+    onNavigateToAppearance: () -> Unit = onNavigateToSettings
 ) {
     var showFoldersDialog by remember { mutableStateOf(false) }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(20.dp)
-    ) {
-        // ENCABEZADO DE USUARIO
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        ) {
-            Row(
-                modifier = Modifier.padding(20.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    modifier = Modifier.size(60.dp).clip(CircleShape),
-                    color = MaterialTheme.colorScheme.primary
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.Person, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
-                    }
-                }
-                Spacer(modifier = Modifier.width(16.dp))
-                Column {
-                    Text("Usuario SoundFlow", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text("SoundFlow ${BuildConfig.VERSION_NAME} • Música local", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+        .verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Text("Perfil", style = MaterialTheme.typography.headlineLarge)
+        Text("Tu espacio en SoundFlow", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        SoundFlowPanel(Modifier.fillMaxWidth()) {
+            Row(Modifier.padding(22.dp), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Icon(Icons.Rounded.Headphones, null, Modifier.size(42.dp), tint = MaterialTheme.colorScheme.primary)
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Text("Tu biblioteca, tu sonido", style = MaterialTheme.typography.titleMedium)
+                    Text("${folders.size} carpetas · ${currentTheme.displayName}", color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // SECCIÓN: PERSONALIZACIÓN VISUAL
-        Text("Personalización", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-        Spacer(modifier = Modifier.height(10.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            AppTheme.values().forEach { theme ->
-                val isSelected = currentTheme == theme
-                Surface(
-                    onClick = { onSelectTheme(theme) },
-                    shape = RoundedCornerShape(14.dp),
-                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                    contentColor = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Box(modifier = Modifier.padding(vertical = 10.dp), contentAlignment = Alignment.Center) {
-                        Text(theme.displayName, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                    }
-                }
+        Text("Personalización", style = MaterialTheme.typography.titleMedium)
+        SettingsActionCard("Apariencia", "Colores, animaciones y superficies de cristal", Icons.Rounded.Palette, onNavigateToAppearance)
+        SoundFlowPanel(Modifier.fillMaxWidth()) {
+            Row(Modifier.fillMaxWidth().toggleable(isDarkMode, role = Role.Switch, onValueChange = onToggleDarkMode)
+                .padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(if (isDarkMode) Icons.Rounded.DarkMode else Icons.Rounded.LightMode, null, tint = MaterialTheme.colorScheme.primary)
+                Text("Modo oscuro", Modifier.weight(1f).padding(horizontal = 16.dp))
+                Switch(isDarkMode, onCheckedChange = null)
             }
         }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // CONMUTADOR MODO CLARO / MODO OSCURO
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-        ) {
-            // DENTRO DE ProfileScreen.kt
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
-                    .clickable { onToggleDarkMode(!isDarkMode) },
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween // 👈 ESTO EMPUJA EL SWITCH A LA DERECHA
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.DarkMode,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Text(
-                        text = "Modo Oscuro",
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-
-                Switch(
-                    checked = isDarkMode,
-                    onCheckedChange = { onToggleDarkMode(it) }
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // SECCIÓN: AUDIO Y ALMACENAMIENTO
-        Text("Herramientas y Preferencias", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-        Spacer(modifier = Modifier.height(10.dp))
-
-        Card(
-            modifier = Modifier.fillMaxWidth().clickable { onNavigateToAudioFx() },
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-        ) {
-            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Equalizer, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                Spacer(modifier = Modifier.width(14.dp))
-                Column {
-                    Text("Ecualizador & DSP", fontWeight = FontWeight.Bold)
-                    Text("Ajusta frecuencias de sonido y graves", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        Card(
-            modifier = Modifier.fillMaxWidth().clickable { showFoldersDialog = true },
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-        ) {
-            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Folder, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                Spacer(modifier = Modifier.width(14.dp))
-                Column {
-                    Text("Carpetas de Música", fontWeight = FontWeight.Bold)
-                    Text("${folders.size} carpetas añadidas al escáner", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        Card(
-            modifier = Modifier.fillMaxWidth().clickable { onNavigateToSettings() },
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-        ) {
-            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                Spacer(modifier = Modifier.width(14.dp))
-                Column {
-                    Text("Configuración Avanzada", fontWeight = FontWeight.Bold)
-                    Text("Escáner de biblioteca y opciones de sistema", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-        }
+        Text("Biblioteca y herramientas", style = MaterialTheme.typography.titleMedium)
+        SettingsActionCard("Carpetas de Música", "Gestiona las carpetas y sus permisos", Icons.Rounded.FolderOpen) { showFoldersDialog = true }
+        SettingsActionCard("Ecualizador & DSP", "Ajusta el sonido de tu reproducción", Icons.Rounded.Equalizer, onNavigateToAudioFx)
+        SettingsActionCard("Ajustes", "Apariencia, almacenamiento e información", Icons.Rounded.Settings, onNavigateToSettings)
+        Text("SoundFlow ${BuildConfig.VERSION_NAME} · Música local", style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 8.dp))
     }
-
     if (showFoldersDialog) {
         ModalBottomSheet(onDismissRequest = { showFoldersDialog = false }) {
-            Box(modifier = Modifier.padding(16.dp)) {
-                FoldersScreen(
-                    folders = folders,
-                    onAddFolder = onAddFolder,
-                    onRemoveFolder = onRemoveFolder,
-                    onFolderClick = { },
-                    isUpdating = isUpdatingFolders,
-                    message = folderMessage,
-                    onDismissMessage = onDismissFolderMessage
-                )
-            }
+            FoldersScreen(folders, onAddFolder, onRemoveFolder, {}, isUpdatingFolders, folderMessage,
+                onDismissFolderMessage, folderAccessToRestore, onRestoreFolderAccess)
         }
     }
 }

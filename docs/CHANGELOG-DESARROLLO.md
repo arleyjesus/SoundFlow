@@ -1,5 +1,176 @@
 ﻿# Registro de desarrollo de SoundFlow 4.0
 
+## 2026-10-12 — Primer bloque funcional de fases 6/7
+
+- Smart DJ local en Inicio: hasta 30 sugerencias por metadatos y favoritos,
+  alternancia por grupos de artistas, tres modos, cola solo al reproducir.
+- Biblioteca inteligente: candidatos por URI o título/artista/duración, escucha
+  de versiones; sin hashing, borrado, fusión ni escritura Room.
+- Privacidad en Ajustes: imágenes Deezer, letras LRCLIB y versiones GitHub
+  independientes, persistentes, conectados y conservados al restablecer Apariencia.
+  Valores ausentes conservan comportamiento anterior; caché/letras locales disponibles.
+- Prepare-SoundFlowRelease.ps1 genera candidato local e informes; sin gestionar
+  firma, cambiar versión, instalar o publicar. Sintaxis PowerShell correcta.
+- 137 fuentes Kotlin comprobadas directamente, 98 JVM sin fallos (10 nuevos).
+  Gradle falla por loopback antes de tareas; APK/Lint nuevos pendientes. Los tests
+  inaccesibles excluidos por el usuario no se reabren como requisitos.
+- Room, dependencias, permisos, firma, versión y datos conservados. Sin staging,
+  commit ni push. Estado y alcance pendiente de innovación/distribución en documento 17.
+
+## Historial — Cierre de fases 1–5 aceptado por el usuario
+
+- Usuario confirma prueba satisfactoria del último APK y solicita excluir pruebas
+  que el agente no puede ejecutar. Se cierran las fases previas a 6/7 en el alcance
+  acordado; instrumentación, memoria/cuadros y matriz visual/accesibilidad exhaustiva
+  no se registran como aprobadas ni se trasladan automáticamente como bloqueos.
+- Tests y evidencias conservados. No se cambian Kotlin, dependencias, Room o datos;
+  no se vuelve a compilar por un cambio documental. Fases 6/7 abiertas, sin release.
+- Documentación actualizada localmente; sin staging, commit ni push.
+
+## 2026-10-12 — Revisión de cierre de desarrollo 4/5
+
+- Verificados informes reales del usuario: Gradle correcto, app/androidTest,
+  88 JVM sin fallos/errores/omitidos, Lint 0 errores/82 avisos/3 sugerencias y
+  dependencias resueltas revisadas. APK aceptado en general; captura de Inspector
+  Opus 48 kHz/estéreo, sin inferir salida efectiva ni calidad de otras canciones.
+- Documentada corrección del fallo Lint anterior: SessionError y AndroidX OptIn
+  del servicio; escape del SDK local sin cambiar ruta ni configuración global.
+- Ajustes posteriores pequeños: visualizador solo anima en RESUMED, título del
+  reproductor flexible y tiempo con Locale.ROOT. 131 fuentes Kotlin correctas y
+  88 JVM directos pasan. Gradle del agente bloqueado por loopback; no APK nuevo.
+- Dependencias: mezcla Compose y downgrades forzados de core/annotation registrados
+  como riesgo, sin actualizar versiones. Clasificados los 82 avisos anteriores;
+  no se ocultan errores ni se añaden baselines. Revisión estática visual completada.
+- ADB sin dispositivos ni emuladores. Instrumentación, memoria/cuadros y matriz
+  visual/TalkBack siguen sin ejecutar. Desarrollo esencial listo con validación
+  externa pendiente; no se declara cierre integral ni lanzamiento de fases 4–7.
+- Rama y modificaciones existentes conservadas; sin staging, commit ni push.
+
+## 2026-10-12 - Ajustes finales 4/5, Audio Inspector y preparación 7
+
+- Apariencia: seguir sistema, restablecimiento visual aislado, animaciones
+  efectivas según Android; cabeceras/diálogos con mejor adaptación a fuente grande.
+- Inicio reutiliza artistas del VM y usa títulos que no simulan historial/ranking;
+  visualizador reutiliza Brush. Reproductor conserva distribución de controles.
+- Audio Inspector a demanda: FLAC nativo por cabecera, otros formatos por
+  MediaExtractor, clasificación conservadora y salida/DAC explícitamente sin medir.
+  Se deja de usar el flag Hi-Res histórico sin modificar entidades ni filas antiguas.
+- Letras: parser común, centésimas correctas y múltiples marcas. Red de letras y
+  actualizaciones acotada; GitHub usa repositorio real, comparación numérica y
+  acción para ver publicación oficial. No descarga/instala automáticamente.
+- 131 fuentes Kotlin comprobadas directamente y 88 JVM pasan. 73 instrumentados
+  nuevos acumulados más plantilla, sin ejecutar. Los trece casos nuevos desde el
+  APK anterior no tienen todavía APK de tests generado.
+- Gradle falla antes de tareas por loopback; sin APK nuevo, lint o dependencias
+  resueltas. Scripts de validación y captura de métricas preparados y parseados.
+- Perfil principal aportado: POCO X7 Pro, Android 16, ~50 canciones de 20–80 MB;
+  Redmi secundario ~200 canciones de ~5 MB, modelo/API por identificar.
+- Documentos 14–16 registran archivos, pruebas, viabilidad y requisitos pendientes.
+  No se declara cierre de fases 4–7 ni release 4.0. Sin staging, commit ni push.
+
+## 2026-10-12 - APK del rediseño aceptado en general
+
+- Usuario confirma prueba satisfactoria del APK. App/tests regenerados a las
+  10:15:34/33 Bogotá, posteriores a las fuentes. Hash diferente del respaldo y
+  componentes nuevos presentes en DEX; el tamaño coincidente no implica APK viejo.
+- XML Gradle: 65 JVM, cero fallos/errores/omitidos, UTC 15:15:37.040Z–15:15:38.303Z.
+- Se supera el pendiente de APK del bloque visual. Instrumentación, accesibilidad,
+  matriz visual y mediciones pendientes; no se declara terminada toda la fase 5.
+- Solo documentación y respaldo local del estado aceptado. Sin cambios de código,
+  staging, commit ni push. Rama refactor/soundflow-4 y cambios existentes conservados.
+
+## 2026-10-12 - Rediseño visual fase 5 sobre APK aceptado
+
+- Negro puro y grises neutros; barra inferior sin bloque gris elevado y mini
+  con degradado/borde, opaco si se deshabilitan transparencias. Inicio conserva
+  estructura; superficies y acentos semánticos compartidos.
+- Perfil/Ajustes renovados y Apariencia directa; panel común en DSP. Crossfades,
+  pestañas, letras y selección respetan Animaciones en rutas intervenidas.
+- Reproductor sin tirador blanco superior y con márgenes seguros; distribución
+  y visualizador conservados. Notch y barras requieren revisión real.
+- Playlist vacía con icono local; retirada acción duplicada «Modificar fotos»
+  que abría selección. Acciones conservadas, sin cambios de datos/audio.
+- Comprobación directa de 116 fuentes Kotlin/Compose y 65 JVM pasan. Tres JVM
+  nuevos y un Android nuevo; 60 instrumentados nuevos acumulados sin ejecutar.
+- Gradle del agente bloqueado antes de tareas por loopback. No hay APK nuevo;
+  no atribuir aceptación/62 XML anteriores a estas fuentes. Matriz visual pendiente.
+- Respaldo aceptado previo y nuevo snapshot local con hashes. Sin staging,
+  commit ni push; entidades, Room y dependencias intactos en esta intervención.
+- [Archivos, pruebas y límites](13-FASE-5-REDISENO-VISUAL.md).
+
+## 2026-10-11 - APK 4B / Apariencia aceptado en general
+
+- Usuario confirma funcionamiento correcto del APK. Verificados archivos app/tests
+  regenerados a las 23:23:57/58 Bogota, posteriores a las fuentes actuales.
+- XML Gradle: 62 JVM (61 especificos y plantilla), cero fallos/errores/omitidos,
+  UTC 2026-10-12T04:23:59–04:24:00. Instrumentacion sin ejecucion registrada.
+- Implementacion esencial fase 4 compilada y aceptada en general; mediciones,
+  informe de dependencias y regresion especifica pendientes. Fase 5 continua
+  pendiente de rediseño completo y aplicacion global de politicas visuales.
+- Solo verificacion de artefactos y actualizacion documental; sin cambios de codigo,
+  staging, commit ni push. Cambios locales conservados en refactor/soundflow-4.
+
+## 2026-10-11 - Implementacion esencial 4B e inicio de Apariencia
+
+- Red/cache de artistas acotadas, claves SHA-256, AtomicFile, backoff y concurrencia
+  limitada. Busqueda cancelable en Default, playlists con songs compartido,
+  progreso aislado de navegacion y colectores UI con ciclo de vida.
+- AudioRepositoryImpl implementa AudioRepository. LibraryViewModel consume el
+  contrato; carpetas usan LibraryFolder sin entidades Room en presentacion.
+- Inicio fase 5: panel Apariencia desde Ajustes, preferencias de efectos
+  independientes en settings_prefs, ColorScheme unico, navegacion/visualizador
+  sin loops al apagar animaciones y reproductor con fondo opaco opcional.
+- 61 JVM directos pasan, incluidos 17 nuevos de fase 4 y cuatro de fase 5.
+  Kotlin/Compose comprueba 71 fuentes seleccionadas, todos los AndroidTest.
+  Cuatro instrumentados nuevos (total 59 nuevos acumulados) sin ejecutar.
+- Gradle falla antes de tareas: Unable to establish loopback connection. No hay
+  APK nuevo ni validacion KSP/Room/empaquetado. No atribuir XML/APK anteriores
+  al estado nuevo. Mediciones de memoria/cuadros y regresion siguen pendientes.
+- Checkpoint 4B previo al cambio visual conservado en local-backups. No cambian
+  entidades, version/nombre Room ni dependencias; sin staging, commit ni push.
+- [Archivos, limites, evidencias y pasos](12-CIERRE-FASE-4-E-INICIO-FASE-5.md).
+
+## 2026-10-11 - Aceptacion de 3C/4A y siguiente bloque 4B
+
+- Usuario confirma funcionamiento correcto del APK. Verificados XML Gradle:
+  41 JVM, cero fallos/errores/omitidos (40 especificas y plantilla), UTC
+  2026-10-12T03:41:30-31. APK app/tests regenerados a las 22:41 Bogota.
+- Los 55 instrumentados nuevos compilaron; no se ejecutaron. No atribuir
+  resultados por caso/dispositivo/API al reporte manual general.
+- Desarrollo final de fase 3 aceptado con limites; fase 4A aceptada en general,
+  mediciones pendientes. Siguiente: 4B cache/red artistas, streams, busqueda
+  y contrato real. Fase 5 integral sigue planificada.
+- Respaldo local fase3C-fase4A-aceptada-20261011-2241 con fuentes, APK,
+  XML y hashes SHA-256. Se conservan snapshots anteriores.
+- Solo documentacion/respaldo en esta intervencion; no cambia codigo ni
+  dependencias. Git revisado, sin staging, commit ni push nuevos.
+
+## 2026-10-11 - Ajuste final 3C e inicio autorizado de fase 4
+
+- Respaldo fuentes/APK aceptado de fase 3B en
+  local-backups/fase3B-validada-20261011-2208, con manifest SHA-256.
+- Informacion del archivo en reproductor: MIME/Hz/kbps guardados, desconocidos
+  explicitos y sin promesa Hi-Res/bit-perfect. Room y Song sin cambios.
+- Temporizador con estados de cuenta atras, espera, detencion y apagado;
+  espera reconoce repeticion y puede cancelarse sin minuto ficticio.
+- Fase 4A: portadas muestreadas, cache de archivos sin RAM duplicada,
+  extracciones serializadas y publicacion atomica. Hits independientes del
+  proveedor lento; loader antiguo limitado.
+- songs compartido con controlador; transformaciones de listas en Default,
+  LRC local en IO y conexion HTTP cerrada con cancelacion propagada.
+- Ajustes describe cache real y version BuildConfig; se retiran promesas
+  de rendimiento no medido. Sin cambios de dependencias/configuracion global.
+- JUnit directo 40/40; 36 fuentes comprobadas parcialmente con K2/Compose.
+  Seis instrumentados nuevos (total 55 escritos), sin ejecucion.
+- Gradle bloqueado antes de tareas: Unable to establish loopback connection.
+  No se genera APK nuevo; cierre validado de fase 3 y de 4A pendientes.
+- Fase 4 auditada: cache/red de artistas, streams/derivaciones, contrato real,
+  dependencias declaradas y mediciones como pendientes esenciales.
+- Fase 5 definida como rediseño integral con paletas, claro/oscuro y controles
+  independientes de animaciones/transparencias. Planificada, no iniciada.
+- Documentos 09/10/11 y registros generales actualizados. Cambios previos
+  conservados; sin staging, commit ni push nuevos.
+
 ## Estado actual
 
 Rama: refactor/soundflow-4
@@ -16,7 +187,7 @@ Publicacion remota no verificada en esta intervencion.
 
 ### Fase 1 - Persistencia
 
-Cambios preparados:
+Cambios publicados en 7c19fd4:
 - Favoritos persistentes mediante Room.
 - Renombrado de playlists con UPDATE.
 - Limpieza transaccional de relaciones al eliminar playlists.
@@ -27,21 +198,35 @@ Validacion historica reportada por el usuario:
 - Fase 1A: compilacion posterior correcta y prueba manual general satisfactoria
   reportadas por el usuario (ver actualizacion 2026-10-11).
 
-Pendiente:
-- Comprobar manualmente el APK con el ajuste final de MusicDatabase (compilado).
-- Verificaciones internas e instrumentacion (aplazada por el usuario).
-- Revision final, autorizacion de commit y publicacion de fase.
+Verificaciones internas e instrumentacion aplazadas por el usuario;
+compatibilidad historica con fixtures reales sigue pendiente. El cierre
+de desarrollo y publicacion no significan que los 16 instrumentados pasaron.
 
 ### Fase 2 - Biblioteca
 
-Planificado:
+Implementado:
 - Sincronizacion por identidad estable.
 - Preservacion de IDs.
 - Prevencion de duplicados.
 - Seguridad ante escaneos fallidos.
 
-Estado: primer bloque local compilado y prueba manual general satisfactoria
-reportada; instrumentacion y publicacion pendientes.
+Estado: primer bloque publicado en ce6f621. Desarrollo final aceptado por el
+usuario tras compilacion (16s) y funcionamiento correcto del APK. Once pruebas
+de identidad pasan en Gradle; 36 instrumentados compilados, sin ejecutar.
+Respaldo local previo a fase 3 en local-backups/fase2-validada-20261011.
+Cambios finales sin nuevo commit/push. Mediciones exhaustivas pendientes.
+
+### Fase 3 - Motor y diseno interno
+
+Primer bloque compilado con Gradle desde terminal del usuario; 17 tests JVM
+sin fallos (16 especificos y uno de plantilla). APK con aceptacion manual
+general reportada; 41 instrumentados nuevos compilados, sin ejecutar.
+Fase abierta. AudioFX y panel renovado propuestos como siguiente bloque.
+
+Fase 3B implementada por autorizacion posterior: efectos del servicio y panel
+renovado. Compilacion posterior verificada: 29 JVM sin fallos y APK con aceptacion
+manual general reportada. 49 instrumentados compilados, sin ejecutar. Propuesta
+3C para ajustes finales; sin cambios Kotlin en el registro. Ver documento 08.
 
 ## 2026-10-10 - Fase 1A: favoritos y playlists
 
@@ -176,8 +361,157 @@ siguen pendientes. No se hicieron commits ni push. La fase 1 sigue abierta.
   y continuar con identidad SAF entre arboles y permisos revocados.
 - Se preparan solo codigo, pruebas y documentacion del bloque. Imagenes e
   informes locales conservados fuera de esta entrega. Instrumentacion aplazada.
+- Commit ce6f621 creado y push confirmado a origin/refactor/soundflow-4.
+
+## 2026-10-11 - Segundo bloque local de fase 2: identidad SAF
+
+- SongIdentity compara documentos por autoridad/documentId, conservando URI
+  exacta para otras fuentes. IDs opacos, decodificacion unica, sin normalizar rutas.
+- DAO y FolderScanner usan la misma regla. Los alias entre carpetas rechazan
+  toda la importacion; los alias de un escaneo se insertan una sola vez.
+- No se cambian URIs guardadas, entidades, esquema, dependencias ni reproduccion.
+  Duplicados historicos y recuperacion automatica de permisos quedan pendientes.
+- Diez pruebas JVM nuevas pasan con Kotlin 2.2.10 y JUnit 4.13.2 locales, fuera
+  de Gradle. Primer intento aislado no pudo iniciar Java; al ejecutar con permisos
+  se corrigio la seleccion de JAR binario de JUnit y el resultado fue OK (10 tests).
+- Cuatro pruebas instrumentadas nuevas de alias/integridad y permiso denegado,
+  pendientes de compilar y ejecutar. No simulan revocacion real durante escaneo.
+- Gradle fallo antes de tareas por Unable to establish loopback connection.
+  No se genero APK nuevo para este bloque. El APK validado es el de ce6f621.
+- README, auditoria, arquitectura, roadmap y plan de pruebas actualizados.
+  Segundo bloque sin commit ni push; fase 2 abierta. Imagenes e informes del
+  usuario conservados sin modificar ni preparar para commit.
+
+## 2026-10-11 - Validacion del segundo bloque SAF
+
+- El usuario confirma: compila y funciona correctamente. Aceptacion manual
+  general, sin atribuir resultados individuales no documentados.
+- XML Gradle de SongIdentityTest inspeccionado: 10 tests, cero fallos, errores
+  u omitidos; timestamp UTC 2026-10-12T01:08:55. APK de app y de tests
+  regenerados a las 20:08 America/Bogota. 31 tests instrumentados nuevos
+  compilados, ninguno ejecutado.
+- Actualizados README, auditoria, roadmap y plan de pruebas. Sin cambios Kotlin
+  ni nuevas ejecuciones de Gradle en esta intervencion. Sin commit ni push.
+- Pendientes: acceso SAF perdido y proveedores reales, revision de MediaStore,
+  biblioteca grande y politica para duplicados historicos. Fase 2 abierta.
+
+## 2026-10-11 - Ajuste final de fase 2 y diagnostico de fase 3
+
+- Usuario autoriza completar fase 2, guardar cambios e iniciar fase 3.
+- Recuperacion de acceso contextual a carpeta: selector, cancelacion sin escritura,
+  rechazo de URI distinta antes de tomar permiso e importar; estado transitorio
+  conectado por ViewModel, navegacion y Perfil hasta FoldersScreen.
+- Consulta de canciones de la carpeta y reutilizacion de metadatos conocidos
+  en FolderScanner. Validacion transaccional de identidad y pertenencia conservada.
+- Revision MediaStore: sin llamadas desde la app. README corregido. Mantener
+  fuentes separadas y preservar duplicados historicos con todas sus referencias.
+- Once tests JVM pasan via compilador Kotlin/JUnit locales; nuevo caso 10.000
+  documentos. Cinco instrumentados nuevos (3 Room, 2 Compose), sin compilar ni
+  ejecutar. Total 36 instrumentados nuevos, ninguno ejecutado.
+- Gradle del agente vuelve a fallar antes de tareas por loopback. Solicitada
+  compilacion local al usuario. No se registra exito ni APK actualizado del ajuste.
+- Diagnostico inicial Media3 documentado en 07-FASE-3-MOTOR-DE-AUDIO.md. No se
+  modifica todavia el reproductor; implementacion posterior a validar fase 2.
+- Cambios guardados en C:\SoundFlow-Git. Sin cambios de entidades, nombre o
+  version de Room, dependencias ni configuracion global. Sin commit ni push.
+
+## 2026-10-11 - Cierre de desarrollo de fase 2 aceptado
+
+- Usuario confirma BUILD SUCCESSFUL in 16s, 77 tareas (15 ejecutadas,
+  62 actualizadas), y APK funcionando correctamente. XML revisado: 11 tests
+  de identidad sin fallos, errores u omitidos; app y androidTest regenerados
+  a las 20:50 America/Bogota. 36 instrumentados compilados, ninguno ejecutado.
+- Aceptacion manual general; rendimiento exhaustivo, proveedores reales y
+  revocacion durante lectura mantienen limites documentados.
+- Usuario pide guardar fase 2 y comenzar fase 3 con mejoras de estilo/diseno
+  interno. Se prepara copia local de fuentes y APK antes de editar reproduccion.
+- No se interpreta guardar como autorizacion nueva de commit o push.
+
+## 2026-10-11 - Fase 3: ciclo de vida, errores y diseno del reproductor
+
+- Respaldo de fase 2 previo a cambios: ZIP con 134 entradas, APK validado,
+  patch y manifiesto. Copia APK comprobada por SHA-256. Carpeta local-backups
+  ignorada en Git para preservar copia tras clean sin publicar binarios.
+- ViewModelProvider retiene el controlador durante rotacion; cierre idempotente
+  de future/listeners/jobs/efectos al terminar su propietario. Cola del servicio
+  resuelta por ID Room; ultima seleccion pendiente conservada al conectar.
+- AudioAttributes, focus y becoming noisy configurados en ExoPlayer del servicio.
+  Sin reintento incondicional en onPlayerError; mensajes y accion explicita.
+- Caratulas IO, bitmap muestreado y paleta fuera del hilo principal; cancelacion
+  de peticiones antiguas y un job de atenuacion que restaura volumen.
+- Temporizador conectado al dialogo; minutos respetados y listener cancelable.
+  Sigue ligado al ViewModel: no prometer persistencia tras cierre del cliente.
+- MiniPlayerCard y FullPlayerSheet: controles de 48 dp, jerarquia visual,
+  colores del tema, estados de conexion/error, scroll normal y etiquetas +/-10s.
+- Gradle bloqueado antes de tareas por Unable to establish loopback connection.
+  Compilacion directa parcial de ocho archivos productivos y tres archivos de
+  tests con Kotlin/Compose locales correcta. No reemplaza build completo/KSP/APK.
+- JUnit directo: 16 tests pasan (11 identidad + 5 posicion). Cinco nuevos
+  instrumentados escritos y comprobados parcialmente con K2, ninguno ejecutado.
+  Los 36 anteriores compilaron con Gradle en fase 2, ninguno ejecutado.
+- Pendiente: build desde terminal del usuario, APK fase 3 y pruebas de audio,
+  rotacion, temporizador, controles y diseno. Fase 3 abierta; AudioFX/gapless/
+  Hi-Res y ampliacion visual registrados. Room y dependencias sin cambios.
+- Cambios guardados en C:\SoundFlow-Git, sin staging, commit ni push nuevos.
+
+## 2026-10-11 - Aceptacion del primer bloque de fase 3
+
+- Usuario confirma que compila y el APK funciona correctamente. Inspeccion
+  XML Gradle: 11 identidad, 5 posicion y 1 plantilla, cero fallos/errores/omitidos.
+  Timestamps UTC 2026-10-12T02:22:36-37; APK app y tests a las 21:22 Bogota.
+- Los 41 instrumentados nuevos compilaron, sin ejecucion registrada. Aceptacion
+  manual general; no afirmar pruebas particulares de audio o accesibilidad.
+- Revision de pendientes: inicializadores AudioFX sin llamadas; sliders de
+  graves/virtualizador locales y switch que permite activacion con efecto nulo.
+  Propuesto conectar efectos al servicio y renovar panel, apagados por defecto
+  y con estado real de soporte/error. Todavia sin implementacion de este bloque.
+- Solo documentacion actualizada en esta intervencion. Sin cambios Kotlin,
+  nueva compilacion, staging, commit ni push. La fase 3 sigue abierta.
+
+## Fase 3B - AudioFX del servicio y panel renovado
+
+- Usuario autoriza continuar. Rama y cambios locales revisados/conservados.
+  Respaldo previo fase 3A: ZIP, APK aceptado y manifiesto SHA-256 en
+  local-backups/fase3A-validada-20261011-2122. Se conserva respaldo fase 2.
+- Servicio propietario de Equalizer, BassBoost y Virtualizer sobre sesion real.
+  Worker serial para AudioFX; callbacks, soporte parcial, errores y release.
+  ID nuevo reinicia neutro/apagado; mismo servicio/sesion conserva ajustes.
+- Contrato propio Media3 con estado Bundle, revision, UID de app y timeout
+  de cinco segundos. Handler expone StateFlow; UI no toca objetos nativos.
+- Panel Material 3 con secciones, controles/valores confirmados, errores,
+  reintento y Restablecer y desactivar. Ningun efecto activado por defecto.
+- Inicializador DSP sin consumidores retirado del handler, incluida ganancia
+  LoudnessEnhancer de 800 mB. EqualizerHandler.kt conservado sin llamadas.
+- JUnit directo: 28 pasan (12 AudioFX, 11 identidad, 5 posicion). K2/Compose
+  parcial correcto con bibliotecas locales. Gradle bloqueado antes de tareas
+  por Unable to establish loopback connection; no APK nuevo generado.
+- Ocho instrumentados nuevos escritos y test de conexion ampliado; total 49,
+  ninguno ejecutado. Build completo y QA audible/visual pendientes. No se
+  actualizan Room, dependencias, version de app ni configuracion global.
+- Actualizadas auditoria, arquitectura, roadmap y pruebas. Sin staging,
+  commit ni push nuevos. Fase 3 abierta; Hi-Res/transiciones siguen pendientes.
+
+## 2026-10-11 - Aceptacion de fase 3B y propuesta de ajuste final
+
+- Usuario confirma funcionamiento correcto del APK. XML Gradle: 29 JVM,
+  cero fallos/errores/omitidos (12 AudioFX, 11 identidad, 5 posicion, 1 plantilla),
+  UTC 2026-10-12T03:08:28. APK app y tests regenerados a las 22:08 Bogota.
+- Los 49 instrumentados nuevos compilaron, sin ejecucion registrada. Aceptacion
+  manual general; no inventar resultados por efecto, dispositivo o recorrido.
+- Propuesta 3C: informacion de archivo fiable, estado de espera del temporizador
+  y limites de transiciones; despues regresion y revision de cierre de fase 3.
+- Solo documentacion actualizada; sin cambios Kotlin, nuevas pruebas ejecutadas,
+  staging, commit ni push. Fase 3 sigue abierta, fase 4 no iniciada.
 
 ## Regla de mantenimiento
 
 Actualizar este archivo despues de cada cambio
 importante y al cerrar cada fase.
+
+### 2026-10-12 — Orden visible y pulido posterior aprobado
+
+Implementado el bloque de docs/18-DIAGNOSTICO-ORDEN-Y-PULIDO-4.0.md: colas del
+contexto visible, aleatorio explícito, orden persistente, categorías de búsqueda,
+retratos conservadores y pulido de Inicio/Biblioteca/reproductor. 114 tests JVM
+por ejecución directa; Gradle bloqueado antes de tareas por loopback. Prueba APK
+reservada por el usuario para el final. Sin cambios de Room/dependencias ni commit.

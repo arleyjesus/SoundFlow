@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import com.example.comarleyaetheraudio.data.local.MusicDao
+import com.example.comarleyaetheraudio.data.local.FolderAccessMismatchException
 import com.example.comarleyaetheraudio.data.local.SongImportResult
 import com.example.comarleyaetheraudio.data.local.dao.PlaylistDao
 import com.example.comarleyaetheraudio.data.local.entity.FolderEntity
@@ -13,7 +14,11 @@ import com.example.comarleyaetheraudio.data.local.entity.SongEntity
 import com.example.comarleyaetheraudio.data.local.util.FolderScanner
 import com.example.comarleyaetheraudio.domain.model.Playlist
 import com.example.comarleyaetheraudio.domain.model.Song
+import com.example.comarleyaetheraudio.domain.model.LibraryFolder
+import com.example.comarleyaetheraudio.domain.repository.AudioRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 
@@ -22,20 +27,23 @@ class AudioRepositoryImpl(
     private val musicDao: MusicDao,
     private val playlistDao: PlaylistDao,
     private val scanner: FolderScanner
-) {
+) : AudioRepository {
+    private val audioInspector = com.example.comarleyaetheraudio.data.local.util.AndroidAudioInspector(context)
+
+    override suspend fun inspectAudio(uri: Uri) = audioInspector.inspect(uri)
 
     // FAVORITOS PERSISTENTES EN ROOM
 
-    val favoriteIds: Flow<List<Long>> =
+    override val favoriteIds: Flow<List<Long>> =
         musicDao.getFavoriteSongIds()
 
-    suspend fun toggleFavorite(songId: Long) {
+    override suspend fun toggleFavorite(songId: Long) {
         musicDao.toggleFavorite(songId)
     }
 
     // BIBLIOTECA MUSICAL
 
-    val allSongs: Flow<List<Song>> =
+    override val allSongs: Flow<List<Song>> =
         musicDao.getAllSongs().map { entities ->
             entities.map { entity ->
                 Song(
@@ -53,20 +61,23 @@ class AudioRepositoryImpl(
                     mimeType = entity.mimeType,
                     bitrate = entity.bitrate,
                     sampleRate = entity.sampleRate,
-                    isHiRes = entity.isHiRes,
+                    // The legacy stored flag was inferred without source bit depth; never trust it.
+                    isHiRes = false,
                     path = entity.path,
                     folderPath = entity.folderName,
                     folderUri = entity.folderUri
                 )
             }
-        }
+        }.flowOn(Dispatchers.Default)
 
     // PLAYLISTS
 
-    val allPlaylists: Flow<List<Playlist>> = combine(
+    override val allPlaylists: Flow<List<Playlist>> get() = observePlaylists(allSongs)
+
+    override fun observePlaylists(library: Flow<List<Song>>): Flow<List<Playlist>> = combine(
         playlistDao.getAllPlaylists(),
         playlistDao.getAllPlaylistSongsFlow(),
-        allSongs
+        library
     ) { playlistEntities, crossRefs, songs ->
 
         val songsById = songs.associateBy { it.id }
@@ -88,14 +99,15 @@ class AudioRepositoryImpl(
                 songs = playlistSongs
             )
         }
-    }
+    }.flowOn(Dispatchers.Default)
 
     // CARPETAS
 
-    val allFolders: Flow<List<FolderEntity>> =
-        musicDao.getAllFolders()
+    override val allFolders: Flow<List<LibraryFolder>> = musicDao.getAllFolders().map { folders ->
+        folders.map { LibraryFolder(it.uriString, it.name, it.path, it.songCount, it.lastScannedMs) }
+    }.flowOn(Dispatchers.Default)
 
-    suspend fun importFolder(uri: Uri): SongImportResult {
+    override suspend fun importFolder(uri: Uri): SongImportResult {
         val resolver = context.contentResolver
         if (resolver.persistedUriPermissions.none { it.uri == uri && it.isReadPermission }) {
             resolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -103,14 +115,20 @@ class AudioRepositoryImpl(
         val folderPath = uri.toString()
         val folderName = uri.lastPathSegment?.substringAfterLast(":") ?: "Carpeta"
         // El escaneo termina antes de abrir la transaccion de escritura.
-        val songs = scanner.scanFolderUri(uri, folderName)
+        val songs = scanner.scanFolderUri(uri, folderName, musicDao.getSongsForFolderSnapshot(folderPath))
         return musicDao.importFolderSongs(
             FolderEntity(uriString = folderPath, name = folderName, path = folderPath), songs
         )
     }
 
-    suspend fun removeFolder(path: String) {
-        musicDao.removeFolderAndRelations(path)
+    override suspend fun restoreFolderAccess(originalUri: String, selectedUri: Uri): SongImportResult {
+        // Recuperar acceso nunca debe importar otra carpeta ni mover referencias.
+        if (originalUri != selectedUri.toString()) throw FolderAccessMismatchException()
+        return importFolder(selectedUri)
+    }
+
+    override suspend fun removeFolder(folderUri: String) {
+        musicDao.removeFolderAndRelations(folderUri)
     }
 
     suspend fun insertFolder(folder: FolderEntity) {
@@ -127,7 +145,7 @@ class AudioRepositoryImpl(
 
     // PLAYLISTS: CREAR
 
-    suspend fun createPlaylist(name: String) {
+    override suspend fun createPlaylist(name: String) {
         val cleanName = name.trim()
 
         if (cleanName.isBlank()) return
@@ -139,7 +157,7 @@ class AudioRepositoryImpl(
 
     // PLAYLISTS: RENOMBRAR SIN ALTERAR CREATEDAT
 
-    suspend fun renamePlaylist(
+    override suspend fun renamePlaylist(
         playlistId: Long,
         newName: String
     ) {
@@ -155,7 +173,7 @@ class AudioRepositoryImpl(
 
     // PLAYLISTS: ELIMINAR CON SUS RELACIONES
 
-    suspend fun deletePlaylist(playlist: Playlist) {
+    override suspend fun deletePlaylist(playlist: Playlist) {
         playlistDao.deletePlaylistAndRelations(
             PlaylistEntity(
                 id = playlist.id,
@@ -166,7 +184,7 @@ class AudioRepositoryImpl(
 
     // PLAYLISTS: AGREGAR UNA CANCION
 
-    suspend fun addSongToPlaylist(
+    override suspend fun addSongToPlaylist(
         playlistId: Long,
         songId: Long
     ) {
@@ -177,7 +195,7 @@ class AudioRepositoryImpl(
     // Se conserva el nombre publico por compatibilidad. La lista es la
     // seleccion completa; para una adicion individual usar addSongToPlaylist.
 
-    suspend fun addSongsToPlaylist(
+    override suspend fun addSongsToPlaylist(
         playlistId: Long,
         songIds: List<Long>
     ) {
@@ -186,7 +204,7 @@ class AudioRepositoryImpl(
 
     // METADATOS
 
-    suspend fun updateSongTags(
+    override suspend fun updateSongTags(
         songId: Long,
         newTitle: String,
         newArtist: String,

@@ -8,7 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.PlaylistAdd
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,11 +16,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.comarleyaetheraudio.domain.model.Playlist
 import com.example.comarleyaetheraudio.domain.model.Song
-import com.example.comarleyaetheraudio.ui.theme.ElectricPurple
-import com.example.comarleyaetheraudio.ui.theme.LightLavender
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,17 +49,17 @@ fun SongOptionsMenuSheet(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1
+                maxLines = 1, overflow = TextOverflow.Ellipsis
             )
             Text(
                 text = song.artist,
                 style = MaterialTheme.typography.bodySmall,
-                color = LightLavender,
-                maxLines = 1
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1, overflow = TextOverflow.Ellipsis
             )
 
             Spacer(modifier = Modifier.height(16.dp))
-            Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             Spacer(modifier = Modifier.height(8.dp))
 
             if (!showPlaylistSelection) {
@@ -76,7 +75,7 @@ fun SongOptionsMenuSheet(
                         Icon(
                             imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                             contentDescription = null,
-                            tint = if (isFavorite) Color.Red else ElectricPurple
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     },
                     modifier = Modifier.clickable {
@@ -95,9 +94,9 @@ fun SongOptionsMenuSheet(
                     },
                     leadingContent = {
                         Icon(
-                            imageVector = Icons.Default.PlaylistAdd,
+                            imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
                             contentDescription = null,
-                            tint = ElectricPurple
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     },
                     modifier = Modifier.clickable {
@@ -109,7 +108,7 @@ fun SongOptionsMenuSheet(
                 Text(
                     text = "Selecciona una lista:",
                     style = MaterialTheme.typography.titleSmall,
-                    color = LightLavender,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
 
@@ -131,13 +130,14 @@ fun SongOptionsMenuSheet(
                                         onAddToPlaylist(playlist.id)
                                         onDismiss()
                                     }
+                                    .heightIn(min = 48.dp)
                                     .padding(vertical = 12.dp, horizontal = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.PlaylistAdd,
+                                    imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
                                     contentDescription = null,
-                                    tint = LightLavender,
+                                    tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))

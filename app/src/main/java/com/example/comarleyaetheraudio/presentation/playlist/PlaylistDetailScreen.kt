@@ -1,5 +1,7 @@
 package com.example.comarleyaetheraudio.presentation.playlist
 
+import com.example.comarleyaetheraudio.ui.theme.LocalAppearance
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -11,13 +13,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Collections
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material.icons.automirrored.filled.QueueMusic
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Collections
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -52,7 +55,8 @@ fun PlaylistDetailScreen(
     onAddSongsConfirmed: (List<Long>) -> Unit,
     onPlayAllClick: (Boolean) -> Unit,
     onSongClick: (Song) -> Unit,
-    onRemoveSongClick: (Song) -> Unit
+    onRemoveSongClick: (Song) -> Unit,
+    onPlayContext: ((Song, List<Song>, Boolean) -> Unit)? = null
 ) {
     BackHandler {
         onBackClick()
@@ -69,10 +73,17 @@ fun PlaylistDetailScreen(
         if (sortDescending) playlist.songs.sortedByDescending { it.id }
         else playlist.songs
     }
+    fun playVisible(shuffle: Boolean) {
+        if (onPlayContext == null) onPlayAllClick(shuffle)
+        else if (sortedPlaylistSongs.isNotEmpty()) {
+            val first = if (shuffle) sortedPlaylistSongs.random() else sortedPlaylistSongs.first()
+            onPlayContext(first, sortedPlaylistSongs, shuffle)
+        }
+    }
 
-    val backgroundColor = if (isDarkMode) Color(0xFF09090B) else Color(0xFFFAFAFC)
-    val cardBgColor = if (isDarkMode) Color(0xFF141417) else Color(0xFFF1F1F5)
-    val textColor = if (isDarkMode) Color.White else Color(0xFF111111)
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val cardBgColor = MaterialTheme.colorScheme.surface
+    val textColor = MaterialTheme.colorScheme.onSurface
 
     val isShuffleActive = playerState.isShuffleEnabled
 
@@ -137,15 +148,11 @@ fun PlaylistDetailScreen(
                             }
                         }
                     } else {
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data("https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000&auto=format&fit=crop")
-                                .crossfade(true)
-                                .build(),
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
+                        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center) {
+                            Icon(Icons.AutoMirrored.Filled.QueueMusic, null, Modifier.size(72.dp),
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                        }
                     }
 
                     Box(
@@ -171,7 +178,7 @@ fun PlaylistDetailScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = playlist.name.uppercase(),
+                        text = playlist.name,
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Black,
                             fontSize = 22.sp
@@ -203,7 +210,7 @@ fun PlaylistDetailScreen(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = if (sortDescending) "Más Recientes Primero" else "Orden Original",
+                            text = if (sortDescending) "Añadidas recientemente" else "Orden de la playlist",
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -216,46 +223,46 @@ fun PlaylistDetailScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Button(
-                            onClick = { onPlayAllClick(true) },
+                            onClick = { playVisible(true) },
                             modifier = Modifier
                                 .weight(1f)
-                                .height(46.dp),
+                                .heightIn(min = 48.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isShuffleActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.20f) else (if (isDarkMode) Color(0xFF1E1E22) else Color(0xFFE8E8ED)),
+                                containerColor = if (isShuffleActive) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
                                 contentColor = if (isShuffleActive) MaterialTheme.colorScheme.primary else textColor
                             ),
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Icon(
-                                Icons.Default.Shuffle,
+                                Icons.Rounded.Shuffle,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp),
                                 tint = if (isShuffleActive) MaterialTheme.colorScheme.primary else textColor
                             )
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("SHUFFLE", fontWeight = FontWeight.Bold)
+                            Text("Aleatorio", fontWeight = FontWeight.Bold)
                         }
 
                         Button(
-                            onClick = { onPlayAllClick(false) },
+                            onClick = { playVisible(false) },
                             modifier = Modifier
                                 .weight(1f)
-                                .height(46.dp)
+                                .heightIn(min = 48.dp)
                                 .shadow(
                                     elevation = 6.dp,
                                     shape = RoundedCornerShape(12.dp),
-                                    ambientColor = Color(0xFFBB86FC),
-                                    spotColor = Color(0xFFBB86FC)
+                                    ambientColor = MaterialTheme.colorScheme.primary,
+                                    spotColor = MaterialTheme.colorScheme.primary
                                 ),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isDarkMode) Color.White else MaterialTheme.colorScheme.primary,
-                                contentColor = if (isDarkMode) Color.Black else Color.White
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
                             ),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("PLAY", fontWeight = FontWeight.Black)
+                            Text("Reproducir", fontWeight = FontWeight.Black)
                         }
                     }
 
@@ -270,11 +277,11 @@ fun PlaylistDetailScreen(
 
                 Surface(
                     shape = RoundedCornerShape(10.dp),
-                    color = if (isCurrentPlaying) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f) else cardBgColor,
+                    color = if (isCurrentPlaying) MaterialTheme.colorScheme.primaryContainer else cardBgColor,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 6.dp, vertical = 3.dp)
-                        .clickable { onSongClick(song) }
+                        .clickable { if (onPlayContext != null) onPlayContext(song, sortedPlaylistSongs, false) else onSongClick(song) }
                 ) {
                     Row(
                         modifier = Modifier
@@ -305,12 +312,12 @@ fun PlaylistDetailScreen(
                         }
 
                         if (isFavorite) {
-                            Icon(Icons.Default.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp).padding(end = 6.dp))
+                            Icon(Icons.Rounded.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp).padding(end = 6.dp))
                         }
 
                         Box {
                             IconButton(onClick = { expandedMenuSongId = song.id }) {
-                                Icon(Icons.Default.MoreVert, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Icon(Icons.Rounded.MoreVert, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             DropdownMenu(
                                 expanded = expandedMenuSongId == song.id,
@@ -342,7 +349,7 @@ fun PlaylistDetailScreen(
                 onClick = onBackClick,
                 modifier = Modifier
                     .clip(CircleShape)
-                    .background(backgroundColor.copy(alpha = 0.7f))
+                    .background(MaterialTheme.colorScheme.surface)
             ) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = textColor)
             }
@@ -352,18 +359,9 @@ fun PlaylistDetailScreen(
                     onClick = { showAddSongsDialog = true },
                     modifier = Modifier
                         .clip(CircleShape)
-                        .background(backgroundColor.copy(alpha = 0.7f))
+                        .background(MaterialTheme.colorScheme.surface)
                 ) {
-                    Icon(Icons.Default.Collections, contentDescription = "Modificar Fotos", tint = MaterialTheme.colorScheme.primary)
-                }
-
-                IconButton(
-                    onClick = { showAddSongsDialog = true },
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .background(backgroundColor.copy(alpha = 0.7f))
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Añadir más", tint = textColor)
+                    Icon(Icons.Rounded.Add, contentDescription = "Añadir más", tint = textColor)
                 }
             }
         }
@@ -403,7 +401,7 @@ private fun HeaderMosaicTile(
     AsyncImage(
         model = ImageRequest.Builder(context)
             .data(cachedCoverFile ?: song.albumArtUri)
-            .crossfade(true)
+            .crossfade(LocalAppearance.current.motionEnabled)
             .build(),
         contentDescription = null,
         modifier = modifier,
@@ -439,7 +437,7 @@ private fun PlaylistSongCover(
             AsyncImage(
                 model = ImageRequest.Builder(context)
                     .data(cachedCoverFile)
-                    .crossfade(true)
+                    .crossfade(LocalAppearance.current.motionEnabled)
                     .build(),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
@@ -449,7 +447,7 @@ private fun PlaylistSongCover(
             AsyncImage(
                 model = ImageRequest.Builder(context)
                     .data(song.albumArtUri)
-                    .crossfade(true)
+                    .crossfade(LocalAppearance.current.motionEnabled)
                     .build(),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
@@ -457,7 +455,7 @@ private fun PlaylistSongCover(
             )
         } else {
             Icon(
-                imageVector = Icons.Default.MusicNote,
+                imageVector = Icons.Rounded.MusicNote,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
             )

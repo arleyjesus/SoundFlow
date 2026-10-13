@@ -58,7 +58,7 @@ fun UpdateAvailableDialog(
                     onDismiss()
                 }
             ) {
-                Text("Actualizar")
+                Text("Ver publicación")
             }
         },
         dismissButton = {

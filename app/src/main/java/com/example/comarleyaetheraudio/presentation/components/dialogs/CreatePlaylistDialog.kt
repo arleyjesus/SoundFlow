@@ -32,12 +32,12 @@ fun CreatePlaylistDialog(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Nombre de la lista", color = LightLavender) },
+                label = { Text("Nombre de la lista", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = ElectricPurple,
-                    unfocusedBorderColor = Color.Gray,
-                    focusedLabelColor = ElectricPurple
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary
                 ),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth()
@@ -45,20 +45,21 @@ fun CreatePlaylistDialog(
         },
         confirmButton = {
             Button(
+                enabled = name.isNotBlank(),
                 onClick = {
                     if (name.isNotBlank()) {
                         onCreate(name)
                         onDismiss()
                     }
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = ElectricPurple)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
-                Text("Crear", color = Color.White, fontWeight = FontWeight.Bold)
+                Text("Crear", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancelar", color = Color.Gray)
+                Text("Cancelar", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     )

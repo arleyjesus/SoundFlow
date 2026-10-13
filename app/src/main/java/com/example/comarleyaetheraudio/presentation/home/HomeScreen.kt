@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.comarleyaetheraudio.ui.theme.LocalAppearance
 import com.example.comarleyaetheraudio.domain.model.AudioPlayerState
 import com.example.comarleyaetheraudio.domain.model.Playlist
 import com.example.comarleyaetheraudio.domain.model.Song
@@ -46,7 +47,11 @@ fun HomeScreen(
     onFavoritesClick: () -> Unit,
     onCreatePlaylist: (String) -> Unit,
     onDeletePlaylist: (Playlist) -> Unit,
-    onAddSongsToPlaylist: (Long, List<Long>) -> Unit = { _, _ -> }
+    onAddSongsToPlaylist: (Long, List<Long>) -> Unit = { _, _ -> },
+    artistGrouped: Map<String, List<Song>>,
+    onNavigateToSmartLibrary: () -> Unit = {},
+    onPlayContext: (Song, List<Song>, Boolean) -> Unit = { song, queue, _ -> onSongClickWithPlaylist(song, queue) },
+    onRenamePlaylist: (Playlist, String) -> Unit = { _, _ -> }
 ) {
     var showFavoritesSheet by remember { mutableStateOf(false) }
     var showPlaylistsSheet by remember { mutableStateOf(false) }
@@ -66,9 +71,6 @@ fun HomeScreen(
 
     val recentSongs = remember(allSongs) { allSongs.take(8) }
 
-    val artistGrouped = remember(allSongs) {
-        allSongs.groupBy { it.artist }
-    }
     val topArtists = remember(artistGrouped) {
         artistGrouped.entries.take(8).map { entry ->
             Pair(entry.key, entry.value.firstOrNull())
@@ -76,61 +78,21 @@ fun HomeScreen(
     }
 
     // 🎨 EVALUACIÓN ESTRICTA DEL FONDO DE INICIO SEGÚN EL MODO SELECCIONADO
-    val baseBgColor = if (isDarkMode) Color(0xFF09090B) else Color(0xFFFAFAFC)
-
-    val topBlobCenterColor = if (isDarkMode) {
-        Color(0xFF8E24AA).copy(alpha = 0.10f)
-    } else {
-        Color(0xFFFDE68A).copy(alpha = 0.28f)
+    val baseBgColor = MaterialTheme.colorScheme.background
+    val accent = MaterialTheme.colorScheme.primary
+    val effects = LocalAppearance.current
+    val backgroundBrush = remember(baseBgColor, accent, effects.isDarkMode, effects.transparenciesEnabled) {
+        Brush.verticalGradient(listOf(
+            if (effects.transparenciesEnabled) androidx.compose.ui.graphics.lerp(baseBgColor, accent, 0.04f) else baseBgColor,
+            baseBgColor, baseBgColor
+        ))
     }
-
-    val midBlobCenterColor = if (isDarkMode) {
-        Color(0xFFD32F2F).copy(alpha = 0.07f)
-    } else {
-        Color(0xFFE9D5FF).copy(alpha = 0.25f)
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(baseBgColor)
-            .drawBehind {
-                drawOval(
-                    brush = Brush.radialGradient(
-                        colorStops = arrayOf(
-                            0.0f to topBlobCenterColor,
-                            0.4f to topBlobCenterColor.copy(alpha = topBlobCenterColor.alpha * 0.4f),
-                            0.8f to topBlobCenterColor.copy(alpha = topBlobCenterColor.alpha * 0.1f),
-                            1.0f to Color.Transparent
-                        ),
-                        center = Offset(size.width * 0.85f, size.height * 0.05f),
-                        radius = size.width * 0.75f
-                    ),
-                    topLeft = Offset(size.width * 0.20f, -size.height * 0.10f),
-                    size = Size(size.width * 1.0f, size.height * 0.35f)
-                )
-
-                drawOval(
-                    brush = Brush.radialGradient(
-                        colorStops = arrayOf(
-                            0.0f to midBlobCenterColor,
-                            0.4f to midBlobCenterColor.copy(alpha = midBlobCenterColor.alpha * 0.4f),
-                            0.8f to midBlobCenterColor.copy(alpha = midBlobCenterColor.alpha * 0.1f),
-                            1.0f to Color.Transparent
-                        ),
-                        center = Offset(size.width * 0.10f, size.height * 0.30f),
-                        radius = size.width * 0.70f
-                    ),
-                    topLeft = Offset(-size.width * 0.30f, size.height * 0.15f),
-                    size = Size(size.width * 0.90f, size.height * 0.38f)
-                )
-            }
-    ) {
+    Box(Modifier.fillMaxSize().background(backgroundBrush)) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(bottom = 120.dp)
+                .padding(bottom = 24.dp)
         ) {
             Column(
                 modifier = Modifier.padding(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 12.dp)
@@ -139,7 +101,7 @@ fun HomeScreen(
                     text = "SoundFlow",
                     style = MaterialTheme.typography.displaySmall.copy(
                         letterSpacing = (-1).sp,
-                        fontWeight = FontWeight.Black
+                        fontWeight = FontWeight.Bold
                     ),
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -154,9 +116,15 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(4.dp))
 
+            Box(Modifier.padding(horizontal = 20.dp)) {
+                com.example.comarleyaetheraudio.presentation.components.SettingsActionCard(
+                    title = "Smart DJ y biblioteca inteligente", subtitle = "Redescubre tu música local",
+                    icon = Icons.AutoMirrored.Filled.QueueMusic, onClick = onNavigateToSmartLibrary)
+            }
+
             if (recentSongs.isNotEmpty()) {
                 Text(
-                    text = "Reproducidas Recientemente",
+                    text = "Tu música",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground,
@@ -168,7 +136,7 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     items(recentSongs, key = { it.id }) { song ->
-                        RecentPosterCard(song = song, onClick = { onSongClick(song) })
+                        RecentPosterCard(song = song, onClick = { onPlayContext(song, recentSongs, false) })
                     }
                 }
 
@@ -177,7 +145,7 @@ fun HomeScreen(
 
             if (topArtists.isNotEmpty()) {
                 Text(
-                    text = "Artistas Principales",
+                    text = "Tus artistas",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground,
@@ -226,7 +194,7 @@ fun HomeScreen(
                         .clickable { showPlaylistsSheet = true },
                     shape = RoundedCornerShape(18.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = if (isDarkMode) Color(0xFF141417) else Color(0xFFF1F1F5)
+                        containerColor = MaterialTheme.colorScheme.surface
                     )
                 ) {
                     Row(
@@ -272,14 +240,14 @@ fun HomeScreen(
                     .clickable { onFavoritesClick() },
                 shape = RoundedCornerShape(18.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = if (isDarkMode) Color(0xFF141417) else Color(0xFFF1F1F5)
+                    containerColor = MaterialTheme.colorScheme.surface
                 )
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.Favorite, contentDescription = null, tint = Color.Red)
+                    Icon(Icons.Default.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text("Favoritos", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
@@ -291,6 +259,9 @@ fun HomeScreen(
 
         if (showPlaylistsSheet) {
             PlaylistsBottomSheet(
+                onPlayContext = onPlayContext,
+                onOpenPlaylist = { selectedPlaylistForDetail = it },
+                onRenamePlaylist = onRenamePlaylist,
                 playlists = playlists,
                 allAvailableSongs = allSongs,
                 playerState = playerState,
@@ -311,6 +282,7 @@ fun HomeScreen(
             }
 
             PlaylistDetailScreen(
+                onPlayContext = onPlayContext,
                 playlist = currentPlaylist,
                 allSongs = allSongs,
                 playerState = playerState,
@@ -343,7 +315,7 @@ fun HomeScreen(
                 artistName = artist,
                 artistSongs = songsOfArtist,
                 onDismiss = { selectedArtistName = null },
-                onSongClick = onSongClick
+                onSongClick = { song -> onPlayContext(song, artistGrouped[artist].orEmpty(), false) }
             )
         }
     }

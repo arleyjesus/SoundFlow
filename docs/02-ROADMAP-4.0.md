@@ -1,5 +1,21 @@
 ﻿# Roadmap de SoundFlow 4.0
 
+## Estado vigente al 2026-10-12
+
+Fases 1–5 cerradas para el alcance de desarrollo acordado. El usuario confirma
+que probó el último APK y funciona correctamente, y excluye del cierre las pruebas
+que el agente no puede ejecutar: instrumentación Android, mediciones de memoria/
+cuadros y matriz visual/accesibilidad exhaustiva. No se presentan como aprobadas.
+Se conservan los tests escritos y resultados reales: 88 JVM correctos, build/Lint
+anterior verificado y comprobación directa posterior de 131 fuentes Kotlin.
+Esta aceptación no certifica todos los dispositivos ni salida bit-perfect.
+Las casillas pendientes y bloqueos de las secciones anteriores son historial;
+las verificaciones excluidas no bloquean ni se trasladan automáticamente como
+condición de avance a fases 6/7. Estas fases continúan abiertas; no hay release.
+[Cierre técnico](14-CIERRE-TECNICO-FASES-4-Y-5.md),
+[Inspector/viabilidad](15-AUDIO-INSPECTOR-Y-FASE-6.md),
+[preparación de lanzamiento](16-PREPARACION-FASE-7.md).
+
 ## Fase 0 - Documentacion y organizacion
 
 - [x] Crear documentacion tecnica
@@ -79,6 +95,12 @@ requieren intervenciones posteriores aprobadas.
 
 ## Fase 2 - Biblioteca y escaneo
 
+Cierre de desarrollo aceptado por el usuario el 2026-10-11: BUILD SUCCESSFUL
+in 16s, 77 tareas (15 ejecutadas, 62 actualizadas), y funcionamiento correcto
+del APK final reportado. Once tests de identidad pasan en Gradle; 36 tests
+instrumentados compilados, sin ejecutar. Se conservan pendientes de medicion
+exhaustiva con dispositivos/proveedores reales. No implica publicacion en Git.
+
 Estado: iniciada por autorizacion del usuario el 2026-10-11.
 Se avanza con bloques pequenos de integridad y mejoras de interfaz del mismo
 recorrido. Primer bloque implementado y compilado desde la terminal del usuario;
@@ -87,10 +109,12 @@ prueba manual satisfactoria reportada por el usuario, instrumentacion aplazada.
 - [x] Detectar canciones existentes por URI exacta antes de insertar
 - [x] Conservar IDs y etiquetas editadas al reimportar la misma URI
 - [x] Evitar duplicados nuevos de URI exacta dentro y entre importaciones
-- [ ] Resolver alias SAF/MediaStore y decidir tratamiento de duplicados historicos
-- [ ] Gestionar escaneos vacios, parciales y fallidos
+- [x] Implementar comparacion SAF por proveedor/documentId y rechazo de alias entre carpetas; compilacion y aceptacion manual general confirmadas
+- [x] Revisar separacion SAF/MediaStore y definir conservacion de duplicados historicos
+- [x] Implementar conservacion de datos ante escaneos vacios, parciales y fallidos
 - [x] Implementar retirada transaccional con limpieza de favoritos y relaciones
-- [ ] Revisar MediaStore y SAF
+- [x] Revisar MediaStore y SAF: solo SAF participa en la biblioteca activa
+- [x] Implementar recuperacion de acceso a la misma carpeta y rechazo de otra seleccion
 - [ ] Probar permisos persistentes
 - [ ] Probar bibliotecas grandes
 - [ ] Publicar fase en GitHub
@@ -117,41 +141,175 @@ prueba manual satisfactoria reportada por el usuario, instrumentacion aplazada.
 - El usuario reporta que el APK funciona correctamente tras los recorridos
   propuestos. No se registraron dispositivo, API ni resultados individuales;
   se conserva como aceptacion manual general del bloque, no de toda la fase 2.
+- Publicado con autorizacion del usuario: ce6f621 en origin/refactor/soundflow-4.
+
+### Segundo bloque de fase 2 - Identidad SAF (2026-10-11)
+
+- Comparacion compartida entre DAO y escaner: autoridad + documentId opaco
+  para documentos SAF, URI exacta para MediaStore y formatos no reconocidos.
+- Conservar la URI almacenada y rechazar la importacion completa ante un
+  documento de otra carpeta, aunque cambie el arbol SAF. Sin fusion historica.
+- Diez pruebas JVM pasan con Kotlin/JUnit de cache, fuera de Gradle.
+  Cuatro pruebas instrumentadas nuevas comprueban alias y permiso denegado;
+  no compiladas ni ejecutadas. Gradle bloqueado antes de tareas por loopback.
+- Pendiente: compilar APK actualizado, probar carpetas superpuestas y perdida
+  de acceso en proveedor real. El APK probado anteriormente no incluye este bloque.
+- Cambios guardados localmente, sin nuevo commit ni push. Fase 2 sigue abierta.
+- Validacion posterior: el usuario confirma que compila y funciona. XML Gradle
+  de SongIdentityTest: 10 tests, cero fallos, errores u omitidos. APK app y tests
+  regenerados a las 20:08 America/Bogota. Los 31 tests instrumentados nuevos
+  estan compilados, sin ejecutar. Aceptacion manual general sin detalle por caso.
+- Siguiente propuesta: recuperacion de acceso SAF y mensajes por carpeta;
+  despues revisar la integracion real de MediaStore y probar biblioteca grande.
+  No fusionar duplicados historicos sin politica y aprobacion explicitas.
+
+### Ajuste final de fase 2 - Recuperacion y volumen (2026-10-11)
+
+- El error de permiso identifica su URI y muestra accion Restaurar acceso.
+  El selector se abre en esa ubicacion; otra URI se rechaza antes de persistir
+  permiso o escribir datos. Cancelar conserva el estado. No se cambia el esquema.
+- Se leen solo las canciones conocidas de esa carpeta para reutilizar sus
+  metadatos durante el recorrido. El DAO vuelve a validar identidad y pertenencia
+  en la transaccion; etiquetas e IDs de filas existentes siguen protegidos.
+- Revision completa de usos: MediaStoreAudioScanner no tiene consumidores.
+  La fase estabiliza SAF; activar MediaStore y fusionar fuentes requiere otro
+  diseno. La politica actual conserva duplicados historicos y sus referencias.
+- Once pruebas JVM pasan fuera de Gradle, incluida identidad de 10.000 documentos.
+  Cinco pruebas instrumentadas adicionales: tres Room y dos Compose. Total 36,
+  sin ejecutar; cinco nuevas pendientes de compilar. No es medicion de rendimiento
+  Android. Prueba con catalogo y proveedor reales sigue pendiente.
+- Gradle del agente falla antes de tareas por loopback. La implementacion final
+  queda guardada localmente; no se declara cierre validado ni nuevo APK generado.
+- Criterio minimo de cierre: compilar las tres tareas y probar restauracion
+  correcta/equivocada/cancelada, reimportacion y referencias en el APK actualizado.
+  Registrar aplazamiento de instrumentacion y mediciones exhaustivas.
+- Fase 3: diagnostico preparado en 07-FASE-3-MOTOR-DE-AUDIO.md. Implementacion
+  del motor despues de validar este ajuste, sin mezclar cambios de ambas fases.
 
 ## Fase 3 - Motor de audio
 
-- [ ] Revisar AudioPlayerHandler
-- [ ] Revisar SoundFlowMediaService
+Iniciada con autorizacion del usuario tras la aceptacion de fase 2. Se amplia
+el alcance a estilo y diseno interno, empezando por minirreproductor y pantalla
+de reproduccion: jerarquia visual, contraste, controles accesibles y estados.
+Mantener temas y contratos existentes; seguir con biblioteca/otras pantallas
+en bloques posteriores despues de validar este recorrido.
+
+- [x] Diagnostico inicial de AudioPlayerHandler y SoundFlowMediaService
+- [x] Implementar propiedad de ViewModel, cierre del cliente y reintento explicito
+- [x] Configurar foco/noisy en el servicio, caratulas asincronas y fades coordinados
+- [x] Mejorar minirreproductor y panel de reproduccion, estados y controles accesibles
+- [x] Ejecutar cinco tests JVM de posicion y once de identidad, fuera de Gradle
+- [x] Compilar primer bloque con Gradle; aceptacion manual general del APK reportada
+- [x] Implementar efectos del servicio y panel AudioFX renovado, apagados/neutros por defecto
+- [x] Ejecutar 12 JVM de politica AudioFX y 16 de regresion, fuera de Gradle
+- [x] Compilar fase 3B con Gradle y registrar aceptacion manual general del APK
+- [x] Implementar ajuste final 3C: informacion de archivo, espera del temporizador y limites de transiciones
+- [x] Compilar APK de 3C/4A y registrar aceptacion manual general del usuario
+- [ ] Completar regresion especifica por caso/dispositivo, sin atribuirla a la aceptacion general
+- [ ] Completar revision de controladores externos y errores en dispositivo
 - [ ] Comprobar MediaSession y segundo plano
 - [ ] Revisar audio focus y becoming noisy
-- [ ] Evaluar ecualizador y efectos
-- [ ] Revisar crossfade y gapless cuando aplique
-- [ ] Documentar limitaciones reales de Hi-Res
+- [x] Evaluar ecualizador y efectos; soporte nativo requiere pruebas por dispositivo
+- [x] Revisar limites de crossfade y gapless; no prometer mezcla ni continuidad universal
+- [x] Documentar limitaciones reales de Hi-Res
 - [ ] Publicar fase en GitHub
 
-## Fase 4 - Rendimiento y arquitectura
+Fase 3B: [implementacion, archivos y limites](08-FASE-3B-EFECTOS-Y-DISENO.md).
+Fase 3C: [desarrollo final y validacion pendiente](09-CIERRE-FASE-3.md).
+Desarrollo final de fase 3 aceptado por el usuario con compilacion Gradle posterior:
+41 JVM sin fallos y APK app/tests regenerados a las 22:41 Bogota. Instrumentacion,
+regresion detallada y publicacion siguen pendientes; fase 4 continua autorizada.
 
-- [ ] Optimizar consultas Room y Flows
-- [ ] Revisar cache de caratulas
-- [ ] Revisar uso de memoria y bitmaps
-- [ ] Revisar concurrencia y cancelacion de tareas
-- [ ] Reducir trabajo innecesario de UI
-- [ ] Revisar separacion de capas
-- [ ] Modernizar APIs gradualmente
-- [ ] Incorporar pruebas automatizadas
+## Fase 4 - Rendimiento, cache, memoria y arquitectura
+
+Estado de cierre de desarrollo (2026-10-12): 88 JVM Gradle, Lint sin errores,
+informes resueltos revisados y aceptación general del APK. Auditoría final y
+ajustes de visualizador/cabecera en documento 14. Ajustes nuevos pendientes
+de APK regenerado; mediciones e instrumentación requieren Android disponible.
+
+- [x] Reutilizar artistas compartidos en Inicio y Brush del visualizador
+- [x] Acotar lectura de letras y respuestas de actualizaciones
+- [x] Preparar script de captura de memoria/cuadros; ejecución real pendiente
+
+Implementacion esencial 4A/4B compilada con Gradle: 62 JVM sin fallos y APK
+actualizado aceptado en general por el usuario. Mediciones y regresion especifica
+pendientes. [Cierre y evidencias](12-CIERRE-FASE-4-E-INICIO-FASE-5.md).
+
+- [x] Auditar tecnologias declaradas, rutas activas, caches y limites entre capas
+- [x] Implementar primer bloque 4A: portadas muestreadas/atomicas sin cache RAM duplicada
+- [x] Compartir songs con controlador y mover transformaciones/lectura de letras fuera de main
+- [x] Ejecutar 40 JVM especificas (12 nuevas); comprobacion Kotlin/Compose parcial
+- [x] Validar Gradle y APK del bloque 4A: 41 JVM, aceptacion manual general
+- [ ] Medir memoria y fluidez en recorrido repetido
+- [x] Bloque 4B: limites de cache/red de artistas, streams, busqueda y contrato real
+
+- [x] Compartir consulta/transformacion de canciones en el recorrido activo
+- [x] Revisar cache de caratulas y acotar cache/red de artistas
+- [x] Revisar asignacion de bitmaps; perfilado de memoria pendiente
+- [x] Revisar concurrencia y cancelacion de tareas intervenidas
+- [x] Aislar progreso de navegacion y mover busqueda fuera de composicion
+- [x] Conectar interfaz real de repositorio y modelos de carpeta sin Room
+- [x] Colectar estado UI con ciclo de vida, sin actualizar dependencias
+- [x] Incorporar pruebas: 17 JVM nuevos de fase 4; 57 JVM directos pasan
+- [x] Validar Gradle y APK del estado final 4B + inicio de fase 5: 62 JVM y aceptacion general
+- [x] Revisar informe real de dependencias resueltas; riesgos de alineación documentados sin cambiar versiones
 - [ ] Publicar fase en GitHub
 
-## Fase 5 - Experiencia
+## Fase 5 - Diseno integral y personalizacion
 
-- [ ] Optimizar pantallas Jetpack Compose
-- [ ] Mejorar navegacion y estados de carga
-- [ ] Mejorar accesibilidad
-- [ ] Mejorar gestion de playlists
-- [ ] Mejorar letras sincronizadas
-- [ ] Personalizacion y temas
+- [x] Implementar seguir tema del sistema conservando elección manual anterior
+- [x] Restablecer solo preferencias visuales con confirmación
+- [x] Combinar animaciones propias con política de Android al volver a primer plano
+- [x] Mejorar cabeceras/diálogos con fuente grande; ocho casos parametrizados escritos
+- [x] Corregir centésimas y unificar parser de letras local/remoto
+- [x] Compilar ajustes de Apariencia e Inspector y registrar aceptación general del APK
+- [ ] Validar ajustes posteriores de cierre y completar matriz visual/accesibilidad
+
+Iniciada por autorizacion del usuario: base Apariencia compilada y con aceptacion
+manual general del APK. Matriz visual por caso pendiente; fase 4 conserva
+pendientes de medicion, instrumentacion e informe de dependencias.
+[Alcance de todas las pantallas y Apariencia](11-FASE-5-DISENO-INTEGRAL.md).
+
+Bloque visual del 2026-10-12 implementado: negro puro, grises neutros, mini con
+degradado, Perfil/Ajustes y componentes compartidos. Validación posterior:
+65 JVM Gradle sin fallos, APK regenerado a las 10:15:34 Bogotá y funcionamiento
+general aceptado por el usuario. Matriz visual por caso, accesibilidad,
+instrumentación y mediciones pendientes.
+[Archivos, límites y recorrido manual](13-FASE-5-REDISENO-VISUAL.md).
+
+- [x] Compilar y registrar aceptación funcional general del APK del rediseño
+- [x] Definir superficies, formas y componente de panel compartido
+- [x] Revisar tokens, superficies e iconos del recorrido activo; componentes heredados sin llamadas conservados
+- [x] Intervenir Inicio, biblioteca, búsqueda, carpetas, playlists y canciones/opciones con roles del tema
+- [x] Integrar reproductor, letras, Perfil, Ajustes, AudioFX y diálogos con Apariencia
+- [ ] Validar cada pantalla/paleta/modo en Android; la revisión estática no acredita resultados visuales
+- [x] Panel Apariencia con paletas e interruptores independientes de animaciones/transparencias
+- [x] Persistir preferencias; pruebas JVM de reapertura y combinaciones pasan
+- [x] ColorScheme unico y pares de contraste para cuatro paletas en ambos modos
+- [x] Consumidores iniciales: navegacion, visualizador y fondo opaco de reproductor
+- [x] Extender efectos a crossfades activos, pestañas, letras, selección y paneles intervenidos
+- [x] Revisar crossfades activos y política visual propia; animaciones internas de Material/sistema con límites documentados
+- [ ] Registrar aceptación por caso de alternativas opacas/sin movimiento, fuente grande y TalkBack
+- [x] Incorporar estados de búsqueda, biblioteca y reproducción y mejoras de diálogos/selección de playlists
+- [x] Corregir parser compartido y movimiento de letras sincronizadas
+- [x] Personalización persistente, seguir sistema y restablecimiento visual aislado
+- [ ] Comparar rendimiento con efectos activados/desactivados
 - [ ] Publicar fase en GitHub
 
 ## Fase 6 - Innovacion
+
+- [x] Implementar Smart DJ local por metadatos con vista previa y reproducción explícita, sin mezcla
+- [x] Implementar vista de posibles duplicados por URI/metadatos, sin borrar ni fusionar
+- [x] Ejecutar 8 JVM de sugerencias/coincidencias y regresión directa (98 totales con privacidad)
+- [ ] Compilar con Gradle y aceptar el APK del bloque nuevo; bloqueo del agente por loopback
+
+Primer alcance y límites en [documento 17](17-FASES-6-Y-7-IMPLEMENTACION-ESENCIAL.md).
+Replay, mezcla, perfiles, USB exclusivo, copias y Wi-Fi son propuestas posteriores;
+las casillas de ideas no representan funciones comprometidas ni completadas.
+
+- [x] Implementar base Audio Inspector: fuente local a demanda y clasificación conservadora
+- [x] Dejar de propagar el flag Hi-Res histórico sin reescribir Room
+- [ ] Validar lector Android, fixtures y recorrido del inspector en APK nuevo
 
 Ideas propuestas, sujetas a viabilidad y pruebas:
 
@@ -168,6 +326,15 @@ sin validar las APIs y el hardware requeridos.
 
 ## Fase 7 - Lanzamiento
 
+- [x] Controles persistentes de privacidad para imágenes, letras y actualizaciones conectados
+- [x] Dos JVM de independencia/reapertura/reset de privacidad; 98 totales directos correctos
+- [x] Herramienta Prepare-SoundFlowRelease para candidato local, hashes e informes; sintaxis validada
+- [ ] Ejecutar preparación release cuando Gradle funcione; aprobar versión/canal/firma antes de distribuir
+
+- [x] Revisión inicial de permisos, consultas externas y reglas de backup
+- [x] Corregir comprobador de versiones y enlace a publicación oficial
+- [x] Preparar script reproducible de compilación/JVM/lint/informes; ejecución pendiente
+
 - [ ] Pruebas de regresion completas
 - [ ] Validacion en multiples versiones Android
 - [ ] Revision de permisos y privacidad
@@ -175,3 +342,10 @@ sin validar las APIs y el hardware requeridos.
 - [ ] Actualizar README y changelog publico
 - [ ] Generar y validar artefactos de lanzamiento
 - [ ] Publicar version 4.0 cuando este lista
+
+### Bloque adicional aprobado — orden y pulido (2026-10-12)
+
+Implementación local de docs/18 realizada: orden de cola, filtros persistentes,
+búsqueda agrupada, retratos, iconos y controles. Mantener el cierre aceptado de
+fases anteriores. Queda la única validación final Gradle/APK de este bloque;
+no requiere migración, dependencias ni nueva fase. Suite JVM directa: 114 tests.

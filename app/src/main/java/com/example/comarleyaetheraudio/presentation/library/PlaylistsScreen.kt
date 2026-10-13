@@ -112,7 +112,7 @@ fun PlaylistsScreen(
                                 onClick = { onPlaylistClick(playlist) },
                                 onLongClick = { playlistMenuTarget = playlist }
                             ),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        color = MaterialTheme.colorScheme.surface,
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Row(

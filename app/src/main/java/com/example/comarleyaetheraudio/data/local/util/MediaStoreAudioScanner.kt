@@ -84,12 +84,10 @@ class MediaStoreAudioScanner(private val context: Context) {
                     albumId
                 )
 
-                // Extraemos Bitrate y SampleRate para evaluar calidad Hi-Res
+                // Metadatos del archivo; no certifican la salida ni su resolución.
                 val (bitrate, sampleRate) = extractAudioMetadata(context, contentUri)
 
-                // Criterio Hi-Res: Formato lossless (FLAC/WAV) o Frecuencia de Muestreo > 48kHz o Bitrate > 1411 kbps
-                val isLosslessFormat = mimeType.contains("flac", ignoreCase = true) || mimeType.contains("wav", ignoreCase = true)
-                val isHiResQuality = isLosslessFormat || sampleRate >= 48000 || bitrate > 1411
+                val isHiResQuality = false // Falta profundidad de bits de la fuente.
 
                 songList.add(
                     Song(

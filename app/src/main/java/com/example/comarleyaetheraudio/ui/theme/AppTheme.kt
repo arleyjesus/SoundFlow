@@ -18,7 +18,7 @@ data class ThemeColors(
 )
 
 fun getThemeColors(theme: AppTheme, isDark: Boolean): ThemeColors {
-    return when (theme) {
+    val palette = when (theme) {
         AppTheme.PRINCIPAL -> ThemeColors(
             primary = if (isDark) Color(0xFFD0BCFF) else Color(0xFF6750A4),
             primaryContainer = if (isDark) Color(0xFF4F378B) else Color(0xFFEADDFF),
@@ -48,4 +48,9 @@ fun getThemeColors(theme: AppTheme, isDark: Boolean): ThemeColors {
             surfaceVariant = if (isDark) Color(0xFF373737) else Color(0xFFE0E0E0)
         )
     }
+    return palette.copy(
+        background = if (isDark) Color.Black else Color(0xFFFAFAFC),
+        surface = if (isDark) Color(0xFF141416) else Color.White,
+        surfaceVariant = if (isDark) Color(0xFF242428) else Color(0xFFF0F0F4)
+    )
 }

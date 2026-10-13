@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,23 +26,30 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import com.example.comarleyaetheraudio.data.local.entity.FolderEntity
+import com.example.comarleyaetheraudio.domain.model.LibraryFolder
 
 @Composable
 fun FoldersScreen(
-    folders: List<FolderEntity>,
+    folders: List<LibraryFolder>,
     onAddFolder: (Uri) -> Unit,
     onRemoveFolder: (String) -> Unit,
-    onFolderClick: (FolderEntity) -> Unit,
+    onFolderClick: (LibraryFolder) -> Unit,
     isUpdating: Boolean = false,
     message: String? = null,
-    onDismissMessage: () -> Unit = {}
+    onDismissMessage: () -> Unit = {},
+    folderAccessToRestore: String? = null,
+    onRestoreFolderAccess: (String, Uri) -> Unit = { _, _ -> }
 ) {
-    var folderToRemove by remember { mutableStateOf<FolderEntity?>(null) }
+    var folderToRemove by remember { mutableStateOf<LibraryFolder?>(null) }
+    var restoreTarget by rememberSaveable { mutableStateOf<String?>(null) }
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
     ) { uri ->
-        uri?.let { onAddFolder(it) }
+        val original = restoreTarget
+        restoreTarget = null
+        if (uri != null) {
+            if (original == null) onAddFolder(uri) else onRestoreFolderAccess(original, uri)
+        }
     }
 
     Column(
@@ -70,7 +78,7 @@ fun FoldersScreen(
 
             Spacer(modifier = Modifier.width(12.dp))
             FilledTonalButton(
-                onClick = { launcher.launch(null) },
+                onClick = { restoreTarget = null; launcher.launch(null) },
                 enabled = !isUpdating,
                 shape = RoundedCornerShape(12.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -116,6 +124,19 @@ fun FoldersScreen(
             Spacer(modifier = Modifier.height(12.dp))
         }
 
+        folderAccessToRestore?.let { original ->
+            FolderAccessRecovery(
+                folderUri = original,
+                folderName = folders.firstOrNull { it.uriString == original }?.name ?: "seleccionada",
+                isUpdating = isUpdating,
+                onRestore = {
+                    restoreTarget = it
+                    launcher.launch(Uri.parse(it))
+                }
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
         // ESTADO SI NO HAY CARPETAS REGISTRADAS
         if (folders.isEmpty()) {
             Box(
@@ -148,7 +169,7 @@ fun FoldersScreen(
                 items(folders, key = { it.path }) { folder ->
                     Surface(
                         shape = RoundedCornerShape(14.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                        color = MaterialTheme.colorScheme.surface,
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(14.dp))
@@ -238,5 +259,28 @@ fun FoldersScreen(
                 TextButton(onClick = { folderToRemove = null }) { Text("Cancelar") }
             }
         )
+    }
+}
+
+@Composable
+internal fun FolderAccessRecovery(
+    folderUri: String,
+    folderName: String,
+    isUpdating: Boolean,
+    onRestore: (String) -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.errorContainer,
+        modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite }
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text("Acceso pendiente: $folderName", fontWeight = FontWeight.Bold)
+            Text("Selecciona la misma carpeta. Tus canciones, favoritos y playlists se conservan.",
+                style = MaterialTheme.typography.bodySmall)
+            TextButton(onClick = { onRestore(folderUri) }, enabled = !isUpdating) {
+                Text("Restaurar acceso")
+            }
+        }
     }
 }

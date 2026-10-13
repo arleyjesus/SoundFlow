@@ -9,6 +9,7 @@ import androidx.room.Transaction
 import com.example.comarleyaetheraudio.data.local.entity.FavoriteSongEntity
 import com.example.comarleyaetheraudio.data.local.entity.FolderEntity
 import com.example.comarleyaetheraudio.data.local.entity.SongEntity
+import com.example.comarleyaetheraudio.data.local.util.songIdentity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -22,6 +23,9 @@ interface MusicDao {
     @Query("SELECT * FROM songs")
     suspend fun getAllSongsSnapshot(): List<SongEntity>
 
+    @Query("SELECT * FROM songs WHERE folderUri = :folderUri")
+    suspend fun getSongsForFolderSnapshot(folderUri: String): List<SongEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSongs(songs: List<SongEntity>)
 
@@ -34,14 +38,14 @@ interface MusicDao {
     @Query("SELECT contentUri FROM songs WHERE folderUri != :folderUri")
     suspend fun getSongUrisOutsideFolder(folderUri: String): List<String>
 
-    // Una URI exacta ya registrada conserva ID y metadatos editados en la app.
-    // No se fusionan alias SAF/MediaStore ni se eliminan duplicados historicos.
+    // Mismo documento SAF: proveedor + ID opaco. Otras fuentes: URI exacta.
+    // Conservar ID, URI de acceso y metadatos; no fusionar filas historicas.
     @Transaction
     suspend fun insertSongsPreservingIds(songs: List<SongEntity>): SongImportResult {
         require(songs.all { it.contentUri.isNotBlank() })
-        val uniqueSongs = songs.distinctBy { it.contentUri }
-        val existingUris = getSongUris().toHashSet()
-        val newSongs = uniqueSongs.filter { it.contentUri !in existingUris }
+        val uniqueSongs = songs.distinctBy { songIdentity(it.contentUri) }
+        val existingIdentities = getSongUris().mapTo(hashSetOf()) { songIdentity(it) }
+        val newSongs = uniqueSongs.filter { songIdentity(it.contentUri) !in existingIdentities }
         if (newSongs.isNotEmpty()) insertNewSongs(newSongs.map { it.copy(id = 0) })
         return SongImportResult(newSongs.size, uniqueSongs.size - newSongs.size)
     }
@@ -52,8 +56,8 @@ interface MusicDao {
     @Transaction
     suspend fun importFolderSongs(folder: FolderEntity, songs: List<SongEntity>): SongImportResult {
         require(songs.all { it.folderUri == folder.uriString })
-        val requestedUris = songs.mapTo(hashSetOf()) { it.contentUri }
-        if (getSongUrisOutsideFolder(folder.uriString).any { it in requestedUris }) {
+        val requestedIdentities = songs.mapTo(hashSetOf()) { songIdentity(it.contentUri) }
+        if (getSongUrisOutsideFolder(folder.uriString).any { songIdentity(it) in requestedIdentities }) {
             throw FolderImportConflictException()
         }
 

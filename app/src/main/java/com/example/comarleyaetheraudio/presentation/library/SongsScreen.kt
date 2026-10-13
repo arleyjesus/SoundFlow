@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.example.comarleyaetheraudio.domain.model.Song
 import com.example.comarleyaetheraudio.presentation.components.items.SongItem
 import com.example.comarleyaetheraudio.presentation.library.components.ArtistDetailBottomSheet
+import com.example.comarleyaetheraudio.ui.theme.LocalAppearance
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -32,6 +33,7 @@ fun SongsScreen(
     val tabs = remember { listOf("Canciones", "Artistas") }
     val pagerState = rememberPagerState(pageCount = { tabs.size })
     val scope = rememberCoroutineScope()
+    val animationsEnabled = LocalAppearance.current.motionEnabled
 
     // Estado para abrir el panel del artista seleccionado
     var selectedArtistName by remember { mutableStateOf<String?>(null) }
@@ -54,7 +56,7 @@ fun SongsScreen(
             tabs.forEachIndexed { index, title ->
                 Tab(
                     selected = pagerState.currentPage == index,
-                    onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                    onClick = { scope.launch { if (animationsEnabled) pagerState.animateScrollToPage(index) else pagerState.scrollToPage(index) } },
                     text = { Text(title, fontWeight = FontWeight.Bold) }
                 )
             }

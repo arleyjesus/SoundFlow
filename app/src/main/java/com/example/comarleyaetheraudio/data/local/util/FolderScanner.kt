@@ -15,15 +15,20 @@ import java.io.IOException
 
 class FolderScanner(private val context: Context) {
 
-    suspend fun scanFolderUri(folderUri: Uri, folderName: String): List<SongEntity> = withContext(Dispatchers.IO) {
+    suspend fun scanFolderUri(
+        folderUri: Uri,
+        folderName: String,
+        existingSongs: List<SongEntity> = emptyList()
+    ): List<SongEntity> = withContext(Dispatchers.IO) {
         val songEntities = mutableListOf<SongEntity>()
+        val existingByIdentity = existingSongs.associateBy { songIdentity(it.contentUri) }
         val scanContext = currentCoroutineContext()
         val rootDocument = DocumentFile.fromTreeUri(context, folderUri)
             ?: throw IllegalArgumentException("Carpeta SAF no valida")
         if (!rootDocument.exists() || !rootDocument.isDirectory || !rootDocument.canRead()) {
             throw SecurityException("No se puede leer la carpeta seleccionada")
         }
-        val visitedDirectories = hashSetOf<String>()
+        val visitedDirectories = hashSetOf<SongIdentity>()
 
         fun listChildren(dir: DocumentFile): List<DocumentFile> {
             val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(
@@ -49,7 +54,7 @@ class FolderScanner(private val context: Context) {
         // Recorrido recursivo seguro para escanear carpetas y subcarpetas
         fun traverseDirectory(dir: DocumentFile) {
             scanContext.ensureActive()
-            if (!visitedDirectories.add(dir.uri.toString())) return
+            if (!visitedDirectories.add(songIdentity(dir.uri.toString()))) return
             if (!dir.canRead()) throw SecurityException("No se puede leer una subcarpeta")
             val files = listChildren(dir)
             for (file in files) {
@@ -58,6 +63,17 @@ class FolderScanner(private val context: Context) {
                     traverseDirectory(file)
                 } else if (file.isFile && isAudioFile(file.type, file.name)) {
                     val fileUri = file.uri
+                    val existing = existingByIdentity[songIdentity(fileUri.toString())]
+                    if (existing != null) {
+                        // El DAO vuelve a comprobar identidad y pertenencia en su transaccion.
+                        // Usar la URI leida permite detectar solapamientos sin reabrir metadatos.
+                        songEntities.add(existing.copy(
+                            contentUri = fileUri.toString(),
+                            folderUri = folderUri.toString(),
+                            folderName = folderName
+                        ))
+                        continue
+                    }
                     val metadata = extractMetadata(context, fileUri, file.name ?: "Desconocido")
 
                     songEntities.add(
@@ -88,8 +104,8 @@ class FolderScanner(private val context: Context) {
         traverseDirectory(rootDocument)
         scanContext.ensureActive()
 
-        // Filtro antipánico: elimina duplicados exactos por ruta antes de tocar la base de datos
-        return@withContext songEntities.distinctBy { it.contentUri }
+        // Un documento puede aparecer bajo varios directorios del proveedor.
+        return@withContext songEntities.distinctBy { songIdentity(it.contentUri) }
     }
 
     private fun isAudioFile(mimeType: String?, fileName: String?): Boolean {
@@ -147,8 +163,8 @@ class FolderScanner(private val context: Context) {
             try { retriever.release() } catch (_: Exception) {}
         }
 
-        val isLossless = uri.toString().contains(".flac", ignoreCase = true) || uri.toString().contains(".wav", ignoreCase = true)
-        val isHiRes = isLossless || sampleRate >= 48000 || bitrate > 1411
+        // Source bit depth is unknown during import. Inspection is explicit and on demand.
+        val isHiRes = false
 
         return ParsedMetadata(title, artist, album, genre, year, trackNumber, duration, bitrate, sampleRate, isHiRes)
     }

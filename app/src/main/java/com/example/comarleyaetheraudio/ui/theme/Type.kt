@@ -14,7 +14,7 @@ val Typography = Typography(
     // Títulos de Gran Impacto (Reproductor Pantalla Completa, SoundFlow, Nombre Playlist)
     displaySmall = TextStyle(
         fontFamily = DisplayFontFamily,
-        fontWeight = FontWeight.Black,
+        fontWeight = FontWeight.Bold,
         fontSize = 28.sp,
         letterSpacing = (-0.5).sp
     ),
@@ -22,7 +22,7 @@ val Typography = Typography(
     // Nombres de Canción en Reproductor Abierto y Pantalla Principal
     titleLarge = TextStyle(
         fontFamily = DisplayFontFamily,
-        fontWeight = FontWeight.ExtraBold,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 22.sp,
         letterSpacing = 0.sp
     ),
@@ -30,7 +30,7 @@ val Typography = Typography(
     // Encabezados de Secciones ("Recently Played", "Tus Playlists", etc.)
     titleMedium = TextStyle(
         fontFamily = MainFontFamily,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 18.sp,
         letterSpacing = 0.15.sp
     ),
@@ -39,7 +39,7 @@ val Typography = Typography(
     bodyLarge = TextStyle(
         fontFamily = MainFontFamily,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 15.sp,
+        fontSize = 16.sp,
         letterSpacing = 0.15.sp
     ),
 
@@ -47,7 +47,7 @@ val Typography = Typography(
     bodyMedium = TextStyle(
         fontFamily = MainFontFamily,
         fontWeight = FontWeight.Medium,
-        fontSize = 13.sp,
+        fontSize = 14.sp,
         letterSpacing = 0.25.sp
     ),
 
@@ -61,7 +61,7 @@ val Typography = Typography(
     labelSmall = TextStyle(
         fontFamily = MainFontFamily,
         fontWeight = FontWeight.Normal,
-        fontSize = 11.sp,
+        fontSize = 12.sp,
         letterSpacing = 0.5.sp
     )
 )

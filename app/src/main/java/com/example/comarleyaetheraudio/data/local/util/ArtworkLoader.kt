@@ -2,25 +2,27 @@ package com.example.comarleyaetheraudio.data.local.util
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.util.LruCache
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.coroutineContext
 
 object ArtworkLoader {
 
-    // Caché en memoria RAM (usa máximo 20MB de RAM para imágenes)
+    // Legacy loader (currently without callers): retain a hard 20 MiB ceiling.
     private val maxMemory = (Runtime.getRuntime().maxMemory() / 1024).toInt()
-    private val cacheSize = maxMemory / 8
+    private val cacheSize = minOf(maxMemory / 8, 20 * 1024).coerceAtLeast(1)
     private val memoryCache = object : LruCache<String, Bitmap>(cacheSize) {
         override fun sizeOf(key: String, bitmap: Bitmap): Int {
-            return bitmap.byteCount / 1024
+            return (bitmap.allocationByteCount / 1024).coerceAtLeast(1)
         }
     }
 
-    // Procesa la imagen en hilo secundario (IO) sin congelar los 120 FPS
+    // Decode off the UI thread; frame rate must be measured on a device.
     suspend fun loadArtworkAsync(context: Context, songId: Long, uri: Uri?, path: String?): Bitmap? = withContext(Dispatchers.IO) {
         val cacheKey = "song_$songId"
 
@@ -40,12 +42,15 @@ object ArtworkLoader {
 
             val art = retriever.embeddedPicture
             if (art != null) {
-                val bitmap = BitmapFactory.decodeByteArray(art, 0, art.size)
+                coroutineContext.ensureActive()
+                val bitmap = ArtworkDecoder.decode(art, 1024)
                 if (bitmap != null) {
                     memoryCache.put(cacheKey, bitmap)
                 }
                 return@withContext bitmap
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (_: Exception) {
             // Silencioso para evitar cierres
         } finally {

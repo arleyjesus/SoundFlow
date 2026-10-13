@@ -1,5 +1,7 @@
 package com.example.comarleyaetheraudio.presentation.home.components
 
+import com.example.comarleyaetheraudio.ui.theme.LocalAppearance
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -41,7 +43,7 @@ fun PlaylistMosaicCard(
             modifier = Modifier
                 .size(140.dp)
                 .clip(RoundedCornerShape(18.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                .background(MaterialTheme.colorScheme.surface),
             contentAlignment = Alignment.Center
         ) {
             if (sampleSongs.isEmpty()) {
@@ -104,7 +106,7 @@ private fun MosaicItemImage(
     AsyncImage(
         model = ImageRequest.Builder(context)
             .data(coverFile ?: song.albumArtUri)
-            .crossfade(true)
+            .crossfade(LocalAppearance.current.motionEnabled)
             .build(),
         contentDescription = null,
         modifier = modifier,

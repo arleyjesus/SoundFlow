@@ -1,6 +1,8 @@
 package com.example.comarleyaetheraudio.presentation.components.dialogs
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -13,15 +15,15 @@ fun TagEditorDialog(
     onDismiss: () -> Unit,
     onSave: (String, String, String) -> Unit
 ) {
-    var title by remember { mutableStateOf(song.title) }
-    var artist by remember { mutableStateOf(song.artist) }
-    var album by remember { mutableStateOf(song.album) }
+    var title by remember(song.id) { mutableStateOf(song.title) }
+    var artist by remember(song.id) { mutableStateOf(song.artist) }
+    var album by remember(song.id) { mutableStateOf(song.album) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Editar Etiquetas ID3") },
+        title = { Text("Editar información") },
         text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },

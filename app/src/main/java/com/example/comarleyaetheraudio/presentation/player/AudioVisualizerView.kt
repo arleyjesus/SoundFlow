@@ -12,58 +12,85 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.comarleyaetheraudio.ui.theme.ElectricPurple
 import com.example.comarleyaetheraudio.ui.theme.LightLavender
+import com.example.comarleyaetheraudio.ui.theme.LocalAppearance
 
 @Composable
 fun AudioVisualizerView(
     isPlaying: Boolean,
     primaryColor: Color = ElectricPurple,
     secondaryColor: Color = LightLavender,
-    barCount: Int = 30,
+    barCount: Int = 40,
     modifier: Modifier = Modifier
         .fillMaxWidth()
         .height(64.dp)
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "VisualizerAnimation")
-
-    val animPhase by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1200, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "PhaseAnim"
-    )
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    var inForeground by remember(lifecycle) {
+        mutableStateOf(lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))
+    }
+    DisposableEffect(lifecycle) {
+        val observer = LifecycleEventObserver { _, _ ->
+            inForeground = lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
+    // Remove the decorative loop from composition while the screen is inactive.
+    val animPhase = if (isPlaying && inForeground && LocalAppearance.current.motionEnabled) animatedPhase() else 0f
+    val barBrush = remember(primaryColor, secondaryColor) {
+        Brush.verticalGradient(colors = listOf(primaryColor, secondaryColor))
+    }
 
     Canvas(modifier = modifier) {
         val width = size.width
         val height = size.height
-        val barWidth = width / (barCount * 1.8f)
+        val count = barCount.coerceAtLeast(1)
+        val barWidth = width / (count * 1.8f)
         val gap = barWidth * 0.8f
 
-        for (i in 0 until barCount) {
+        for (i in 0 until count) {
             val factor = if (isPlaying) {
-                // Cálculo de altura oscilante basada en función seno para simular frecuencia de audio
-                val wave = kotlin.math.sin((i.toFloat() * 0.5f) + (animPhase * kotlin.math.PI * 2)).toFloat()
-                (kotlin.math.abs(wave) * 0.75f) + 0.25f
+                // Decorative animation: this is not a measurement of the audio signal.
+                val position = (i + 0.5f) / count
+                val envelope = kotlin.math.sin(position * kotlin.math.PI).toFloat()
+                val wave = kotlin.math.sin(i * 0.63 + animPhase * kotlin.math.PI * 2).toFloat()
+                val detail = kotlin.math.cos(i * 1.17 - animPhase * kotlin.math.PI * 2).toFloat()
+                0.12f + envelope * (0.28f + kotlin.math.abs(wave * 0.38f + detail * 0.18f))
             } else {
                 0.15f
             }
 
             val barHeight = height * factor
             val x = i * (barWidth + gap) + gap / 2
-            val y = height - barHeight
+            val y = (height - barHeight) / 2f
 
             drawRoundRect(
-                brush = Brush.verticalGradient(
-                    colors = listOf(primaryColor, secondaryColor)
-                ),
+                brush = barBrush,
                 topLeft = Offset(x, y),
                 size = Size(barWidth, barHeight),
                 cornerRadius = CornerRadius(barWidth / 2, barWidth / 2)
             )
         }
     }
+}
+
+@Composable
+private fun animatedPhase(): Float {
+    val infiniteTransition = rememberInfiniteTransition(label = "VisualizerAnimation")
+    val phase by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1800, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "PhaseAnim"
+    )
+
+    return phase
 }

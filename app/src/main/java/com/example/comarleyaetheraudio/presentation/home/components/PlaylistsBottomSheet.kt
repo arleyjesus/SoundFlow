@@ -19,7 +19,10 @@ fun PlaylistsBottomSheet(
     onCreatePlaylist: (String) -> Unit,
     onDeletePlaylist: (Playlist) -> Unit,
     onAddSongsToPlaylist: (Long, List<Long>) -> Unit,
-    onSongClick: (Song) -> Unit
+    onSongClick: (Song) -> Unit,
+    onPlayContext: (Song, List<Song>, Boolean) -> Unit = { song, _, _ -> onSongClick(song) },
+    onOpenPlaylist: ((Playlist) -> Unit)? = null,
+    onRenamePlaylist: (Playlist, String) -> Unit = { _, _ -> }
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         PlaylistsScreen(
@@ -28,23 +31,22 @@ fun PlaylistsBottomSheet(
             playerState = playerState,
             favoriteIds = favoriteIds,
             onPlaylistClick = { playlist ->
-                if (playlist.songs.isNotEmpty()) {
-                    onSongClick(playlist.songs.first())
-                }
+                if (onOpenPlaylist != null) onOpenPlaylist(playlist)
+                else playlist.songs.firstOrNull()?.let { onPlayContext(it, playlist.songs, false) }
                 onDismiss()
             },
-            onSongClick = { song, _ ->
-                onSongClick(song)
+            onSongClick = { song, queue ->
+                onPlayContext(song, queue, false)
                 onDismiss()
             },
-            onPlayAllPlaylist = { playlist, _ ->
+            onPlayAllPlaylist = { playlist, shuffle ->
                 if (playlist.songs.isNotEmpty()) {
-                    onSongClick(playlist.songs.first())
+                    onPlayContext(if (shuffle) playlist.songs.random() else playlist.songs.first(), playlist.songs, shuffle)
                 }
                 onDismiss()
             },
             onCreatePlaylistClick = onCreatePlaylist,
-            onRenamePlaylist = { _, _ -> },
+            onRenamePlaylist = onRenamePlaylist,
             onDeletePlaylist = onDeletePlaylist,
             onAddSongsToPlaylist = onAddSongsToPlaylist
         )

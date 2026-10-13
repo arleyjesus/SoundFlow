@@ -1,11 +1,14 @@
 package com.example.comarleyaetheraudio.presentation.library.components
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.comarleyaetheraudio.domain.model.Song
@@ -17,7 +20,8 @@ fun ArtistDetailBottomSheet(
     artistName: String,
     artistSongs: List<Song>,
     onDismiss: () -> Unit,
-    onSongClick: (Song) -> Unit
+    onSongClick: (Song) -> Unit,
+    showArtistPortrait: Boolean = true
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -29,6 +33,9 @@ fun ArtistDetailBottomSheet(
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
         ) {
+            if (showArtistPortrait) com.example.comarleyaetheraudio.presentation.components.ArtistPortrait(
+                artistName, artistSongs.firstOrNull(), Modifier.padding(top = 12.dp).size(72.dp)
+                    .clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer))
             // Cabecera del Artista
             Text(
                 text = artistName,

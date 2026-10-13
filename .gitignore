@@ -2,6 +2,9 @@
 .gradle/
 build/
 
+# Copias locales de fases y APK validados
+/local-backups/
+
 # Local configuration file (sdk path, etc)
 local.properties
 

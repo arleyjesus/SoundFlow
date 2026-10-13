@@ -1,6 +1,9 @@
 package com.example.comarleyaetheraudio.presentation.playlist
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.snap
+import com.example.comarleyaetheraudio.ui.theme.LocalAppearance
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
@@ -126,12 +129,14 @@ private fun AddSongItemRow(
 
     // ⚡ CONTROLADOR HÁPTICO DE VIBRACIÓN DE ANDROID
     val haptic = LocalHapticFeedback.current
+    val animationsEnabled = LocalAppearance.current.motionEnabled
 
     val backgroundColor by animateColorAsState(
         targetValue = if (isSelectedState)
             MaterialTheme.colorScheme.primaryContainer
         else
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+            MaterialTheme.colorScheme.surface,
+        animationSpec = if (animationsEnabled) tween(180) else snap(),
         label = "BgInstantColor"
     )
 
@@ -140,6 +145,7 @@ private fun AddSongItemRow(
             MaterialTheme.colorScheme.onPrimaryContainer
         else
             MaterialTheme.colorScheme.onSurface,
+        animationSpec = if (animationsEnabled) tween(180) else snap(),
         label = "TextInstantColor"
     )
 

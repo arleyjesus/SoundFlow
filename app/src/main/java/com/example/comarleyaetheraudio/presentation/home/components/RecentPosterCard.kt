@@ -36,7 +36,7 @@ fun RecentPosterCard(song: Song, onClick: () -> Unit) {
             .width(135.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(modifier = Modifier.padding(8.dp)) {
             Box(
@@ -44,7 +44,7 @@ fun RecentPosterCard(song: Song, onClick: () -> Unit) {
                     .fillMaxWidth()
                     .height(110.dp)
                     .clip(RoundedCornerShape(14.dp))
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.4f)),
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
                 if (coverFile != null) {
@@ -60,7 +60,7 @@ fun RecentPosterCard(song: Song, onClick: () -> Unit) {
                 } else {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                        color = MaterialTheme.colorScheme.surface
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(

@@ -1,16 +1,20 @@
 package com.example.comarleyaetheraudio.data.remote
 
 import com.example.comarleyaetheraudio.BuildConfig
+import com.example.comarleyaetheraudio.domain.playback.ReleaseVersion
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
-import java.net.HttpURLConnection
 import java.net.URL
 
 object GitHubUpdateChecker {
 
-    // ⚡ REEMPLAZA CON TU USUARIO Y TU REPOSITORIO REAL DE GITHUB
-    private const val GITHUB_RELEASES_URL = "https://api.github.com/repos/TU_USUARIO/TU_REPOSITORIO/releases/latest"
+    private const val GITHUB_RELEASES_URL = "https://api.github.com/repos/arleyjesus/SoundFlow/releases/latest"
+    private const val RELEASE_PAGE = "https://github.com/arleyjesus/SoundFlow/releases/latest"
+    private val reader = BoundedHttpReader()
 
     data class UpdateInfo(
         val hasUpdate: Boolean,
@@ -21,38 +25,21 @@ object GitHubUpdateChecker {
 
     suspend fun checkForUpdates(): UpdateInfo? = withContext(Dispatchers.IO) {
         try {
-            val url = URL(GITHUB_RELEASES_URL)
-            val connection = url.openConnection() as HttpURLConnection
-            connection.requestMethod = "GET"
-            connection.setRequestProperty("Accept", "application/vnd.github.v3+json")
-
-            if (connection.responseCode == 200) {
-                val responseText = connection.inputStream.bufferedReader().readText()
-                val json = JSONObject(responseText)
-
-                val tagName = json.optString("tag_name", "")
-                val releaseNotes = json.optString("body", "")
-
-                val assets = json.optJSONArray("assets")
-                var downloadUrl = ""
-                if (assets != null && assets.length() > 0) {
-                    downloadUrl = assets.getJSONObject(0).optString("browser_download_url", "")
-                }
-
-                val remoteVersionClean = tagName.replace("v", "").trim()
-                val currentVersionClean = BuildConfig.VERSION_NAME.trim()
-
-                val hasUpdate = remoteVersionClean.isNotEmpty() && remoteVersionClean != currentVersionClean
-
-                return@withContext UpdateInfo(
-                    hasUpdate = hasUpdate,
-                    latestVersionName = tagName,
-                    releaseNotes = releaseNotes,
-                    downloadUrl = downloadUrl
-                )
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
+            val taskContext = currentCoroutineContext()
+            val bytes = reader.read(URL(GITHUB_RELEASES_URL), 256 * 1024) { taskContext.ensureActive() }
+            val json = JSONObject(String(bytes, Charsets.UTF_8))
+            if (json.optBoolean("draft") || json.optBoolean("prerelease")) return@withContext null
+            val tag = json.optString("tag_name", "")
+            return@withContext UpdateInfo(
+                hasUpdate = ReleaseVersion.isNewer(tag, BuildConfig.VERSION_NAME),
+                latestVersionName = tag,
+                releaseNotes = json.optString("body", "").take(16_000),
+                downloadUrl = RELEASE_PAGE
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // Offline, rate-limited or missing release: playback continues without an update prompt.
         }
         return@withContext null
     }

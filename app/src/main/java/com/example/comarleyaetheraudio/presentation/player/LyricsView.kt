@@ -9,13 +9,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.comarleyaetheraudio.domain.model.LyricLine
-import kotlinx.coroutines.launch
+import com.example.comarleyaetheraudio.ui.theme.LocalAppearance
 
 @Composable
 fun LyricsView(
@@ -31,7 +30,7 @@ fun LyricsView(
             Text(
                 text = "No hay letras disponibles (.lrc)",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         return
@@ -44,14 +43,13 @@ fun LyricsView(
     }
 
     val listState = rememberLazyListState()
-    val coroutineScope = rememberCoroutineScope()
+    val animationsEnabled = LocalAppearance.current.motionEnabled
 
     // Scroll automático al avanzar la letra
-    LaunchedEffect(activeIndex) {
-        coroutineScope.launch {
-            if (activeIndex >= 0 && activeIndex < lyrics.size) {
-                listState.animateScrollToItem(activeIndex)
-            }
+    LaunchedEffect(activeIndex, animationsEnabled, lyrics) {
+        if (activeIndex >= 0 && activeIndex < lyrics.size) {
+            if (animationsEnabled) listState.animateScrollToItem(activeIndex)
+            else listState.scrollToItem(activeIndex)
         }
     }
 
@@ -67,7 +65,7 @@ fun LyricsView(
                 text = line.text,
                 fontSize = if (isActive) 18.sp else 14.sp,
                 fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
-                color = if (isActive) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = 0.5f),
+                color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .fillMaxWidth()

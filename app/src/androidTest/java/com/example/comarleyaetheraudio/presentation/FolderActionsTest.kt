@@ -7,8 +7,9 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.example.comarleyaetheraudio.data.local.entity.FolderEntity
+import com.example.comarleyaetheraudio.domain.model.LibraryFolder
 import com.example.comarleyaetheraudio.presentation.folders.FoldersScreen
+import com.example.comarleyaetheraudio.presentation.folders.FolderAccessRecovery
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -17,7 +18,26 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class FolderActionsTest {
     @get:Rule val compose = createComposeRule()
-    private val folder = FolderEntity("content://soundflow.test/folder", "Pruebas", "content://soundflow.test/folder", 2)
+    private val folder = LibraryFolder("content://soundflow.test/folder", "Pruebas", "content://soundflow.test/folder", 2)
+
+    @Test
+    fun recoveryIdentifiesFolderAndRequestsItsOriginalUri() {
+        val requested = mutableListOf<String>()
+        compose.setContent {
+            MaterialTheme { FolderAccessRecovery(folder.uriString, folder.name, false, requested::add) }
+        }
+        compose.onNodeWithText("Acceso pendiente: Pruebas").assertExists()
+        compose.onNodeWithText("Restaurar acceso").performClick()
+        compose.runOnIdle { assertEquals(listOf(folder.uriString), requested) }
+    }
+
+    @Test
+    fun recoveryCannotLaunchWhileUpdating() {
+        compose.setContent {
+            MaterialTheme { FolderAccessRecovery(folder.uriString, folder.name, true, {}) }
+        }
+        compose.onNodeWithText("Restaurar acceso").assertIsNotEnabled()
+    }
 
     @Test
     fun removalRequiresConfirmationAndCanBeCancelled() {

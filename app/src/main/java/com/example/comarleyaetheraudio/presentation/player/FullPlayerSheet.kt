@@ -1,9 +1,11 @@
 package com.example.comarleyaetheraudio.presentation.player
 
-import android.graphics.BitmapFactory
+import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -26,14 +28,23 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.comarleyaetheraudio.data.local.util.LrcParser
+import com.example.comarleyaetheraudio.data.local.util.ArtworkDecoder
 import com.example.comarleyaetheraudio.data.remote.LrcLibService
 import com.example.comarleyaetheraudio.domain.model.AudioPlayerState
 import com.example.comarleyaetheraudio.domain.model.LyricLine
+import com.example.comarleyaetheraudio.domain.playback.AudioInspection
+import com.example.comarleyaetheraudio.domain.model.Song
+import com.example.comarleyaetheraudio.domain.playback.SleepTimerState
 import com.example.comarleyaetheraudio.presentation.components.dialogs.SleepTimerDialog
 import com.example.comarleyaetheraudio.presentation.components.dialogs.TagEditorDialog
 import com.example.comarleyaetheraudio.ui.theme.DynamicThemeExtractor
-import com.example.comarleyaetheraudio.ui.theme.ElectricPurple
-import com.example.comarleyaetheraudio.ui.theme.LightLavender
+import com.example.comarleyaetheraudio.ui.theme.LocalAppearance
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.withContext
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,47 +64,68 @@ fun FullPlayerSheet(
     onRewind: () -> Unit,
     onForward: () -> Unit,
     onToggleShuffle: () -> Unit,
-    onEditTags: (String, String, String) -> Unit
+    onEditTags: (String, String, String) -> Unit,
+    onRetry: () -> Unit = {},
+    sleepTimerState: SleepTimerState = if (currentTimerMinutes > 0)
+        SleepTimerState.CountingDown(currentTimerMinutes) else SleepTimerState.Off,
+    inspectAudio: suspend (Song) -> AudioInspection = { AudioInspection() }
 ) {
     val song = playerState.currentSong ?: return
-    var sliderPosition by remember { mutableStateOf<Float?>(null) }
+    var sliderPosition by remember(song.id) { mutableStateOf<Float?>(null) }
 
     var showLyrics by remember { mutableStateOf(false) }
     var showTagEditor by remember { mutableStateOf(false) }
     var showTimerDialog by remember { mutableStateOf(false) }
     var showMenuOptions by remember { mutableStateOf(false) }
+    var showFileInfo by remember(song.id) { mutableStateOf(false) }
 
-    var fetchedLyrics by remember(song) { mutableStateOf<List<LyricLine>?>(null) }
+    val onlineLyrics = com.example.comarleyaetheraudio.presentation.settings.LocalNetworkSettings.current.lyrics
+    var fetchedLyrics by remember(song, onlineLyrics) { mutableStateOf<List<LyricLine>?>(null) }
     var isLoadingLyrics by remember { mutableStateOf(false) }
 
-    LaunchedEffect(showLyrics, song) {
+    LaunchedEffect(showLyrics, song, onlineLyrics) {
         if (showLyrics && fetchedLyrics == null) {
             isLoadingLyrics = true
-            val localLyrics = LrcParser.parseLrcForSong(song.path)
-            if (localLyrics.isNotEmpty()) {
-                fetchedLyrics = localLyrics
-            } else {
-                val cleanTitle = song.title.replace(Regex("(?i)\\(official.*?\\)|\\[official.*?\\]|\\.(mp3|flac|m4a)"), "").trim()
-                val cleanArtist = if (song.artist.contains("Unknown", ignoreCase = true)) "" else song.artist.trim()
-                val remoteLyrics = LrcLibService.fetchSyncedLyrics(cleanTitle, cleanArtist)
-                fetchedLyrics = remoteLyrics ?: emptyList()
+            try {
+                val localLyrics = withContext(Dispatchers.IO) { LrcParser.parseLrcForSong(song.path) }
+                fetchedLyrics = if (localLyrics.isNotEmpty()) localLyrics else if (!onlineLyrics) emptyList() else {
+                    val cleanTitle = song.title.replace(Regex("(?i)\\(official.*?\\)|\\[official.*?\\]|\\.(mp3|flac|m4a)"), "").trim()
+                    val cleanArtist = if (song.artist.contains("Unknown", ignoreCase = true)) "" else song.artist.trim()
+                    LrcLibService.fetchSyncedLyrics(cleanTitle, cleanArtist) ?: emptyList()
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                fetchedLyrics = emptyList()
+            } finally {
+                isLoadingLyrics = false
             }
-            isLoadingLyrics = false
         }
     }
 
     val artworkData = playerState.artworkData
-    val bitmap = remember(artworkData) {
-        artworkData?.let { bytes -> BitmapFactory.decodeByteArray(bytes, 0, bytes.size) }
+    val bitmapState = produceState<Bitmap?>(null, artworkData) {
+        value = withContext(Dispatchers.Default) {
+            artworkData?.let { bytes ->
+                ArtworkDecoder.decode(bytes, 1024)
+            }
+        }
     }
 
-    val dominantColor = remember(bitmap) {
-        DynamicThemeExtractor.extractDominantColor(bitmap, ElectricPurple)
+    val bitmap = bitmapState.value
+    val transparencies = LocalAppearance.current.transparenciesEnabled
+    val dominantColor = MaterialTheme.colorScheme.primary
+    val artworkAccent by produceState(dominantColor, bitmap, dominantColor) {
+        value = withContext(Dispatchers.Default) {
+            DynamicThemeExtractor.extractDominantColor(bitmap, dominantColor)
+        }
     }
+    val backdropColor = if (transparencies) artworkAccent else dominantColor
+    val playContentColor = com.example.comarleyaetheraudio.ui.theme.contrastingContent(artworkAccent)
 
-    // ⚡ COLOR DE FONDO 100% GARANTIZADO BLANCO EN MODO CLARO
-    val baseBgColor = if (isDarkMode) Color(0xFF121212) else Color.White
-    val textColor = if (isDarkMode) Color.White else Color(0xFF111111)
+    val baseBgColor = MaterialTheme.colorScheme.background
+    val textColor = MaterialTheme.colorScheme.onSurface
+    val contentScroll = rememberScrollState()
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -101,6 +133,8 @@ fun FullPlayerSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = baseBgColor,
+        dragHandle = null,
+        shape = RectangleShape,
         modifier = Modifier.fillMaxSize()
     ) {
         Box(
@@ -108,7 +142,7 @@ fun FullPlayerSheet(
                 .fillMaxSize()
                 .background(baseBgColor)
         ) {
-            if (bitmap != null) {
+            if (transparencies && bitmap != null) {
                 Image(
                     bitmap = bitmap.asImageBitmap(),
                     contentDescription = null,
@@ -121,13 +155,13 @@ fun FullPlayerSheet(
                 )
             }
 
-            Box(
+            if (transparencies) Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                dominantColor.copy(alpha = if (isDarkMode) 0.35f else 0.08f),
+                                backdropColor.copy(alpha = if (isDarkMode) 0.35f else 0.08f),
                                 baseBgColor.copy(alpha = 0.90f),
                                 baseBgColor
                             )
@@ -138,6 +172,8 @@ fun FullPlayerSheet(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
+                    .then(if (showLyrics) Modifier else Modifier.verticalScroll(contentScroll))
                     .padding(horizontal = 24.dp, vertical = 4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -151,12 +187,12 @@ fun FullPlayerSheet(
                     Surface(
                         onClick = onDismiss,
                         shape = CircleShape,
-                        color = if (isDarkMode) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.05f),
-                        modifier = Modifier.size(38.dp)
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        modifier = Modifier.size(48.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
-                                Icons.Default.ArrowBack,
+                                Icons.AutoMirrored.Rounded.ArrowBack,
                                 contentDescription = "Volver",
                                 tint = textColor,
                                 modifier = Modifier.size(18.dp)
@@ -164,12 +200,14 @@ fun FullPlayerSheet(
                         }
                     }
 
+                    Text("Ahora suena", style = MaterialTheme.typography.titleMedium, color = textColor,
+                        modifier = Modifier.weight(1f).padding(horizontal = 12.dp), textAlign = TextAlign.Center)
                     Box {
                         Surface(
                             onClick = { showMenuOptions = true },
                             shape = CircleShape,
-                            color = if (isDarkMode) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.05f),
-                            modifier = Modifier.size(38.dp)
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            modifier = Modifier.size(48.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
@@ -186,6 +224,11 @@ fun FullPlayerSheet(
                             onDismissRequest = { showMenuOptions = false }
                         ) {
                             DropdownMenuItem(
+                                text = { Text("Información del archivo") },
+                                leadingIcon = { Icon(Icons.Default.Info, contentDescription = null) },
+                                onClick = { showMenuOptions = false; showFileInfo = true }
+                            )
+                            DropdownMenuItem(
                                 text = { Text("Editar información") },
                                 leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
                                 onClick = {
@@ -198,6 +241,8 @@ fun FullPlayerSheet(
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
+
+                PlaybackStatusBanner(playerState, onRetry)
 
                 if (showLyrics) {
                     Box(
@@ -238,12 +283,13 @@ fun FullPlayerSheet(
                         )
                     } else {
                         Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                            Text("No se encontraron letras.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(if (onlineLyrics) "No se encontraron letras." else "No hay letras locales. La búsqueda en línea está desactivada en Ajustes.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 } else {
                     Box(
                         modifier = Modifier
+                            .widthIn(max = 360.dp)
                             .fillMaxWidth(0.82f)
                             .aspectRatio(1f)
                             .shadow(20.dp, RoundedCornerShape(24.dp), spotColor = dominantColor)
@@ -299,7 +345,7 @@ fun FullPlayerSheet(
                         )
                     }
 
-                    Spacer(modifier = Modifier.weight(1f))
+                    Spacer(modifier = Modifier.height(20.dp))
                 }
 
                 Row(
@@ -311,11 +357,11 @@ fun FullPlayerSheet(
                 ) {
                     IconButton(
                         onClick = onToggleFavorite,
-                        modifier = Modifier.size(34.dp)
+                        modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
                             imageVector = if (isFavorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
-                            contentDescription = "Favorito",
+                            contentDescription = if (isFavorite) "Quitar de favoritos" else "Añadir a favoritos",
                             tint = if (isFavorite) dominantColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                             modifier = Modifier.size(24.dp)
                         )
@@ -324,22 +370,23 @@ fun FullPlayerSheet(
                     Row {
                         IconButton(
                             onClick = { showTimerDialog = true },
-                            modifier = Modifier.size(34.dp)
+                            enabled = !playerState.isConnecting && playerState.errorMessage == null,
+                            modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
                                 Icons.Rounded.Timer,
-                                contentDescription = "Timer",
-                                tint = if (currentTimerMinutes > 0) dominantColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                contentDescription = "Temporizador",
+                                tint = if (sleepTimerState.isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                 modifier = Modifier.size(20.dp)
                             )
                         }
                         Spacer(modifier = Modifier.width(6.dp))
                         IconButton(
                             onClick = { showLyrics = !showLyrics },
-                            modifier = Modifier.size(34.dp)
+                            modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
-                                Icons.Default.FormatQuote,
+                                Icons.Rounded.Lyrics,
                                 contentDescription = "Letras",
                                 tint = if (showLyrics) dominantColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                 modifier = Modifier.size(20.dp)
@@ -351,18 +398,20 @@ fun FullPlayerSheet(
                 Column(modifier = Modifier.fillMaxWidth()) {
                     AudioVisualizerView(
                         isPlaying = playerState.isPlaying,
-                        primaryColor = dominantColor,
-                        secondaryColor = LightLavender,
+                        primaryColor = artworkAccent,
+                        secondaryColor = MaterialTheme.colorScheme.secondary,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(16.dp)
                             .padding(horizontal = 4.dp)
                     )
 
-                    val currentPos = sliderPosition ?: playerState.currentPosition.toFloat()
+                    val currentPos = (sliderPosition ?: playerState.currentPosition.toFloat())
+                        .coerceIn(0f, playerState.duration.coerceAtLeast(1L).toFloat())
                     val totalDuration = playerState.duration.coerceAtLeast(1L).toFloat()
 
                     Slider(
+                        enabled = !playerState.isConnecting && playerState.duration > 0,
                         value = currentPos,
                         onValueChange = { sliderPosition = it },
                         onValueChangeFinished = {
@@ -377,7 +426,7 @@ fun FullPlayerSheet(
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(12.dp)
+                            .heightIn(min = 48.dp)
                     )
 
                     Row(
@@ -394,11 +443,11 @@ fun FullPlayerSheet(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(0.55f),
+                    modifier = Modifier.fillMaxWidth(0.75f),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = onToggleShuffle) {
+                    IconButton(onClick = onToggleShuffle, enabled = !playerState.isConnecting) {
                         Icon(
                             Icons.Rounded.Shuffle,
                             contentDescription = "Aleatorio",
@@ -407,13 +456,18 @@ fun FullPlayerSheet(
                         )
                     }
 
-                    IconButton(onClick = onRewind) {
+                    IconButton(onClick = onRewind, enabled = !playerState.isConnecting) {
                         Icon(
-                            Icons.Rounded.Repeat,
-                            contentDescription = "Repetir",
+                            Icons.Rounded.Replay10,
+                            contentDescription = "Retroceder 10 segundos",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                             modifier = Modifier.size(20.dp)
                         )
+                    }
+                    IconButton(onClick = onForward, enabled = !playerState.isConnecting) {
+                        Icon(Icons.Rounded.Forward10, contentDescription = "Adelantar 10 segundos",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp))
                     }
                 }
 
@@ -426,35 +480,39 @@ fun FullPlayerSheet(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = onPrevious) {
+                    IconButton(onClick = onPrevious, enabled = !playerState.isConnecting) {
                         Icon(Icons.Rounded.SkipPrevious, contentDescription = "Anterior", tint = textColor, modifier = Modifier.size(38.dp))
                     }
 
                     Surface(
                         onClick = onTogglePlayPause,
+                        enabled = !playerState.isConnecting,
                         modifier = Modifier
                             .size(68.dp)
-                            .shadow(14.dp, CircleShape, spotColor = dominantColor),
+                            .shadow(14.dp, CircleShape, spotColor = artworkAccent),
                         shape = CircleShape,
-                        color = dominantColor
+                        color = artworkAccent
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = if (playerState.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                                contentDescription = null,
+                                contentDescription = if (playerState.isPlaying) "Pausar" else "Reproducir",
                                 modifier = Modifier.size(34.dp),
-                                tint = Color.White
+                                tint = playContentColor
                             )
                         }
                     }
 
-                    IconButton(onClick = onNext) {
+                    IconButton(onClick = onNext, enabled = !playerState.isConnecting) {
                         Icon(Icons.Rounded.SkipNext, contentDescription = "Siguiente", tint = textColor, modifier = Modifier.size(38.dp))
                     }
                 }
             }
         }
 
+        if (showFileInfo) {
+            AudioInspectorDialog(song, inspectAudio, onDismiss = { showFileInfo = false })
+        }
         if (showTagEditor) {
             TagEditorDialog(
                 song = song,
@@ -468,6 +526,7 @@ fun FullPlayerSheet(
         if (showTimerDialog) {
             SleepTimerDialog(
                 currentTimerMinutes = currentTimerMinutes,
+                sleepTimerState = sleepTimerState,
                 onStartTimer = onStartTimer,
                 onCancelTimer = onCancelTimer,
                 onDismiss = { showTimerDialog = false }
@@ -480,5 +539,5 @@ private fun formatTime(ms: Long): String {
     val totalSeconds = ms / 1000
     val m = totalSeconds / 60
     val s = totalSeconds % 60
-    return String.format("%02d:%02d", m, s)
+    return String.format(Locale.ROOT, "%02d:%02d", m, s)
 }

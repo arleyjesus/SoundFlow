@@ -1,5 +1,7 @@
 package com.example.comarleyaetheraudio.presentation.library
 
+import com.example.comarleyaetheraudio.ui.theme.LocalAppearance
+
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -54,26 +56,30 @@ fun LibraryScreen(
     onAddSongsToPlaylist: (Long, List<Long>) -> Unit,
     onCreatePlaylist: (String) -> Unit,
     onRenamePlaylist: (Playlist, String) -> Unit,
-    onDeletePlaylist: (Playlist) -> Unit
+    onDeletePlaylist: (Playlist) -> Unit,
+    onPlayContext: (Song, List<Song>, Boolean) -> Unit = { song, queue, _ -> onSongClickWithPlaylist(song, queue) },
+    libraryOrder: com.example.comarleyaetheraudio.domain.library.LibraryOrder = com.example.comarleyaetheraudio.domain.library.LibraryOrder.ADDED_NEWEST,
+    onLibraryOrder: (com.example.comarleyaetheraudio.domain.library.LibraryOrder) -> Unit = {}
 ) {
     val tabs = remember { listOf("Canciones", "Artistas", "Playlists") }
     val pagerState = rememberPagerState(pageCount = { tabs.size })
     val scope = rememberCoroutineScope()
+    val animationsEnabled = LocalAppearance.current.motionEnabled
 
     var selectedArtistName by remember { mutableStateOf<String?>(null) }
     var songOptionsId by remember { mutableStateOf<Long?>(null) }
     var selectedPlaylistForDetail by remember { mutableStateOf<Playlist?>(null) }
 
     // ⚡ Estado para el filtro de ordenamiento en la pestaña de canciones
-    var sortDescending by remember { mutableStateOf(true) } // true = Más Recientes primero
+    var showOrderMenu by remember { mutableStateOf(false) }
 
     // 🎨 ASIGNACIÓN DE COLORES DE FONDO Y TARJETAS UNIFORMES
-    val backgroundColor = if (isDarkMode) Color(0xFF09090B) else Color(0xFFFAFAFC)
-    val cardBgColor = if (isDarkMode) Color(0xFF141417) else Color(0xFFF1F1F5)
-    val textColor = if (isDarkMode) Color.White else Color(0xFF111111)
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val cardBgColor = MaterialTheme.colorScheme.surface
+    val textColor = MaterialTheme.colorScheme.onSurface
 
     val artistList by remember(artistGrouped) {
-        derivedStateOf { artistGrouped.keys.toList() }
+        derivedStateOf { artistGrouped.keys.sortedWith(String.CASE_INSENSITIVE_ORDER) }
     }
 
     val totalStatsText by remember(songs) {
@@ -88,6 +94,8 @@ fun LibraryScreen(
 
     Box(modifier = Modifier.fillMaxSize().background(backgroundColor)) {
         Column(modifier = Modifier.fillMaxSize()) {
+            Text("Biblioteca", style = MaterialTheme.typography.headlineLarge,
+                modifier = Modifier.padding(start = 20.dp, top = 16.dp, bottom = 4.dp))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -97,12 +105,12 @@ fun LibraryScreen(
                 tabs.forEachIndexed { index, title ->
                     val isSelected = pagerState.currentPage == index
                     Surface(
-                        onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                        onClick = { scope.launch { if (animationsEnabled) pagerState.animateScrollToPage(index) else pagerState.scrollToPage(index) } },
                         shape = RoundedCornerShape(20.dp),
                         color = if (isSelected) MaterialTheme.colorScheme.primary else cardBgColor,
-                        contentColor = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                        contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                         tonalElevation = if (isSelected) 6.dp else 0.dp,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f).heightIn(min = 48.dp)
                     ) {
                         Box(
                             modifier = Modifier.padding(vertical = 10.dp),
@@ -121,9 +129,9 @@ fun LibraryScreen(
                 when (page) {
                     0 -> {
                         // ⚡ Lista de canciones ordenada dinámicamente
-                        val sortedSongs = remember(songs, sortDescending) {
-                            if (sortDescending) songs.sortedByDescending { it.id }
-                            else songs.sortedBy { it.id }
+                        val sortedSongs = remember(songs, libraryOrder) {
+                            com.example.comarleyaetheraudio.domain.library.orderedLibrary(songs, libraryOrder,
+                                { it.id }, { it.title }, { it.artist })
                         }
 
                         LazyColumn(
@@ -145,7 +153,8 @@ fun LibraryScreen(
                                         color = MaterialTheme.colorScheme.primary,
                                         fontWeight = FontWeight.Bold
                                     )
-                                    TextButton(onClick = { sortDescending = !sortDescending }) {
+                                    Box {
+                                    TextButton(onClick = { showOrderMenu = true }) {
                                         Icon(
                                             imageVector = Icons.AutoMirrored.Filled.Sort,
                                             contentDescription = "Ordenar",
@@ -153,9 +162,17 @@ fun LibraryScreen(
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Text(
-                                            text = if (sortDescending) "Más Recientes" else "Más Antiguas",
+                                            text = libraryOrder.label,
                                             style = MaterialTheme.typography.labelSmall
                                         )
+                                    }
+                                    DropdownMenu(expanded = showOrderMenu, onDismissRequest = { showOrderMenu = false }) {
+                                        com.example.comarleyaetheraudio.domain.library.LibraryOrder.entries.forEach { order ->
+                                            DropdownMenuItem(text = { Text(order.label) }, onClick = {
+                                                onLibraryOrder(order); showOrderMenu = false
+                                            })
+                                        }
+                                    }
                                     }
                                 }
                             }
@@ -167,7 +184,8 @@ fun LibraryScreen(
                                 ) {
                                     SongItem(
                                         song = song,
-                                        onClick = { onSongClick(song) },
+                                        isActive = playerState.currentSong?.id == song.id,
+                                        onClick = { onPlayContext(song, sortedSongs, false) },
                                         onMoreOptionsClick = { songOptionsId = song.id }
                                     )
                                 }
@@ -213,7 +231,7 @@ fun LibraryScreen(
                             onPlayAllPlaylist = { playlist, isShuffle ->
                                 if (playlist.songs.isNotEmpty()) {
                                     val targetSong = if (isShuffle) playlist.songs.shuffled().first() else playlist.songs.first()
-                                    onSongClickWithPlaylist(targetSong, playlist.songs)
+                                    onPlayContext(targetSong, playlist.songs, isShuffle)
                                 }
                             },
                             onCreatePlaylistClick = onCreatePlaylist,
@@ -244,6 +262,7 @@ fun LibraryScreen(
             val currentPlaylist = playlists.find { it.id == playlist.id } ?: playlist
 
             PlaylistDetailScreen(
+                onPlayContext = onPlayContext,
                 playlist = currentPlaylist,
                 allSongs = songs,
                 playerState = playerState,
@@ -276,79 +295,20 @@ fun LibraryScreen(
                 artistName = artist,
                 artistSongs = artistGrouped[artist] ?: emptyList(),
                 onDismiss = { selectedArtistName = null },
-                onSongClick = onSongClick
+                onSongClick = { song -> onPlayContext(song, artistGrouped[artist].orEmpty(), false) }
             )
         }
     }
 }
 
 @Composable
-private fun ArtistListItem(
-    artistName: String,
-    songCount: Int,
-    sampleSong: Song?,
-    onClick: () -> Unit
-) {
-    val context = LocalContext.current
-    var artistImagePath by remember(artistName) { mutableStateOf<String?>(null) }
-    var artistCoverFile by remember(artistName) { mutableStateOf<File?>(null) }
-
-    LaunchedEffect(artistName, sampleSong) {
-        val onlinePath = ArtistImageFetcher.getOrFetchArtistPicture(context, artistName)
-        if (onlinePath != null) {
-            artistImagePath = onlinePath
-        } else {
-            sampleSong?.let { song ->
-                artistCoverFile = CoverCacheManager.getOrFetchCover(context, song.id, song.albumArtUri, song.path)
-            }
-        }
-    }
-
-    ListItem(
-        modifier = Modifier.clickable { onClick() },
+private fun ArtistListItem(artistName: String, songCount: Int, sampleSong: Song?, onClick: () -> Unit) {
+    ListItem(modifier = Modifier.clickable(onClick = onClick),
         leadingContent = {
-            Surface(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape),
-                color = MaterialTheme.colorScheme.primaryContainer
-            ) {
-                when {
-                    artistImagePath != null -> {
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(File(artistImagePath!!))
-                                .crossfade(true)
-                                .build(),
-                            contentDescription = artistName,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
-                    artistCoverFile != null -> {
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(artistCoverFile)
-                                .crossfade(false)
-                                .build(),
-                            contentDescription = artistName,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
-                    else -> {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
-                }
-            }
+            com.example.comarleyaetheraudio.presentation.components.ArtistPortrait(
+                artistName, sampleSong, Modifier.size(52.dp).clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer))
         },
-        headlineContent = { Text(artistName, fontWeight = FontWeight.Bold) },
-        supportingContent = { Text("$songCount Canciones") }
-    )
+        headlineContent = { Text(artistName, style = MaterialTheme.typography.titleMedium) },
+        supportingContent = { Text("$songCount canciones") })
 }

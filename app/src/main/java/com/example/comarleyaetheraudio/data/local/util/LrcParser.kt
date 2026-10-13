@@ -1,19 +1,23 @@
 package com.example.comarleyaetheraudio.data.local.util
 
 import com.example.comarleyaetheraudio.domain.model.LyricLine
+import com.example.comarleyaetheraudio.domain.playback.SyncedLyricsParser
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
 import java.io.File
 
 object LrcParser {
     fun parseLrcForSong(songPath: String): List<LyricLine> {
+        if (songPath.isBlank() || songPath.startsWith("content://")) return emptyList()
         // 1. Intentar leer archivo .lrc externo con el mismo nombre
         val lrcPath = songPath.substringBeforeLast(".") + ".lrc"
         val lrcFile = File(lrcPath)
 
-        if (lrcFile.exists()) {
-            val content = lrcFile.readText()
-            val parsed = parseLrcContent(content)
+        if (lrcFile.isFile && lrcFile.length() <= SyncedLyricsParser.MAX_CHARACTERS) {
+            val content = try { lrcFile.reader().use { it.readTextLimited() } }
+                catch (_: java.io.IOException) { "" }
+                catch (_: SecurityException) { "" }
+            val parsed = SyncedLyricsParser.parse(content)
             if (parsed.isNotEmpty()) return parsed
         }
 
@@ -24,32 +28,25 @@ object LrcParser {
             if (tag != null) {
                 val embeddedLyrics = tag.getFirst(FieldKey.LYRICS)
                 if (embeddedLyrics.isNotBlank()) {
-                    val parsed = parseLrcContent(embeddedLyrics)
+                    val parsed = SyncedLyricsParser.parse(embeddedLyrics)
                     if (parsed.isNotEmpty()) return parsed
                 }
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
+        } catch (_: Exception) {
         }
 
         // 3. Si no hay letra local ni incrustada, retorna lista vacía (sin textos genéricos de prueba)
         return emptyList()
     }
 
-    private fun parseLrcContent(content: String): List<LyricLine> {
-        val lines = mutableListOf<LyricLine>()
-        val regex = "\\[(\\d{2}):(\\d{2})\\.(\\d{2,3})\\](.*)".toRegex()
-
-        content.lines().forEach { line ->
-            val match = regex.find(line)
-            if (match != null) {
-                val (min, sec, ms, text) = match.destructured
-                val totalMs = (min.toLong() * 60 * 1000) + (sec.toLong() * 1000) + ms.toLong()
-                if (text.trim().isNotEmpty()) {
-                    lines.add(LyricLine(totalMs, text.trim()))
-                }
-            }
+    private fun java.io.Reader.readTextLimited(): String {
+        val buffer = CharArray(SyncedLyricsParser.MAX_CHARACTERS + 1)
+        var size = 0
+        while (size < buffer.size) {
+            val count = read(buffer, size, buffer.size - size)
+            if (count < 0) break
+            size += count
         }
-        return lines.sortedBy { it.timeMs }
+        return if (size <= SyncedLyricsParser.MAX_CHARACTERS) String(buffer, 0, size) else ""
     }
 }
