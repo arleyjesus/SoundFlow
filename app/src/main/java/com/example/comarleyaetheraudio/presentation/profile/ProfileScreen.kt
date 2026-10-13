@@ -41,9 +41,9 @@ fun ProfileScreen(
     onNavigateToAppearance: () -> Unit = onNavigateToSettings
 ) {
     var showFoldersDialog by remember { mutableStateOf(false) }
-    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+    Column(Modifier.fillMaxSize().background(com.example.comarleyaetheraudio.ui.theme.screenBackgroundColor())
         .verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Text("Perfil", style = MaterialTheme.typography.headlineLarge)
+        Text("Perfil", style = MaterialTheme.typography.headlineLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold)
         Text("Tu espacio en SoundFlow", color = MaterialTheme.colorScheme.onSurfaceVariant)
         SoundFlowPanel(Modifier.fillMaxWidth()) {
             Row(Modifier.padding(22.dp), verticalAlignment = Alignment.CenterVertically,

@@ -228,3 +228,7 @@ Consultar el archivo `LICENSE` del repositorio para conocer los términos de dis
 Pulido adicional local: orden visible de reproducción, filtros persistentes,
 búsqueda por canciones/artistas/álbumes y controles visuales renovados. Estado y
 validación final: [orden y pulido 4.0](docs/18-DIAGNOSTICO-ORDEN-Y-PULIDO-4.0.md).
+
+Candidato local **4.0.0-rc.1**: iconos propios, cristal sutil, fondo personalizado,
+playlists renovadas y ranking opcional de escuchas. Estado, privacidad y pruebas:
+[identidad 4.0 y escucha local](docs/19-IDENTIDAD-4.0-Y-ESCUCHA-LOCAL.md).

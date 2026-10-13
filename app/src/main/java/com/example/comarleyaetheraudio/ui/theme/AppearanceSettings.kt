@@ -9,7 +9,8 @@ data class AppearanceSettings(
     val transparenciesEnabled: Boolean = true,
     val followSystemTheme: Boolean = false,
     // Runtime capability, never persisted over the user's preference.
-    val systemAnimationsEnabled: Boolean = true
+    val systemAnimationsEnabled: Boolean = true,
+    val backgroundUri: String? = null
 ) {
     val motionEnabled: Boolean get() = animationsEnabled && systemAnimationsEnabled
     fun darkMode(systemDark: Boolean): Boolean = if (followSystemTheme) systemDark else isDarkMode

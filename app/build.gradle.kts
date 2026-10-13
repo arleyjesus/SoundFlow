@@ -13,8 +13,8 @@ android {
         applicationId = "com.example.comarleyaetheraudio"
         minSdk = 24
         targetSdk = 35
-        versionCode = 37
-        versionName = "3.7.0"
+        versionCode = 40
+        versionName = "4.0.0-rc.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

@@ -8,6 +8,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.example.comarleyaetheraudio.ui.theme.SoundFlowIcons
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.rounded.*
@@ -192,7 +193,7 @@ fun FullPlayerSheet(
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
-                                Icons.AutoMirrored.Rounded.ArrowBack,
+                                SoundFlowIcons.Back,
                                 contentDescription = "Volver",
                                 tint = textColor,
                                 modifier = Modifier.size(18.dp)
@@ -211,7 +212,7 @@ fun FullPlayerSheet(
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
-                                    Icons.Default.MoreHoriz,
+                                    SoundFlowIcons.More,
                                     contentDescription = "Opciones",
                                     tint = textColor,
                                     modifier = Modifier.size(20.dp)
@@ -225,12 +226,12 @@ fun FullPlayerSheet(
                         ) {
                             DropdownMenuItem(
                                 text = { Text("Información del archivo") },
-                                leadingIcon = { Icon(Icons.Default.Info, contentDescription = null) },
+                                leadingIcon = { Icon(SoundFlowIcons.Info, contentDescription = null) },
                                 onClick = { showMenuOptions = false; showFileInfo = true }
                             )
                             DropdownMenuItem(
                                 text = { Text("Editar información") },
-                                leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                                leadingIcon = { Icon(SoundFlowIcons.Edit, contentDescription = null) },
                                 onClick = {
                                     showMenuOptions = false
                                     showTagEditor = true
@@ -264,7 +265,7 @@ fun FullPlayerSheet(
                                 modifier = Modifier.fillMaxSize(),
                                 color = MaterialTheme.colorScheme.surfaceVariant
                             ) {
-                                Icon(Icons.Default.MusicNote, contentDescription = null, modifier = Modifier.padding(24.dp))
+                                Icon(SoundFlowIcons.Music, contentDescription = null, modifier = Modifier.padding(24.dp))
                             }
                         }
                     }
@@ -307,7 +308,7 @@ fun FullPlayerSheet(
                                 modifier = Modifier.fillMaxSize(),
                                 color = MaterialTheme.colorScheme.surfaceVariant
                             ) {
-                                Icon(Icons.Default.MusicNote, contentDescription = null, modifier = Modifier.padding(52.dp))
+                                Icon(SoundFlowIcons.Music, contentDescription = null, modifier = Modifier.padding(52.dp))
                             }
                         }
                     }
@@ -360,7 +361,7 @@ fun FullPlayerSheet(
                         modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
-                            imageVector = if (isFavorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                            imageVector = if (isFavorite) SoundFlowIcons.FavoriteSelected else SoundFlowIcons.Favorite,
                             contentDescription = if (isFavorite) "Quitar de favoritos" else "Añadir a favoritos",
                             tint = if (isFavorite) dominantColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                             modifier = Modifier.size(24.dp)
@@ -374,7 +375,7 @@ fun FullPlayerSheet(
                             modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
-                                Icons.Rounded.Timer,
+                                SoundFlowIcons.Timer,
                                 contentDescription = "Temporizador",
                                 tint = if (sleepTimerState.isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                 modifier = Modifier.size(20.dp)
@@ -386,7 +387,7 @@ fun FullPlayerSheet(
                             modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
-                                Icons.Rounded.Lyrics,
+                                SoundFlowIcons.Lyrics,
                                 contentDescription = "Letras",
                                 tint = if (showLyrics) dominantColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                 modifier = Modifier.size(20.dp)
@@ -402,7 +403,7 @@ fun FullPlayerSheet(
                         secondaryColor = MaterialTheme.colorScheme.secondary,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(16.dp)
+                            .height(28.dp)
                             .padding(horizontal = 4.dp)
                     )
 
@@ -449,7 +450,7 @@ fun FullPlayerSheet(
                 ) {
                     IconButton(onClick = onToggleShuffle, enabled = !playerState.isConnecting) {
                         Icon(
-                            Icons.Rounded.Shuffle,
+                            SoundFlowIcons.Shuffle,
                             contentDescription = "Aleatorio",
                             tint = if (playerState.isShuffleEnabled) dominantColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                             modifier = Modifier.size(20.dp)
@@ -458,14 +459,14 @@ fun FullPlayerSheet(
 
                     IconButton(onClick = onRewind, enabled = !playerState.isConnecting) {
                         Icon(
-                            Icons.Rounded.Replay10,
+                            SoundFlowIcons.Rewind,
                             contentDescription = "Retroceder 10 segundos",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                             modifier = Modifier.size(20.dp)
                         )
                     }
                     IconButton(onClick = onForward, enabled = !playerState.isConnecting) {
-                        Icon(Icons.Rounded.Forward10, contentDescription = "Adelantar 10 segundos",
+                        Icon(SoundFlowIcons.Forward, contentDescription = "Adelantar 10 segundos",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(20.dp))
                     }
@@ -481,7 +482,7 @@ fun FullPlayerSheet(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onPrevious, enabled = !playerState.isConnecting) {
-                        Icon(Icons.Rounded.SkipPrevious, contentDescription = "Anterior", tint = textColor, modifier = Modifier.size(38.dp))
+                        Icon(SoundFlowIcons.Previous, contentDescription = "Anterior", tint = textColor, modifier = Modifier.size(38.dp))
                     }
 
                     Surface(
@@ -495,7 +496,7 @@ fun FullPlayerSheet(
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
-                                imageVector = if (playerState.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                                imageVector = if (playerState.isPlaying) SoundFlowIcons.Pause else SoundFlowIcons.Play,
                                 contentDescription = if (playerState.isPlaying) "Pausar" else "Reproducir",
                                 modifier = Modifier.size(34.dp),
                                 tint = playContentColor
@@ -504,7 +505,7 @@ fun FullPlayerSheet(
                     }
 
                     IconButton(onClick = onNext, enabled = !playerState.isConnecting) {
-                        Icon(Icons.Rounded.SkipNext, contentDescription = "Siguiente", tint = textColor, modifier = Modifier.size(38.dp))
+                        Icon(SoundFlowIcons.Next, contentDescription = "Siguiente", tint = textColor, modifier = Modifier.size(38.dp))
                     }
                 }
             }

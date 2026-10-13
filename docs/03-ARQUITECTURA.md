@@ -248,3 +248,13 @@ ArtistIdentity valida nombres antes de guardar retratos; ArtistPortrait comparte
 fallback y respeta privacidad. SearchScreen calcula coincidencias y grupos en
 Dispatchers.Default y descarta snapshots de consulta/categoría anterior.
 Room v2, identificadores, entidades y dependencias conservados.
+
+### Historial y presentación 4.0.0-rc.1
+
+El servicio Media3 acredita avance reproducido con ListeningTracker y opt-in local.
+SettingsRepository separa listening_private de settings_prefs; counters/flag se
+observan por Flow y los contadores no reinician el observador de activación.
+DataStore de historial excluido de backups configurados. Un fondo Coil acotado
+se dibuja detrás de la app con velo de tema; componentes mantienen contraste.
+La sesión recibe carátula de la pista actual y retira bytes de otras pistas.
+Room y sus entidades/versiones permanecen iguales. Ver docs/19 para límites.

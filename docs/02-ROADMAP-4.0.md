@@ -349,3 +349,10 @@ Implementación local de docs/18 realizada: orden de cola, filtros persistentes,
 búsqueda agrupada, retratos, iconos y controles. Mantener el cierre aceptado de
 fases anteriores. Queda la única validación final Gradle/APK de este bloque;
 no requiere migración, dependencias ni nueva fase. Suite JVM directa: 114 tests.
+
+### Candidato 4.0.0-rc.1
+
+Implementada identidad propia, presentación de playlists, fondo personal y ranking
+opt-in de escuchas. Ver docs/19. Mantener la única validación APK al finalizar.
+Listas por ánimo propuestas mediante etiquetas personales, todavía sin implementar.
+No confundir commit/push de la rama con lanzamiento público firmado de 4.0.0.

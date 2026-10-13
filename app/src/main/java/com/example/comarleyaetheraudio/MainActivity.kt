@@ -12,6 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.example.comarleyaetheraudio.ui.theme.SoundFlowIcons
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.LibraryMusic
@@ -124,7 +125,8 @@ fun MainAppStructure(viewModel: LibraryViewModel, isDarkMode: Boolean) {
     val navContainerColor = MaterialTheme.colorScheme.background
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
+        modifier = com.example.comarleyaetheraudio.ui.theme.appBackdropModifier(),
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
         bottomBar = {
             Column(
                 modifier = Modifier
@@ -138,13 +140,13 @@ fun MainAppStructure(viewModel: LibraryViewModel, isDarkMode: Boolean) {
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     val navItems = listOf(
-                        Pair(Screen.Home, Icons.Rounded.Home),
-                        Pair(Screen.Library, Icons.Rounded.LibraryMusic),
-                        Pair(Screen.Search, Icons.Rounded.Search),
-                        Pair(Screen.Profile, Icons.Rounded.Person)
+                        Pair(Screen.Home, SoundFlowIcons.Home),
+                        Pair(Screen.Library, SoundFlowIcons.Library),
+                        Pair(Screen.Search, SoundFlowIcons.Search),
+                        Pair(Screen.Profile, SoundFlowIcons.Profile)
                     )
 
-                    navItems.forEach { (screen, iconVector) ->
+                    navItems.forEachIndexed { index, (screen, iconVector) ->
                         NavigationBarItem(
                             icon = { Icon(iconVector, contentDescription = screen.title) },
                             label = {
@@ -171,6 +173,11 @@ fun MainAppStructure(viewModel: LibraryViewModel, isDarkMode: Boolean) {
                                 }
                             }
                         )
+                        if (index < navItems.lastIndex) Box(Modifier.width(1.dp).height(26.dp).background(
+                            androidx.compose.ui.graphics.Brush.verticalGradient(listOf(
+                                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.05f),
+                                MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
+                                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.05f)))))
                     }
                 }
             }

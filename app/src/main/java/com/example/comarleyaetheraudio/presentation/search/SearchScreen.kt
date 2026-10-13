@@ -48,7 +48,7 @@ fun SearchScreen(
     var selectedGroup by remember { mutableStateOf<SearchGroup?>(null) }
     val focusManager = LocalFocusManager.current
 
-    val backgroundColor = MaterialTheme.colorScheme.background
+    val backgroundColor = com.example.comarleyaetheraudio.ui.theme.screenBackgroundColor()
     val cardBgColor = MaterialTheme.colorScheme.surface
 
     val snapshot by produceState<SearchSnapshot?>(null, searchQuery, songs, category) {
@@ -83,7 +83,7 @@ fun SearchScreen(
         Text(
             text = "Buscar",
             style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.ExtraBold,
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(start = 20.dp, top = 20.dp, bottom = 12.dp)
         )

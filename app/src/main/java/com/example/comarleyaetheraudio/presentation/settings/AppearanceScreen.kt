@@ -18,6 +18,11 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.comarleyaetheraudio.ui.theme.*
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import android.content.Intent
+import kotlinx.coroutines.CancellationException
 
 @Composable
 fun AppearanceScreen(
@@ -28,11 +33,20 @@ fun AppearanceScreen(
     onAnimations: (Boolean) -> Unit,
     onTransparencies: (Boolean) -> Unit,
     onFollowSystem: (Boolean) -> Unit = {},
-    onReset: () -> Unit = {}
+    onReset: () -> Unit = {},
+    onBackground: (String?) -> Unit = {}
 ) {
     var showReset by remember { mutableStateOf(false) }
+    var backgroundError by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
+    val backgroundPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) try {
+            context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            onBackground(uri.toString()); backgroundError = null
+        } catch (e: SecurityException) { backgroundError = "No se pudo conservar acceso a esta imagen. Elige otra ubicación." }
+    }
     Column(
-        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+        Modifier.fillMaxSize().background(com.example.comarleyaetheraudio.ui.theme.screenBackgroundColor())
             .verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -41,6 +55,18 @@ fun AppearanceScreen(
             Text("Apariencia", modifier = Modifier.weight(1f), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         }
         Text("Tu música, a tu estilo", style = MaterialTheme.typography.titleMedium)
+        com.example.comarleyaetheraudio.presentation.components.SoundFlowPanel {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Fondo personalizado", style = MaterialTheme.typography.titleMedium)
+                Text("Una imagen con velo claro u oscuro para mantener la lectura. Se oculta al desactivar Transparencias.",
+                    style = MaterialTheme.typography.bodySmall)
+                OutlinedButton(onClick = { backgroundPicker.launch(arrayOf("image/*")) }, modifier = Modifier.heightIn(min = 48.dp)) {
+                    Text(if (settings.backgroundUri == null) "Elegir imagen" else "Cambiar imagen")
+                }
+                if (settings.backgroundUri != null) TextButton(onClick = { onBackground(null) }) { Text("Quitar fondo") }
+                backgroundError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            }
+        }
         Text("Paleta de colores", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
         Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             AppTheme.entries.forEach { theme ->

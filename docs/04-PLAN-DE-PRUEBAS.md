@@ -658,3 +658,12 @@ sustituye compilación Gradle, empaquetado, Lint ni ejecución Android.
 Gradle falla antes de tareas por Unable to establish loopback connection.
 Ejecutar tools/Validate-SoundFlow.ps1 en PowerShell y probar APK solo al final,
 según instrucción del usuario. No se ejecutó instrumentación en este bloque.
+
+### Verificación 4.0.0-rc.1
+
+Base anterior validada por PowerShell: 114 JVM y Lint 0 errores/81 advertencias.
+Candidato: 130 JVM directos y comprobación Kotlin; nuevo Gradle/APK/Lint pendientes
+por loopback en agente. ListeningTrackerTest, ListeningPreferencesTest y
+ReleaseCandidateTest cubren políticas, persistencia/aislamiento y actualización RC.
+Manual único final en docs/19, incluido fondo, historial en segundo plano,
+carátulas de notificación y regresión de orden/favoritos/playlists.

@@ -442,3 +442,12 @@ búsqueda por categorías y retrato conservador; actualizado el pulido visual.
 114 tests JVM directos aprobados; Gradle/APK/Lint actuales pendientes por loopback.
 La prueba final Android se aplaza por solicitud del usuario. El ID sigue siendo
 aproximación de incorporación, nunca fecha de descarga certificada.
+
+### Revisión 4.0.0-rc.1
+
+El registro PowerShell confirma que los errores históricos de Lint fueron corregidos:
+última base con 114 JVM y 0 errores/81 avisos. Nuevo candidato implementa identidad
+propia, fondo, presentación de playlists y escuchas opt-in conservadoras en servicio.
+Ver docs/19 para archivos, pruebas, límites y viabilidad de ánimo. La salida visual
+de System UI depende de Android/HyperOS; solo se controlan metadatos y acciones.
+Nuevo Gradle/APK pendiente por loopback; no atribuir al candidato el Lint anterior.

@@ -29,6 +29,12 @@ class LibraryViewModel(
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
     suspend fun inspectAudio(song: Song) = repository.inspectAudio(song.contentUri)
+    fun onBackground(uri: String?) { viewModelScope.launch { settingsRepository.setBackground(uri) } }
+    val listeningCounts = settingsRepository.listeningCounts.flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+    val listeningEnabled = settingsRepository.listeningEnabled.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    fun onListeningEnabled(enabled: Boolean) { viewModelScope.launch { settingsRepository.setListeningEnabled(enabled) } }
+    fun clearListeningCounts() { viewModelScope.launch { settingsRepository.clearListeningCounts() } }
     val libraryOrder = settingsRepository.libraryOrder.stateIn(viewModelScope,
         SharingStarted.WhileSubscribed(5000), com.example.comarleyaetheraudio.domain.library.LibraryOrder.ADDED_NEWEST)
     fun onLibraryOrder(order: com.example.comarleyaetheraudio.domain.library.LibraryOrder) {

@@ -79,8 +79,8 @@ fun PlaylistsScreen(
         } else {
             // ⚡ SE REDUCE EL PADDING HORIZONTAL PARA EXPANDIR LAS PLAYLISTS CASI HASTA EL BORDE DE PANTALLA
             LazyColumn(
-                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
                 item {
@@ -92,7 +92,7 @@ fun PlaylistsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Colección de Listas",
+                            text = "Tus playlists",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground
@@ -107,13 +107,14 @@ fun PlaylistsScreen(
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(20.dp))
                             .combinedClickable(
                                 onClick = { onPlaylistClick(playlist) },
                                 onLongClick = { playlistMenuTarget = playlist }
                             ),
-                        color = MaterialTheme.colorScheme.surface,
-                        shape = RoundedCornerShape(12.dp)
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                        shape = RoundedCornerShape(20.dp)
                     ) {
                         Row(
                             modifier = Modifier
@@ -121,19 +122,7 @@ fun PlaylistsScreen(
                                 .padding(horizontal = 10.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Surface(
-                                modifier = Modifier.size(50.dp),
-                                shape = RoundedCornerShape(10.dp),
-                                color = MaterialTheme.colorScheme.primaryContainer
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.QueueMusic,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                                    )
-                                }
-                            }
+                            com.example.comarleyaetheraudio.presentation.components.PlaylistCover(playlist.songs, Modifier.size(68.dp))
 
                             Spacer(modifier = Modifier.width(12.dp))
 
@@ -147,7 +136,7 @@ fun PlaylistsScreen(
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = "${playlist.songs.size} canciones",
+                                    text = "${playlist.songs.size} canciones · ${playlist.songs.sumOf { it.duration } / 60000} min",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

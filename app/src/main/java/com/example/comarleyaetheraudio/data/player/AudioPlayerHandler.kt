@@ -180,11 +180,29 @@ class AudioPlayerHandler(private val context: Context) {
             artworkJob?.cancel()
             artworkUri = song?.contentUri
             _playerState.update { it.copy(artworkData = null) }
+            // Drop embedded covers from previous items instead of growing the queue's memory.
+            for (index in 0 until p.mediaItemCount) {
+                if (index == p.currentMediaItemIndex) continue
+                val oldItem = p.getMediaItemAt(index)
+                if (oldItem.mediaMetadata.artworkData != null) {
+                    p.replaceMediaItem(index, oldItem.buildUpon().setMediaMetadata(
+                        oldItem.mediaMetadata.buildUpon().setArtworkData(null, null).build()).build())
+                }
+            }
             if (song != null) artworkJob = scope.launch {
                 val bytes = withContext(Dispatchers.IO) { extractArtworkBytes(song.contentUri) }
                 if (_playerState.value.currentSong?.contentUri == song.contentUri &&
                     _playerState.value.currentSong?.id == song.id) {
                     _playerState.update { it.copy(artworkData = bytes) }
+                    // Publish only the bounded current cover to the platform media session.
+                    // Keep all other queued items free of embedded image copies.
+                    val index = p.currentMediaItemIndex
+                    val item = p.currentMediaItem
+                    if (bytes != null && item?.mediaId == song.id.toString() && index >= 0) {
+                        val metadata = item.mediaMetadata.buildUpon()
+                            .setArtworkData(bytes, MediaMetadata.PICTURE_TYPE_FRONT_COVER).build()
+                        p.replaceMediaItem(index, item.buildUpon().setMediaMetadata(metadata).build())
+                    }
                 }
             }
         }
@@ -257,6 +275,7 @@ class AudioPlayerHandler(private val context: Context) {
                         .setTitle(s.title)
                         .setArtist(s.artist)
                         .setAlbumTitle(s.album)
+                        .setArtworkUri(s.albumArtUri)
                         .build()
                 )
                 .build()

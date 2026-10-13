@@ -2,6 +2,7 @@ package com.example.comarleyaetheraudio.presentation.library
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -14,12 +15,20 @@ import com.example.comarleyaetheraudio.domain.library.*
 import com.example.comarleyaetheraudio.domain.model.Song
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.example.comarleyaetheraudio.presentation.components.SoundFlowPanel
+import com.example.comarleyaetheraudio.presentation.components.items.SongItem
+import com.example.comarleyaetheraudio.ui.theme.SoundFlowIcons
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 
 private data class SmartResult(val session: List<Long>, val matches: List<PossibleDuplicates>)
 
 @Composable
 fun SmartLibraryScreen(songs: List<Song>, favorites: List<Long>, seedId: Long?,
-    onBack: () -> Unit, onPlaySession: (List<Song>) -> Unit, onPlaySong: (Song) -> Unit) {
+    onBack: () -> Unit, onPlaySession: (List<Song>) -> Unit, onPlaySong: (Song) -> Unit,
+    listeningCounts: Map<Long, Int> = emptyMap(), listeningEnabled: Boolean = false,
+    onListeningEnabled: (Boolean) -> Unit = {}, onClearHistory: () -> Unit = {},
+    onPlayContext: (Song, List<Song>) -> Unit = { song, _ -> onPlaySong(song) }) {
     var style by remember { mutableStateOf(SessionStyle.VARIETY) }
     var result by remember(songs, favorites, seedId, style) { mutableStateOf<SmartResult?>(null) }
     val byId = remember(songs) { songs.associateBy { it.id } }
@@ -31,6 +40,11 @@ fun SmartLibraryScreen(songs: List<Song>, favorites: List<Long>, seedId: Long?,
         }
     }
     val current = result
+    var confirmClear by remember { mutableStateOf(false) }
+    val mostPlayed = remember(listeningCounts, songs) {
+        listeningCounts.entries.filter { it.key in byId }.sortedWith(
+            compareByDescending<Map.Entry<Long, Int>> { it.value }.thenBy { it.key }).take(10)
+    }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -38,12 +52,37 @@ fun SmartLibraryScreen(songs: List<Song>, favorites: List<Long>, seedId: Long?,
                 Text("Biblioteca inteligente", Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
             }
         }
-        item { Text("Smart DJ local", style = MaterialTheme.typography.titleLarge) }
-        item { Text("Sugerencias de hasta 30 canciones, alternando artistas. Variedad prioriza el género de la canción actual y favoritos; no analiza el sonido ni realiza mezclas.") }
-        items(SessionStyle.entries) { option ->
+        item { SoundFlowPanel {
+            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Icon(SoundFlowIcons.SmartDJ, null, Modifier.size(36.dp), tint = MaterialTheme.colorScheme.primary)
+                Text("Tu próxima sesión", style = MaterialTheme.typography.headlineSmall)
+                Text("Smart DJ combina tu biblioteca en sesiones de hasta 30 canciones y alterna artistas. Elige el punto de partida.")
+                Text("Usa metadatos y favoritos; no analiza el sonido ni mezcla pistas.", style = MaterialTheme.typography.bodySmall)
+            }
+        } }
+        item { LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) { items(SessionStyle.entries) { option ->
             FilterChip(selected = style == option, onClick = { style = option }, label = {
                 Text(when (option) { SessionStyle.VARIETY -> "Variedad"; SessionStyle.FAVORITES -> "Favoritos"; SessionStyle.DISCOVERY -> "Explorar no favoritas" })
             })
+        } } }
+        item { SoundFlowPanel {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Más escuchadas", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+                    Switch(checked = listeningEnabled, onCheckedChange = onListeningEnabled,
+                        modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Guardar historial de escuchas local" })
+                }
+                Text("Guardar escuchas solo en este dispositivo. Cuenta después de 30 segundos de avance reproducido, o la mitad de una canción más corta. Los saltos de posición no suman tiempo.",
+                    style = MaterialTheme.typography.bodySmall)
+                if (mostPlayed.isEmpty()) Text(if (listeningEnabled) "Tu ranking aparecerá al escuchar música." else "Activa el historial para comenzar. No se reconstruyen escuchas anteriores.")
+                if (listeningCounts.isNotEmpty()) TextButton(onClick = { confirmClear = true }) { Text("Borrar historial de escuchas") }
+            }
+        } }
+        items(mostPlayed, key = { "rank-${it.key}" }) { count ->
+            byId[count.key]?.let { song ->
+                ListItem(headlineContent = { Text(song.title) }, supportingContent = { Text("${song.artist} · ${count.value} escuchas") },
+                    trailingContent = { IconButton(onClick = { onPlayContext(song, mostPlayed.mapNotNull { byId[it.key] }) }) { Icon(SoundFlowIcons.Play, "Reproducir ${song.title}") } })
+            }
         }
         if (current == null) item { Text("Preparando sugerencias…") }
         else {
@@ -56,7 +95,7 @@ fun SmartLibraryScreen(songs: List<Song>, favorites: List<Long>, seedId: Long?,
                 if (current.session.isEmpty()) Text("No hay canciones para esta selección.")
             }
             items(current.session, key = { "session-$it" }) { id -> byId[id]?.let { song ->
-                ListItem(headlineContent = { Text(song.title) }, supportingContent = { Text(song.artist) })
+                SongItem(song, onClick = { onPlayContext(song, current.session.mapNotNull(byId::get)) })
             } }
             item {
                 HorizontalDivider()
@@ -80,4 +119,8 @@ fun SmartLibraryScreen(songs: List<Song>, favorites: List<Long>, seedId: Long?,
             }
         }
     }
+    if (confirmClear) AlertDialog(onDismissRequest = { confirmClear = false }, title = { Text("Borrar historial") },
+        text = { Text("Se borra el ranking de escuchas de este dispositivo. Tu música, favoritos y playlists se conservan.") },
+        confirmButton = { TextButton(onClick = { onClearHistory(); confirmClear = false }) { Text("Borrar") } },
+        dismissButton = { TextButton(onClick = { confirmClear = false }) { Text("Cancelar") } })
 }

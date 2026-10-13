@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.example.comarleyaetheraudio.ui.theme.SoundFlowIcons
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
@@ -81,7 +82,7 @@ fun PlaylistDetailScreen(
         }
     }
 
-    val backgroundColor = MaterialTheme.colorScheme.background
+    val backgroundColor = com.example.comarleyaetheraudio.ui.theme.screenBackgroundColor()
     val cardBgColor = MaterialTheme.colorScheme.surface
     val textColor = MaterialTheme.colorScheme.onSurface
 
@@ -92,8 +93,8 @@ fun PlaylistDetailScreen(
             val totalMs = playlist.songs.sumOf { it.duration }
             val hours = totalMs / (1000 * 60 * 60)
             val minutes = (totalMs % (1000 * 60 * 60)) / (1000 * 60)
-            if (hours > 0) "${playlist.songs.size} CANCIONES • ${hours}H ${minutes}M"
-            else "${playlist.songs.size} CANCIONES • ${minutes}M"
+            if (hours > 0) "${playlist.songs.size} canciones · ${hours} h ${minutes} min"
+            else "${playlist.songs.size} canciones · ${minutes} min"
         }
     }
 
@@ -110,7 +111,7 @@ fun PlaylistDetailScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(290.dp)
+                        .height(238.dp)
                 ) {
                     val sampleSongs = remember(playlist.songs) { playlist.songs.take(4) }
 
@@ -234,7 +235,7 @@ fun PlaylistDetailScreen(
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Icon(
-                                Icons.Rounded.Shuffle,
+                                SoundFlowIcons.Shuffle,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp),
                                 tint = if (isShuffleActive) MaterialTheme.colorScheme.primary else textColor
@@ -260,7 +261,7 @@ fun PlaylistDetailScreen(
                             ),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Icon(Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Icon(SoundFlowIcons.Play, contentDescription = null, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(6.dp))
                             Text("Reproducir", fontWeight = FontWeight.Black)
                         }
@@ -297,7 +298,7 @@ fun PlaylistDetailScreen(
                             Text(
                                 text = song.title,
                                 style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = FontWeight.ExtraBold,
                                 color = if (isCurrentPlaying) MaterialTheme.colorScheme.primary else textColor,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -312,12 +313,12 @@ fun PlaylistDetailScreen(
                         }
 
                         if (isFavorite) {
-                            Icon(Icons.Rounded.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp).padding(end = 6.dp))
+                            Icon(SoundFlowIcons.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp).padding(end = 6.dp))
                         }
 
                         Box {
                             IconButton(onClick = { expandedMenuSongId = song.id }) {
-                                Icon(Icons.Rounded.MoreVert, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Icon(SoundFlowIcons.More, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             DropdownMenu(
                                 expanded = expandedMenuSongId == song.id,

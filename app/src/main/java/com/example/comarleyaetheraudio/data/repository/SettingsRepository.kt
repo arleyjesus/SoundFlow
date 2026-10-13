@@ -13,11 +13,13 @@ import com.example.comarleyaetheraudio.domain.model.NetworkSettings
 import com.example.comarleyaetheraudio.domain.model.NetworkFeature
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings_prefs")
+private val Context.listeningStore: DataStore<Preferences> by preferencesDataStore(name = "listening_private")
 
-class SettingsRepository(private val store: DataStore<Preferences>) {
-    constructor(context: Context) : this(context.applicationContext.dataStore)
+class SettingsRepository(private val store: DataStore<Preferences>, private val historyStore: DataStore<Preferences> = store) {
+    constructor(context: Context) : this(context.applicationContext.dataStore, context.applicationContext.listeningStore)
 
     private val IS_DARK_MODE_KEY = booleanPreferencesKey("is_dark_mode")
     private val SELECTED_THEME_KEY = stringPreferencesKey("selected_theme_style")
@@ -25,6 +27,24 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
     private val TRANSPARENCIES_KEY = booleanPreferencesKey("appearance_transparencies")
     private val FOLLOW_SYSTEM_KEY = booleanPreferencesKey("appearance_follow_system")
     private val LIBRARY_ORDER_KEY = stringPreferencesKey("library_order")
+    private val BACKGROUND_KEY = stringPreferencesKey("appearance_background_uri")
+    private val LISTENING_ENABLED = booleanPreferencesKey("listening_history_enabled")
+    private val LISTENING_COUNTS = stringPreferencesKey("listening_history_counts")
+    val listeningEnabled: Flow<Boolean> = historyStore.data.map { it[LISTENING_ENABLED] ?: false }.distinctUntilChanged()
+    val listeningCounts: Flow<Map<Long, Int>> = historyStore.data.map {
+        com.example.comarleyaetheraudio.domain.library.decodeListeningCounts(it[LISTENING_COUNTS])
+    }
+    suspend fun setListeningEnabled(enabled: Boolean) { historyStore.edit { it[LISTENING_ENABLED] = enabled } }
+    suspend fun clearListeningCounts() { historyStore.edit { it.remove(LISTENING_COUNTS) } }
+    suspend fun recordListening(id: Long) { historyStore.edit {
+        if (it[LISTENING_ENABLED] != true) return@edit
+        val counts = com.example.comarleyaetheraudio.domain.library.decodeListeningCounts(it[LISTENING_COUNTS]).toMutableMap()
+        counts[id] = ((counts[id] ?: 0) + 1).coerceAtMost(1_000_000)
+        it[LISTENING_COUNTS] = com.example.comarleyaetheraudio.domain.library.encodeListeningCounts(counts)
+    } }
+    suspend fun setBackground(uri: String?) {
+        store.edit { if (uri == null) it.remove(BACKGROUND_KEY) else it[BACKGROUND_KEY] = uri }
+    }
     val libraryOrder: Flow<com.example.comarleyaetheraudio.domain.library.LibraryOrder> = store.data.map { prefs ->
         com.example.comarleyaetheraudio.domain.library.LibraryOrder.entries.firstOrNull { it.name == prefs[LIBRARY_ORDER_KEY] }
             ?: com.example.comarleyaetheraudio.domain.library.LibraryOrder.ADDED_NEWEST
@@ -52,7 +72,8 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             theme = AppTheme.entries.firstOrNull { it.name == prefs[SELECTED_THEME_KEY] } ?: AppTheme.PRINCIPAL,
             animationsEnabled = prefs[ANIMATIONS_KEY] ?: true,
             transparenciesEnabled = prefs[TRANSPARENCIES_KEY] ?: true,
-            followSystemTheme = prefs[FOLLOW_SYSTEM_KEY] ?: false
+            followSystemTheme = prefs[FOLLOW_SYSTEM_KEY] ?: false,
+            backgroundUri = prefs[BACKGROUND_KEY]
         )
     }
 
@@ -75,6 +96,7 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             it.remove(ANIMATIONS_KEY)
             it.remove(TRANSPARENCIES_KEY)
             it.remove(FOLLOW_SYSTEM_KEY)
+            it.remove(BACKGROUND_KEY)
         }
     }
 

@@ -74,7 +74,7 @@ fun LibraryScreen(
     var showOrderMenu by remember { mutableStateOf(false) }
 
     // 🎨 ASIGNACIÓN DE COLORES DE FONDO Y TARJETAS UNIFORMES
-    val backgroundColor = MaterialTheme.colorScheme.background
+    val backgroundColor = com.example.comarleyaetheraudio.ui.theme.screenBackgroundColor()
     val cardBgColor = MaterialTheme.colorScheme.surface
     val textColor = MaterialTheme.colorScheme.onSurface
 
@@ -95,6 +95,7 @@ fun LibraryScreen(
     Box(modifier = Modifier.fillMaxSize().background(backgroundColor)) {
         Column(modifier = Modifier.fillMaxSize()) {
             Text("Biblioteca", style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.ExtraBold,
                 modifier = Modifier.padding(start = 20.dp, top = 16.dp, bottom = 4.dp))
             Row(
                 modifier = Modifier

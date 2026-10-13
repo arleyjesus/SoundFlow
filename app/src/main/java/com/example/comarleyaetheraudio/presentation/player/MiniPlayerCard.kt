@@ -6,6 +6,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.example.comarleyaetheraudio.ui.theme.SoundFlowIcons
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -82,11 +83,11 @@ internal fun MiniPlayerCard(
                     shape = CircleShape, border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary),
                     colors = IconButtonDefaults.outlinedIconButtonColors(containerColor = Color.Transparent,
                         contentColor = MaterialTheme.colorScheme.primary), modifier = Modifier.size(48.dp)) {
-                    Icon(if (state.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                    Icon(if (state.isPlaying) SoundFlowIcons.Pause else SoundFlowIcons.Play,
                         contentDescription = if (state.isPlaying) "Pausar" else "Reproducir")
                 }
                 IconButton(onClick = onNext, enabled = !state.isConnecting, modifier = Modifier.size(48.dp)) {
-                    Icon(Icons.Rounded.SkipNext, contentDescription = "Siguiente")
+                    Icon(SoundFlowIcons.Next, contentDescription = "Siguiente")
                 }
             }
             val progress = if (state.duration > 0)

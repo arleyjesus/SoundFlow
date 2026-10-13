@@ -27,7 +27,7 @@ fun SettingsScreen(
     onNetworkFeature: (NetworkFeature, Boolean) -> Unit = { _, _ -> }
 ) {
     var showAbout by remember { mutableStateOf(false) }
-    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+    Column(Modifier.fillMaxSize().background(com.example.comarleyaetheraudio.ui.theme.screenBackgroundColor())
         .verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Volver") }

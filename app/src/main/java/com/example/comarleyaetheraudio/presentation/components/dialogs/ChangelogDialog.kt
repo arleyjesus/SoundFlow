@@ -4,6 +4,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import com.example.comarleyaetheraudio.BuildConfig
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -17,7 +20,7 @@ fun ChangelogDialog(onDismiss: () -> Unit) {
         title = {
             Column {
                 Text(
-                    text = "¡Bienvenido a SoundFlow v2.2.0! 🎨",
+                    text = "SoundFlow ${BuildConfig.VERSION_NAME}",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -29,11 +32,11 @@ fun ChangelogDialog(onDismiss: () -> Unit) {
             }
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                ChangelogItem("🎨", "Color Dinámico: Adaptación de la interfaz a la carátula activa (Palette API).")
-                ChangelogItem("📊", "Visualizador de Audio: Espectro audio-reactivo en tiempo real.")
-                ChangelogItem("🎛️", "Personalización de temas (Claro, Oscuro y AMOLED Puro).")
-                ChangelogItem("⚡", "Renderizado optimizado a 120 FPS.")
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ChangelogItem("🎨", "Identidad visual 4.0: iconos propios, cristal sutil y tarjetas de playlists renovadas.")
+                ChangelogItem("🎵", "Reproducción según la lista visible y una onda decorativa que respeta tus ajustes de animación.")
+                ChangelogItem("🖼️", "Fondo personalizado con adaptación clara y oscura; controles con acento de portada.")
+                ChangelogItem("✨", "Smart DJ con sesiones locales y ranking opcional de escuchas en este dispositivo.")
             }
         },
         confirmButton = {

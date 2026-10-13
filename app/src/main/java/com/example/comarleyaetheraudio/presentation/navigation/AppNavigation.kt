@@ -177,7 +177,12 @@ fun AppNavigation(
         }
 
         composable(Screen.SmartLibrary.route) {
+            val counts by viewModel.listeningCounts.collectAsStateWithLifecycle()
+            val enabled by viewModel.listeningEnabled.collectAsStateWithLifecycle()
             SmartLibraryScreen(songs, favoriteIds, playerState.currentSong?.id,
+                listeningCounts = counts, listeningEnabled = enabled,
+                onPlayContext = { song, queue -> viewModel.playerHandler.playSong(song, queue) },
+                onListeningEnabled = viewModel::onListeningEnabled, onClearHistory = viewModel::clearListeningCounts,
                 onBack = { navController.popBackStack() },
                 onPlaySession = { queue -> viewModel.playerHandler.playSong(queue.first(), queue) },
                 onPlaySong = { song -> viewModel.playerHandler.playSong(song, listOf(song)) })
@@ -192,7 +197,8 @@ fun AppNavigation(
                 onAnimations = viewModel::onToggleAnimations,
                 onTransparencies = viewModel::onToggleTransparencies,
                 onFollowSystem = viewModel::onFollowSystemTheme,
-                onReset = viewModel::onResetAppearance
+                onReset = viewModel::onResetAppearance,
+                onBackground = viewModel::onBackground
             )
         }
 

@@ -20,6 +20,10 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
 import java.util.concurrent.Executors
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.collectLatest
+import com.example.comarleyaetheraudio.domain.library.ListeningTracker
+import com.example.comarleyaetheraudio.data.repository.SettingsRepository
 
 /**
  * Servicio en segundo plano para mantener la reproducción activa y vincular
@@ -34,6 +38,8 @@ class SoundFlowMediaService : MediaSessionService() {
     private val mainHandler = Handler(Looper.getMainLooper())
     @Volatile private var destroyed = false
     private var effectsRevision = 0L
+    private val historyScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val listeningTracker = ListeningTracker()
 
     private fun refreshEffectsFromDevice() {
         if (destroyed) return
@@ -125,6 +131,9 @@ class SoundFlowMediaService : MediaSessionService() {
             .setHandleAudioBecomingNoisy(true)
             .build()
         player.addListener(object : Player.Listener {
+            override fun onMediaItemTransition(mediaItem: androidx.media3.common.MediaItem?, reason: Int) {
+                listeningTracker.reset()
+            }
             override fun onAudioSessionIdChanged(audioSessionId: Int) {
                 if (destroyed) return
                 effectsWorker.execute {
@@ -135,6 +144,21 @@ class SoundFlowMediaService : MediaSessionService() {
             }
         })
         mediaSession = MediaSession.Builder(this, player).setCallback(sessionCallback).build()
+        historyScope.launch {
+            try {
+                val settings = SettingsRepository(applicationContext)
+                settings.listeningEnabled.collectLatest { enabled ->
+                    listeningTracker.reset()
+                    if (enabled) while (isActive) {
+                        delay(1000)
+                        val credited = listeningTracker.sample(player.currentMediaItem?.mediaId?.toLongOrNull(),
+                            player.currentPosition, player.duration, player.isPlaying, android.os.SystemClock.elapsedRealtime())
+                        if (credited != null) withContext(Dispatchers.IO) { settings.recordListening(credited) }
+                    }
+                }
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { android.util.Log.w("SoundFlow", "Listening history unavailable", e) }
+        }
         val initialSessionId = player.audioSessionId
         effectsWorker.execute {
             effects.attach(initialSessionId)
@@ -149,6 +173,7 @@ class SoundFlowMediaService : MediaSessionService() {
 
     override fun onDestroy() {
         destroyed = true
+        historyScope.cancel()
         effectsWorker.execute { effects.release() }
         effectsWorker.shutdown()
         mediaSession?.run {

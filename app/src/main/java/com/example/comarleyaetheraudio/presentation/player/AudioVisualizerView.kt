@@ -11,6 +11,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -24,7 +26,7 @@ fun AudioVisualizerView(
     isPlaying: Boolean,
     primaryColor: Color = ElectricPurple,
     secondaryColor: Color = LightLavender,
-    barCount: Int = 40,
+    barCount: Int = 48,
     modifier: Modifier = Modifier
         .fillMaxWidth()
         .height(64.dp)
@@ -45,6 +47,7 @@ fun AudioVisualizerView(
     val barBrush = remember(primaryColor, secondaryColor) {
         Brush.verticalGradient(colors = listOf(primaryColor, secondaryColor))
     }
+    val ribbon = remember { Path() }
 
     Canvas(modifier = modifier) {
         val width = size.width
@@ -52,6 +55,15 @@ fun AudioVisualizerView(
         val count = barCount.coerceAtLeast(1)
         val barWidth = width / (count * 1.8f)
         val gap = barWidth * 0.8f
+        ribbon.reset()
+        for (point in 0..64) {
+            val x = width * point / 64f
+            val envelope = kotlin.math.sin(point / 64f * kotlin.math.PI).toFloat()
+            val displacement = if (isPlaying) kotlin.math.sin(point * 0.19 + animPhase * kotlin.math.PI * 2).toFloat() else 0f
+            val y = height / 2f + displacement * envelope * height * 0.12f
+            if (point == 0) ribbon.moveTo(x, y) else ribbon.lineTo(x, y)
+        }
+        drawPath(ribbon, primaryColor.copy(alpha = 0.3f), style = Stroke(width = 1.dp.toPx()))
 
         for (i in 0 until count) {
             val factor = if (isPlaying) {

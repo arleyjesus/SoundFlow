@@ -515,3 +515,14 @@ contexto visible, aleatorio explícito, orden persistente, categorías de búsqu
 retratos conservadores y pulido de Inicio/Biblioteca/reproductor. 114 tests JVM
 por ejecución directa; Gradle bloqueado antes de tareas por loopback. Prueba APK
 reservada por el usuario para el final. Sin cambios de Room/dependencias ni commit.
+
+### 4.0.0-rc.1 — identidad visual y escucha local
+
+Rework de iconos vectoriales, reproductor/onda, tarjetas y playlists, títulos,
+separadores y mensajes. Fondo personal con adaptación de tema, Smart DJ mejor
+presentado y ranking opcional privado. Carátula publicada en sesión multimedia,
+con límite de copias en cola. Preparado RC/código 40 y actualización hacia estable.
+Historial en DataStore separado, excluido de backups configurados; sin migraciones.
+Detalle y verificación: docs/19-IDENTIDAD-4.0-Y-ESCUCHA-LOCAL.md. Base anterior:
+114 JVM Gradle y Lint 0 errores/81 avisos. Nuevo bloque: 130 JVM directos y Kotlin
+local; Gradle actual bloqueado por loopback, APK/Lint nuevo pendientes.

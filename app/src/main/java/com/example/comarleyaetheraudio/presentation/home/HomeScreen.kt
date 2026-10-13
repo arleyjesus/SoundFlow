@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import com.example.comarleyaetheraudio.ui.theme.SoundFlowIcons
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Favorite
@@ -64,7 +65,14 @@ fun HomeScreen(
             "Siente el flujo del sonido ✨",
             "Tu banda sonora de hoy 🎧",
             "Descubre tu ritmo perfecto 🎶",
-            "Música para cada momento 🚀"
+            "Música para cada momento 🚀",
+            "Un paso a la vez, una canción a la vez",
+            "Respira. Tu próxima canción te espera",
+            "Dale ritmo a lo que viene",
+            "Tu música también sabe acompañarte",
+            "Hoy puede empezar con una buena canción",
+            "Encuentra una pausa en tu melodía favorita",
+            "Pequeños momentos, grandes canciones"
         )
     }
     val randomGreeting = remember { greetings.random() }
@@ -78,7 +86,7 @@ fun HomeScreen(
     }
 
     // 🎨 EVALUACIÓN ESTRICTA DEL FONDO DE INICIO SEGÚN EL MODO SELECCIONADO
-    val baseBgColor = MaterialTheme.colorScheme.background
+    val baseBgColor = com.example.comarleyaetheraudio.ui.theme.screenBackgroundColor()
     val accent = MaterialTheme.colorScheme.primary
     val effects = LocalAppearance.current
     val backgroundBrush = remember(baseBgColor, accent, effects.isDarkMode, effects.transparenciesEnabled) {
@@ -101,7 +109,7 @@ fun HomeScreen(
                     text = "SoundFlow",
                     style = MaterialTheme.typography.displaySmall.copy(
                         letterSpacing = (-1).sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.ExtraBold
                     ),
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -119,14 +127,14 @@ fun HomeScreen(
             Box(Modifier.padding(horizontal = 20.dp)) {
                 com.example.comarleyaetheraudio.presentation.components.SettingsActionCard(
                     title = "Smart DJ y biblioteca inteligente", subtitle = "Redescubre tu música local",
-                    icon = Icons.AutoMirrored.Filled.QueueMusic, onClick = onNavigateToSmartLibrary)
+                    icon = SoundFlowIcons.SmartDJ, onClick = onNavigateToSmartLibrary)
             }
 
             if (recentSongs.isNotEmpty()) {
                 Text(
                     text = "Tu música",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
                 )
@@ -147,7 +155,7 @@ fun HomeScreen(
                 Text(
                     text = "Tus artistas",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
                 )
@@ -178,7 +186,7 @@ fun HomeScreen(
                 Text(
                     text = "Tus Playlists",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 TextButton(onClick = { showPlaylistsSheet = true }) {
@@ -204,7 +212,7 @@ fun HomeScreen(
                         Icon(Icons.AutoMirrored.Filled.QueueMusic, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            Text("Crear Playlist", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                            Text("Crear Playlist", fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
                             Text("Toca para añadir una lista de reproducción", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
@@ -228,7 +236,7 @@ fun HomeScreen(
             Text(
                 text = "Colecciones",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
             )
@@ -250,7 +258,7 @@ fun HomeScreen(
                     Icon(Icons.Default.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
-                        Text("Favoritos", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                        Text("Favoritos", fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
                         Text("${favoriteIds.size} temas", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }

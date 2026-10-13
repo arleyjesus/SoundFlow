@@ -31,18 +31,16 @@ fun RecentPosterCard(song: Song, onClick: () -> Unit) {
         coverFile = CoverCacheManager.getOrFetchCover(context, song.id, song.albumArtUri, song.path)
     }
 
-    Card(
+    com.example.comarleyaetheraudio.presentation.components.SoundFlowPanel(
         modifier = Modifier
-            .width(135.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            .width(148.dp)
+            .clickable { onClick() }
     ) {
         Column(modifier = Modifier.padding(8.dp)) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(110.dp)
+                    .height(124.dp)
                     .clip(RoundedCornerShape(14.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
