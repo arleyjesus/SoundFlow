@@ -1,0 +1,6 @@
+# Copy to signing.properties locally. Never commit the completed file or share its passwords.
+# Existing key: first confirm its certificate matches the previous public SoundFlow release.
+storeFile=mis_claves.jks
+storePassword=REPLACE_LOCALLY
+keyAlias=soundflow_key
+keyPassword=REPLACE_LOCALLY

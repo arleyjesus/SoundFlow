@@ -451,3 +451,17 @@ propia, fondo, presentación de playlists y escuchas opt-in conservadoras en ser
 Ver docs/19 para archivos, pruebas, límites y viabilidad de ánimo. La salida visual
 de System UI depende de Android/HyperOS; solo se controlan metadatos y acciones.
 Nuevo Gradle/APK pendiente por loopback; no atribuir al candidato el Lint anterior.
+
+## 2026-10-13 — orden de archivos y actualización APK
+
+Confirmado y corregido: el orden reciente utilizaba IDs Room en vez de fechas.
+Ahora consulta fecha MediaStore o modificación SAF, cachea valores válidos y deja
+sin fecha al final. No se puede reconstruir una fecha de descarga ausente del
+proveedor. Room v2 e identidades conservadas. Ver docs/21 para límites y pruebas.
+
+Descarga/validación de APK y búsqueda manual implementadas; instalador Android
+con aprobación del usuario. Fuente 4.0.0/código 41 preparada, no publicada.
+Firma pública v3.7.0 distinta del debug local. Keystore local con alias
+soundflow_key, contraseña pendiente; no generar otra clave ni recomendar desinstalar.
+Gradle bloqueado antes de tareas por loopback; 158 fuentes y 151 JVM directos.
+No se ejecutó actualización Android ni se generó/publicó APK nuevo.

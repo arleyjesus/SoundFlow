@@ -1,13 +1,16 @@
 [CmdletBinding()]
 param([switch]$Offline)
 
-# Builds a local candidate only. Does not create keys, sign, install or publish.
+# Builds a local candidate using the existing local signing configuration. Never creates keys or publishes.
 $ErrorActionPreference = 'Stop'
 $taskRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $taskReport = Join-Path $taskRoot ('build/release-check/' + [DateTime]::UtcNow.ToString('yyyyMMdd-HHmmss') + '-UTC')
 New-Item -ItemType Directory -Path $taskReport | Out-Null
 Push-Location $taskRoot
 try {
+    if (!(Test-Path -LiteralPath (Join-Path $taskRoot 'signing.properties'))) {
+        throw 'Release signing is not configured. See signing.properties.example; never share/commit passwords.'
+    }
     $taskOptions = @(':app:assembleRelease', ':app:testReleaseUnitTest', ':app:lintRelease', '--console=plain')
     if ($Offline) { $taskOptions += '--offline' }
     $taskOldPolicy = $ErrorActionPreference
@@ -50,5 +53,5 @@ try {
     & git branch --show-current | Set-Content (Join-Path $taskReport 'git-branch.txt')
     Write-Host "Local candidate and reports: $taskReport"
     Write-Host 'Build success does not confirm release signing. Check the certificate before distributing.'
-    Write-Host 'Application version unchanged. No key, signing, installation, commit or publication performed.'
+    Write-Host 'Source version retained. Uses configured signing only; no new key, installation, commit or publication.'
 } finally { Pop-Location }

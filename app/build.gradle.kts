@@ -1,8 +1,15 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("com.google.devtools.ksp") version "2.1.0-1.0.29"
+}
+
+val soundFlowSigningFile = rootProject.file("signing.properties")
+val soundFlowSigning = Properties().apply {
+    if (soundFlowSigningFile.isFile) soundFlowSigningFile.inputStream().use { load(it) }
 }
 
 android {
@@ -13,8 +20,8 @@ android {
         applicationId = "com.example.comarleyaetheraudio"
         minSdk = 24
         targetSdk = 35
-        versionCode = 40
-        versionName = "4.0.0-rc.1"
+        versionCode = 41
+        versionName = "4.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -22,8 +29,18 @@ android {
         }
     }
 
+    signingConfigs {
+        if (soundFlowSigningFile.isFile) create("soundFlowRelease") {
+            storeFile = rootProject.file(requireNotNull(soundFlowSigning.getProperty("storeFile")))
+            storePassword = requireNotNull(soundFlowSigning.getProperty("storePassword"))
+            keyAlias = requireNotNull(soundFlowSigning.getProperty("keyAlias"))
+            keyPassword = requireNotNull(soundFlowSigning.getProperty("keyPassword"))
+        }
+    }
+
     buildTypes {
         release {
+            if (soundFlowSigningFile.isFile) signingConfig = signingConfigs.getByName("soundFlowRelease")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

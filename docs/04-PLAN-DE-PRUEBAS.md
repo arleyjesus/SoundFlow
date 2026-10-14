@@ -667,3 +667,17 @@ por loopback en agente. ListeningTrackerTest, ListeningPreferencesTest y
 ReleaseCandidateTest cubren políticas, persistencia/aislamiento y actualización RC.
 Manual único final en docs/19, incluido fondo, historial en segundo plano,
 carátulas de notificación y regresión de orden/favoritos/playlists.
+
+## Fechas y actualización APK — 2026-10-13
+
+Suite directa ampliada a 151 pruebas: fechas frente a IDs, empates y desconocidos,
+DataStore en disco/reapertura/alias/cancelación/recuperación, URLs y política de
+paquete, versión y certificado. 158 fuentes Kotlin comprobadas. XML y scripts
+PowerShell revisados. Gradle bloqueado por loopback; no APK/Lint nuevo ni
+instrumentación ejecutada. Detalle y pasos de actualización en docs/21.
+
+Regresión final: canción descargada hoy, reescaneo y reapertura; recientes/antiguas,
+cola del contexto visible y favoritos/playlists. Actualización desde una versión
+inferior de la misma firma: consulta, descarga, permiso del instalador, instalación,
+reapertura y datos. Rechazo de versión/firma ajenas, integridad, descarga interrumpida
+y falta de espacio. La firma debug y la producción no se intercambian.

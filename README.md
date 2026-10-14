@@ -20,6 +20,7 @@ Su objetivo es ofrecer una experiencia musical moderna, rápida, personalizable 
 - Importación musical mediante carpetas SAF. El escáner MediaStore existe, pero todavía no está conectado al recorrido activo.
 - Selección y escaneo de carpetas.
 - Organización por canciones, álbumes y artistas.
+- Orden reciente por fecha disponible del archivo; fechas desconocidas al final.
 - Creación y administración de playlists.
 - Funcionalidad de canciones favoritas.
 - Visualización de carátulas y metadatos.
@@ -30,6 +31,8 @@ Su objetivo es ofrecer una experiencia musical moderna, rápida, personalizable 
 - Componentes basados en Material Design 3.
 - Reproductor expandido y minirreproductor.
 - Opciones de personalización.
+- Consulta y descarga de actualizaciones APK oficiales desde Ajustes, con comprobación
+  de versión/firma y confirmación mediante el instalador de Android.
 - Visualización de audio y letras musicales.
 
 ### ⚙️ Herramientas de reproducción

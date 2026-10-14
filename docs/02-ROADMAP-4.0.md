@@ -360,3 +360,10 @@ No confundir commit/push de la rama con lanzamiento público firmado de 4.0.0.
 Pulido posterior solicitado: cristal de Inicio más tenue, iconos limpios, nueva
 onda y reducción de trabajo/esperas evitables de reproducción. Ver docs/20.
 137 JVM directos; Gradle/APK final aún pendiente por bloqueo del agente.
+
+### Fechas y actualizador 4.0.0 preparados — 2026-10-13
+
+Corregido orden reciente por fecha disponible y actualizado Inicio. Descarga APK,
+comprobación de identidad/firma y consulta manual implementadas. Ver docs/21.
+Fuente 4.0.0/código 41; publicación pendiente de build y firma original, no
+confundir con una release ya disponible. 151 JVM directos y 158 fuentes Kotlin.

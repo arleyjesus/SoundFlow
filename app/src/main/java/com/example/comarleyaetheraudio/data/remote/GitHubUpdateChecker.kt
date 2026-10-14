@@ -2,6 +2,7 @@ package com.example.comarleyaetheraudio.data.remote
 
 import com.example.comarleyaetheraudio.BuildConfig
 import com.example.comarleyaetheraudio.domain.playback.ReleaseVersion
+import com.example.comarleyaetheraudio.domain.playback.UpdatePackagePolicy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
@@ -20,25 +21,38 @@ object GitHubUpdateChecker {
         val hasUpdate: Boolean,
         val latestVersionName: String,
         val releaseNotes: String,
-        val downloadUrl: String
+        val downloadUrl: String,
+        val apkUrl: String? = null,
+        val apkSha256: String? = null
     )
 
-    suspend fun checkForUpdates(): UpdateInfo? = withContext(Dispatchers.IO) {
+    suspend fun checkForUpdates(throwOnError: Boolean = false): UpdateInfo? = withContext(Dispatchers.IO) {
         try {
             val taskContext = currentCoroutineContext()
             val bytes = reader.read(URL(GITHUB_RELEASES_URL), 256 * 1024) { taskContext.ensureActive() }
             val json = JSONObject(String(bytes, Charsets.UTF_8))
             if (json.optBoolean("draft") || json.optBoolean("prerelease")) return@withContext null
             val tag = json.optString("tag_name", "")
+            val assets = json.optJSONArray("assets")
+            val apks = (0 until (assets?.length() ?: 0)).mapNotNull { assets?.optJSONObject(it) }
+                .filter { it.optString("state") == "uploaded" &&
+                    UpdatePackagePolicy.officialAssetUrl(it.optString("browser_download_url")) &&
+                    it.optLong("size") in 1..(150L * 1024 * 1024) }
+            // Require an unambiguous universal APK; never guess between split/ABI packages.
+            val apk = apks.singleOrNull()
             return@withContext UpdateInfo(
                 hasUpdate = ReleaseVersion.isNewer(tag, BuildConfig.VERSION_NAME),
                 latestVersionName = tag,
                 releaseNotes = json.optString("body", "").take(16_000),
-                downloadUrl = RELEASE_PAGE
+                downloadUrl = RELEASE_PAGE,
+                apkUrl = apk?.optString("browser_download_url"),
+                apkSha256 = apk?.optString("digest")?.removePrefix("sha256:")
+                    ?.takeIf { it.matches(Regex("[0-9a-fA-F]{64}")) }
             )
         } catch (e: CancellationException) {
             throw e
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            if (throwOnError) throw e
             // Offline, rate-limited or missing release: playback continues without an update prompt.
         }
         return@withContext null

@@ -18,6 +18,10 @@ import com.example.comarleyaetheraudio.presentation.components.SoundFlowPanel
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.ui.semantics.Role
 import com.example.comarleyaetheraudio.domain.model.NetworkFeature
+import com.example.comarleyaetheraudio.data.remote.GitHubUpdateChecker
+import com.example.comarleyaetheraudio.presentation.components.dialogs.UpdateAvailableDialog
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsScreen(
@@ -27,6 +31,11 @@ fun SettingsScreen(
     onNetworkFeature: (NetworkFeature, Boolean) -> Unit = { _, _ -> }
 ) {
     var showAbout by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    var checking by remember { mutableStateOf(false) }
+    var updateInfo by remember { mutableStateOf<GitHubUpdateChecker.UpdateInfo?>(null) }
+    var updateMessage by remember { mutableStateOf<String?>(null) }
+    val network = LocalNetworkSettings.current
     Column(Modifier.fillMaxSize().background(com.example.comarleyaetheraudio.ui.theme.screenBackgroundColor())
         .verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -39,7 +48,6 @@ fun SettingsScreen(
         Text("Privacidad y servicios en línea", style = MaterialTheme.typography.titleMedium)
         Text("La música se reproduce localmente. Estas consultas opcionales envían el nombre del artista, el título o datos normales de conexión al proveedor indicado. No suben tus archivos de audio.",
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        val network = LocalNetworkSettings.current
         NetworkToggle("Imágenes de artistas", "Deezer: nombre del artista. Al desactivar se conserva la caché local.", network.artistImages) {
             onNetworkFeature(NetworkFeature.ARTIST_IMAGES, it)
         }
@@ -49,6 +57,20 @@ fun SettingsScreen(
         NetworkToggle("Comprobar actualizaciones", "GitHub: consulta de versiones, sin instalación automática.", network.updates) {
             onNetworkFeature(NetworkFeature.UPDATES, it)
         }
+        OutlinedButton(enabled = network.updates && !checking, onClick = {
+            scope.launch {
+                checking = true
+                updateMessage = null
+                try {
+                    val info = GitHubUpdateChecker.checkForUpdates(throwOnError = true)
+                    if (info?.hasUpdate == true) updateInfo = info
+                    else updateMessage = "No hay una versión estable más reciente publicada."
+                } catch (e: CancellationException) { throw e }
+                catch (_: Exception) { updateMessage = "No se pudo consultar GitHub. Comprueba tu conexión e inténtalo de nuevo." }
+                finally { checking = false }
+            }
+        }) { Text(if (checking) "Comprobando…" else "Buscar actualización ahora") }
+        updateMessage?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
         Text("Almacenamiento", style = MaterialTheme.typography.titleMedium)
         SoundFlowPanel(Modifier.fillMaxWidth()) {
             Row(Modifier.padding(18.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -62,6 +84,9 @@ fun SettingsScreen(
         }
         Text("Acerca de", style = MaterialTheme.typography.titleMedium)
         SettingsActionCard("SoundFlow ${BuildConfig.VERSION_NAME}", "Información de la aplicación", Icons.Rounded.Info) { showAbout = true }
+    }
+    if (network.updates) updateInfo?.let { info ->
+        UpdateAvailableDialog(info) { updateInfo = null }
     }
     if (showAbout) AlertDialog(onDismissRequest = { showAbout = false }, title = { Text("SoundFlow ${BuildConfig.VERSION_NAME}") },
         text = { Text("Reproductor de música local con Media3, biblioteca Room e interfaz Jetpack Compose.") },

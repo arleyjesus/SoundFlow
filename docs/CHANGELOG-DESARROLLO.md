@@ -538,3 +538,17 @@ carátula retenida/publicada acotada. Sin cambios de Room/dependencias/versión.
 153 fuentes Kotlin y 137 JVM directos correctos; Gradle bloqueado por loopback.
 Validación Android al final según usuario, sin promesas de latencia/FPS medidos.
 Detalle, límites y pasos finales: docs/20-FLUIDEZ-Y-CRISTAL-SUTIL.md.
+
+### 2026-10-13 — fechas reales disponibles y actualización APK
+
+Más recientes/antiguas ordena por fecha del proveedor y conserva el ID como
+desempate; desconocidos al final. Caché DataStore auxiliar, reapertura/alias y
+cancelación comprobados, sin modificar Room v2. SAF solo garantiza última
+modificación disponible, no fecha exacta de descarga. Inicio también actualizado.
+Actualizador descarga el APK oficial con límites, compara paquete/versión/firma
+y abre el instalador Android; botón de consulta manual y privacidad conservada.
+Preparada fuente 4.0.0/código 41, firma local opcional ignorada y herramienta de
+publicación revisable. Certificado público v3.7.0 distinto al debug local.
+No se generó ni publicó APK nuevo: Gradle bloqueado por loopback y contraseña
+original de firma aún sin configurar. 158 fuentes Kotlin y 151 JVM directos;
+XML/scripts revisados. Recorrido Android pendiente. Detalle: docs/21.
