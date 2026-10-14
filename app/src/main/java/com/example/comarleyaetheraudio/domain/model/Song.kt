@@ -24,5 +24,6 @@ data class Song(
     val isHiRes: Boolean = false,
     val path: String = "",              // Nuevo: Ruta absoluta del archivo (necesaria para letras .lrc)
     val folderPath: String = "",       // Nuevo: Para agrupar las canciones por la carpeta que eligió el usuario
-    val folderUri: String = ""         // Nuevo: El identificador de la carpeta padre
+    val folderUri: String = "",        // Nuevo: El identificador de la carpeta padre
+    val addedAtMs: Long = 0L          // Provider date; 0 means unavailable. Not a Room column.
 )

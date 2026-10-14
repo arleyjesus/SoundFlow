@@ -21,6 +21,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import java.io.IOException
 
 class AudioRepositoryImpl(
     val context: Context,
@@ -29,6 +30,7 @@ class AudioRepositoryImpl(
     private val scanner: FolderScanner
 ) : AudioRepository {
     private val audioInspector = com.example.comarleyaetheraudio.data.local.util.AndroidAudioInspector(context)
+    private val libraryDates = com.example.comarleyaetheraudio.data.local.util.LibraryDateStore(context)
 
     override suspend fun inspectAudio(uri: Uri) = audioInspector.inspect(uri)
 
@@ -45,6 +47,9 @@ class AudioRepositoryImpl(
 
     override val allSongs: Flow<List<Song>> =
         musicDao.getAllSongs().map { entities ->
+            // A cosmetic cache failure must not prevent opening the Room library.
+            val dates = try { libraryDates.timestamps(entities.map { it.contentUri }) }
+                catch (_: IOException) { emptyMap() }
             entities.map { entity ->
                 Song(
                     id = entity.id,
@@ -65,9 +70,10 @@ class AudioRepositoryImpl(
                     isHiRes = false,
                     path = entity.path,
                     folderPath = entity.folderName,
-                    folderUri = entity.folderUri
+                    folderUri = entity.folderUri,
+                    addedAtMs = dates[entity.contentUri] ?: 0L
                 )
-            }
+            }.sortedWith(compareByDescending<Song> { it.addedAtMs }.thenByDescending { it.id })
         }.flowOn(Dispatchers.Default)
 
     // PLAYLISTS

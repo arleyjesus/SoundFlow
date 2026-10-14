@@ -132,7 +132,7 @@ fun LibraryScreen(
                         // ⚡ Lista de canciones ordenada dinámicamente
                         val sortedSongs = remember(songs, libraryOrder) {
                             com.example.comarleyaetheraudio.domain.library.orderedLibrary(songs, libraryOrder,
-                                { it.id }, { it.title }, { it.artist })
+                                { it.id }, { it.title }, { it.artist }, { it.addedAtMs })
                         }
 
                         LazyColumn(
