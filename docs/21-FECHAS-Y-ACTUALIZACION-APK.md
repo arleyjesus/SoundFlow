@@ -166,3 +166,19 @@ modificado sin preparar; cualquier otro cambio de fuente sigue bloqueando.
 El control estricto continúa siendo el predeterminado. No se cambió configuración
 de firma ni se obtuvo/guardó la contraseña. Publicación autorizada pendiente de
 confirmar el resultado remoto en la siguiente anotación.
+
+## Publicación confirmada — 2026-10-13
+
+Release pública estable [v4.0.0](https://github.com/arleyjesus/SoundFlow/releases/tag/v4.0.0),
+creada sobre b9b8da9ea63148f6a271a8bb83502e64d1e9385b. Un único asset:
+SoundFlow-4.0.0.apk, 17 623 907 bytes; digest remoto SHA-256 idéntico al local
+41d4efe846f5cf14dc22cb2190c5259d45967cf377f250020e87b8027b210119.
+La API pública releases/latest devuelve v4.0.0, draft=false, prerelease=false,
+asset uploaded. Se creó borrador, se cargó/verificó el APK y después se publicó.
+No se modificó main, no se publicó una clave y no se instaló el APK desde el agente.
+
+El fallo de Gradle dentro del agente no impidió validar el APK generado por el
+usuario en Android Studio. Las 151 JVM nuevas provienen de XML Gradle local.
+Lint nuevo e instalación/actualización Android siguen pendientes; no se declara
+ese recorrido probado a partir del certificado o la publicación.
+Se preservan los dos perfiles .dm modificados sin commit y los archivos personales.

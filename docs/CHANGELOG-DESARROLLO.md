@@ -552,3 +552,14 @@ publicación revisable. Certificado público v3.7.0 distinto al debug local.
 No se generó ni publicó APK nuevo: Gradle bloqueado por loopback y contraseña
 original de firma aún sin configurar. 158 fuentes Kotlin y 151 JVM directos;
 XML/scripts revisados. Recorrido Android pendiente. Detalle: docs/21.
+
+### 2026-10-13 — APK 4.0.0 firmado y release publicada
+
+Usuario generó APK release usando la contraseña recordada de Android Studio.
+apksigner verifica firma v2 y certificado original v3.7.0; paquete correcto,
+versión 4.0.0/código 41. XML Gradle: 151 JVM sin fallos/errores. Lint nuevo y
+actualización Android aún pendientes. Publicada v4.0.0 sobre b9b8da9 con un
+único APK; releases/latest, tamaño y SHA-256 remoto/local verificados.
+Publicador permite explícitamente solo los dos perfiles .dm generados sin
+preparar; fuentes siguen protegidas. Perfiles y archivos personales conservados.
+No se modificó main ni se expuso/configuró la contraseña. Detalle en docs/21.

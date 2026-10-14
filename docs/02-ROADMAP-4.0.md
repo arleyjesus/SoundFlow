@@ -367,3 +367,8 @@ Corregido orden reciente por fecha disponible y actualizado Inicio. Descarga APK
 comprobación de identidad/firma y consulta manual implementadas. Ver docs/21.
 Fuente 4.0.0/código 41; publicación pendiente de build y firma original, no
 confundir con una release ya disponible. 151 JVM directos y 158 fuentes Kotlin.
+
+Actualización 2026-10-13: APK firmado generado por el usuario, certificado original
+verificado y release v4.0.0 publicada. 151 JVM Gradle locales sin fallos/errores.
+API latest y hash remoto correctos. Pendientes: Lint nuevo y recorrido real de
+actualización Android. El texto anterior conserva el estado previo a la publicación.
