@@ -144,3 +144,25 @@ descargar, conceder permiso, instalar, reabrir y verificar datos. Rechazar firma
 distinta, APK corrupto, cancelación/desconexión y falta de espacio. Una versión
 antigua que solo abre GitHub necesitará instalar una vez el nuevo actualizador;
 las actualizaciones posteriores podrán usar el recorrido integrado.
+
+## APK firmado generado y verificado — 2026-10-13
+
+El usuario confirmó la contraseña recordada en Android Studio y generó el APK.
+Se verificó app/release/app-release.apk: paquete com.example.comarleyaetheraudio,
+4.0.0/código 41, minSdk 24/target 35, firma v2 válida y certificado idéntico al
+APK público v3.7.0 (31cbd149…d91419b). Tamaño: 17 623 907 bytes. SHA-256:
+41d4efe846f5cf14dc22cb2190c5259d45967cf377f250020e87b8027b210119.
+
+XML Gradle nuevo: 151 JVM, cero fallos/errores, 28 suites, última marca
+2026-10-14T02:13:56.059Z (2026-10-13 por la noche en Bogotá). APK debug y
+androidTest regenerados también. Instrumentación no ejecutada; Lint sigue siendo
+el informe del 12 de octubre y no valida los cambios nuevos. No se probó la
+instalación de actualización Android desde el agente.
+
+Android Studio modificó únicamente los dos .dm ya seguidos de
+app/release/baselineProfiles/0 y /1. Se conservan. El publicador incorpora
+-AllowGeneratedProfiles explícito para permitir solo esos dos archivos en estado
+modificado sin preparar; cualquier otro cambio de fuente sigue bloqueando.
+El control estricto continúa siendo el predeterminado. No se cambió configuración
+de firma ni se obtuvo/guardó la contraseña. Publicación autorizada pendiente de
+confirmar el resultado remoto en la siguiente anotación.

@@ -3,6 +3,7 @@ param(
     [Parameter(Mandatory)][string]$ApkPath,
     [Parameter(Mandatory)][string]$NotesFile,
     [string]$ExpectedCertificate = '31cbd14903f1fb7fe086efe8650d2465fbf7cfb6b9ffeaeef7adf01e1d91419b',
+    [switch]$AllowGeneratedProfiles,
     [switch]$Publish
 )
 
@@ -12,6 +13,13 @@ $taskRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 Push-Location $taskRoot
 try {
     $taskTrackedChanges = @(& git status --porcelain --untracked-files=no)
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect Git changes.' }
+    if ($AllowGeneratedProfiles) {
+        $taskProfilePaths = @('app/release/baselineProfiles/0/app-release.dm', 'app/release/baselineProfiles/1/app-release.dm')
+        $taskTrackedChanges = @($taskTrackedChanges | Where-Object {
+            $_.Substring(0, 3) -ne ' M ' -or $_.Substring(3) -notin $taskProfilePaths
+        })
+    }
     if ($taskTrackedChanges.Count) { throw 'Commit/review tracked changes before publishing; no automatic commit is performed.' }
     $taskCommit = (& git rev-parse HEAD).Trim()
     if ($LASTEXITCODE -ne 0) { throw 'Cannot identify source commit.' }
