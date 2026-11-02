@@ -38,11 +38,9 @@ import com.example.comarleyaetheraudio.data.local.MusicDatabase
 import com.example.comarleyaetheraudio.data.local.util.CoverCacheManager
 import com.example.comarleyaetheraudio.data.local.util.FolderScanner
 import com.example.comarleyaetheraudio.data.player.AudioPlayerHandler
-import com.example.comarleyaetheraudio.data.remote.GitHubUpdateChecker
 import com.example.comarleyaetheraudio.data.repository.AudioRepositoryImpl
 import com.example.comarleyaetheraudio.data.repository.SettingsRepository
 import com.example.comarleyaetheraudio.domain.model.Song
-import com.example.comarleyaetheraudio.presentation.components.dialogs.UpdateAvailableDialog
 import com.example.comarleyaetheraudio.presentation.library.LibraryViewModel
 import com.example.comarleyaetheraudio.presentation.navigation.AppNavigation
 import com.example.comarleyaetheraudio.presentation.navigation.Screen
@@ -121,17 +119,6 @@ fun MainAppStructure(viewModel: LibraryViewModel, isDarkMode: Boolean) {
     val currentTheme = LocalAppearance.current.theme
 
     var showFullPlayer by rememberSaveable { mutableStateOf(false) }
-    var updateInfoState by remember { mutableStateOf<GitHubUpdateChecker.UpdateInfo?>(null) }
-
-    val onlineUpdates = LocalNetworkSettings.current.updates
-    LaunchedEffect(onlineUpdates) {
-        if (!onlineUpdates) { updateInfoState = null; return@LaunchedEffect }
-        val info = GitHubUpdateChecker.checkForUpdates()
-        if (info != null && info.hasUpdate) {
-            updateInfoState = info
-        }
-    }
-
     val navContainerColor = MaterialTheme.colorScheme.background
 
     Scaffold(
@@ -211,12 +198,7 @@ fun MainAppStructure(viewModel: LibraryViewModel, isDarkMode: Boolean) {
                 FullPlayerHost(viewModel, isDarkMode) { showFullPlayer = false }
             }
 
-            updateInfoState?.let { info ->
-                UpdateAvailableDialog(
-                    updateInfo = info,
-                    onDismiss = { updateInfoState = null }
-                )
-            }
+            com.example.comarleyaetheraudio.presentation.updates.VersionNoticesHost(viewModel.versionNotices, LocalNetworkSettings.current.updates)
         }
     }
 }

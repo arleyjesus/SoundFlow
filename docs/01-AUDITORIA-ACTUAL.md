@@ -465,3 +465,10 @@ Firma pública v3.7.0 distinta del debug local. Keystore local con alias
 soundflow_key, contraseña pendiente; no generar otra clave ni recomendar desinstalar.
 Gradle bloqueado antes de tareas por loopback; 158 fuentes y 151 JVM directos.
 No se ejecutó actualización Android ni se generó/publicó APK nuevo.
+
+## 4.0.1 — avisos una vez (2026-11-02)
+
+Confirmado: el aviso anterior no persistía y ChangelogDialog no se mostraba al
+actualizar. Corregido con claims atómicos, coordinador retenido y ciclo de vida.
+No hay push con la app cerrada. 164 JVM directos; prueba real APK pendiente.
+Sin cambios de Room, dependencias o servicios de segundo plano. Detalle: docs/22.

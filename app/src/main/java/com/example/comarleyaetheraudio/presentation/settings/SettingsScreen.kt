@@ -28,7 +28,8 @@ fun SettingsScreen(
     onNavigateToAudioFx: () -> Unit,
     onNavigateToAppearance: () -> Unit = {},
     onBack: () -> Unit = {},
-    onNetworkFeature: (NetworkFeature, Boolean) -> Unit = { _, _ -> }
+    onNetworkFeature: (NetworkFeature, Boolean) -> Unit = { _, _ -> },
+    onUpdateViewed: suspend (String) -> Unit = {}
 ) {
     var showAbout by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -63,7 +64,10 @@ fun SettingsScreen(
                 updateMessage = null
                 try {
                     val info = GitHubUpdateChecker.checkForUpdates(throwOnError = true)
-                    if (info?.hasUpdate == true) updateInfo = info
+                    if (info?.hasUpdate == true) {
+                        onUpdateViewed(info.latestVersionName)
+                        updateInfo = info
+                    }
                     else updateMessage = "No hay una versión estable más reciente publicada."
                 } catch (e: CancellationException) { throw e }
                 catch (_: Exception) { updateMessage = "No se pudo consultar GitHub. Comprueba tu conexión e inténtalo de nuevo." }

@@ -681,3 +681,11 @@ cola del contexto visible y favoritos/playlists. Actualización desde una versi�
 inferior de la misma firma: consulta, descarga, permiso del instalador, instalación,
 reapertura y datos. Rechazo de versión/firma ajenas, integridad, descarga interrumpida
 y falta de espacio. La firma debug y la producción no se intercambian.
+
+## Avisos de actualización y novedades 4.0.1 (2026-11-02)
+
+164 JVM directos correctos (13 nuevos de avisos) y 163 fuentes Kotlin comprobadas.
+Gradle bloqueado antes de tareas; sin APK/Lint nuevos ni instrumentación ejecutada.
+Ver docs/22 para persistencia, concurrencia, privacidad, reintento y prueba en dos
+versiones: 4.0.1 base instalada, después una versión superior con los dos ajustes
+pendientes del usuario. No declarar comprobado el recorrido Android hasta realizarlo.

@@ -33,6 +33,8 @@ Su objetivo es ofrecer una experiencia musical moderna, rápida, personalizable 
 - Opciones de personalización.
 - Consulta y descarga de actualizaciones APK oficiales desde Ajustes, con comprobación
   de versión/firma y confirmación mediante el instalador de Android.
+- Aviso automático una vez por versión al entrar o volver a la app; novedades
+  de la versión instalada una sola vez y disponibles sin conexión.
 - Visualización de audio y letras musicales.
 
 ### ⚙️ Herramientas de reproducción

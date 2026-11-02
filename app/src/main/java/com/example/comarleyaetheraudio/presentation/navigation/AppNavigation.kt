@@ -169,6 +169,7 @@ fun AppNavigation(
 
         composable(Screen.Settings.route) {
             SettingsScreen(
+                onUpdateViewed = { viewModel.versionNotices.noteManualPresentation(it) },
                 onNetworkFeature = viewModel::onNetworkFeature,
                 onNavigateToAudioFx = { navController.navigate(Screen.AudioFx.route) },
                 onNavigateToAppearance = { navController.navigate(Screen.Appearance.route) },

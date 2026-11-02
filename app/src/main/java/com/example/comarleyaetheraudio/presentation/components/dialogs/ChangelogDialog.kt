@@ -33,10 +33,10 @@ fun ChangelogDialog(onDismiss: () -> Unit) {
         },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                ChangelogItem("🎨", "Identidad visual 4.0: iconos propios, cristal sutil y tarjetas de playlists renovadas.")
-                ChangelogItem("🎵", "Reproducción según la lista visible y una onda decorativa que respeta tus ajustes de animación.")
-                ChangelogItem("🖼️", "Fondo personalizado con adaptación clara y oscura; controles con acento de portada.")
-                ChangelogItem("✨", "Smart DJ con sesiones locales y ranking opcional de escuchas en este dispositivo.")
+                ChangelogItem("🔄", "Búsqueda automática de nuevas versiones al abrir o volver a SoundFlow y mientras la app está visible.")
+                ChangelogItem("🔔", "El aviso automático se muestra una sola vez por versión. Puedes volver a buscarla desde Ajustes.")
+                ChangelogItem("✨", "Esta ventana muestra la versión instalada y sus novedades una sola vez, incluso sin conexión.")
+                ChangelogItem("🔒", "La descarga conserva las comprobaciones del APK y la confirmación de instalación de Android.")
             }
         },
         confirmButton = {

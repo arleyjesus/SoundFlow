@@ -372,3 +372,12 @@ Actualización 2026-10-13: APK firmado generado por el usuario, certificado orig
 verificado y release v4.0.0 publicada. 151 JVM Gradle locales sin fallos/errores.
 API latest y hash remoto correctos. Pendientes: Lint nuevo y recorrido real de
 actualización Android. El texto anterior conserva el estado previo a la publicación.
+
+### 4.0.1 — avisos y novedades persistentes (2026-11-02)
+
+Preparada consulta automática en primer plano y avisos una vez por versión.
+Changelog instalado local, privacidad y consulta manual integrados. Ver docs/22.
+164 JVM directos y 163 fuentes Kotlin; publicación e instalación pendientes de
+APK firmado 4.0.1/código 42. Gradle del agente mantiene el bloqueo de loopback.
+Primero instalar esta base; los otros dos ajustes se definirán para una versión
+posterior que permita comprobar el recorrido de actualización completo.

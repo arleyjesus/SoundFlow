@@ -563,3 +563,15 @@ actualización Android aún pendientes. Publicada v4.0.0 sobre b9b8da9 con un
 Publicador permite explícitamente solo los dos perfiles .dm generados sin
 preparar; fuentes siguen protegidas. Perfiles y archivos personales conservados.
 No se modificó main ni se expuso/configuró la contraseña. Detalle en docs/21.
+
+### 2026-11-02 — 4.0.1 preparada: avisos automáticos sin repetición
+
+Registro persistente de versiones presentadas, novedades locales sin conexión y
+consulta al entrar/volver o cada cinco minutos en primer plano. Intervalo mínimo
+de un minuto, respeto a privacidad, descarte de respuestas anteriores y registro
+de la presentación manual. Diálogos separados y coordinador retenido en ViewModel.
+Fuente 4.0.1/código 42; 163 fuentes Kotlin y 164 JVM directos correctos.
+Gradle del agente bloqueado antes de tareas por loopback; no APK/release 4.0.1
+ni nueva validación Android. API latest v4.0.0 comprobada. Datos Room conservados;
+los otros dos ajustes del usuario esperan definición. Detalle y prueba en dos
+entregas (4.0.1 y versión posterior): docs/22.

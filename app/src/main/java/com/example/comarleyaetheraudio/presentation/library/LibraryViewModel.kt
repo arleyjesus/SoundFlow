@@ -28,6 +28,9 @@ class LibraryViewModel(
     val playerHandler: AudioPlayerHandler,
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
+    val versionNotices = com.example.comarleyaetheraudio.presentation.updates.VersionNoticeCoordinator(
+        settingsRepository.versionNotices, com.example.comarleyaetheraudio.BuildConfig.VERSION_CODE,
+        { com.example.comarleyaetheraudio.data.remote.GitHubUpdateChecker.checkForUpdates() })
     suspend fun inspectAudio(song: Song) = repository.inspectAudio(song.contentUri)
     fun onBackground(uri: String?) { viewModelScope.launch { settingsRepository.setBackground(uri) } }
     val listeningCounts = settingsRepository.listeningCounts.flowOn(Dispatchers.Default)

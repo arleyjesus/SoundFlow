@@ -19,6 +19,7 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 private val Context.listeningStore: DataStore<Preferences> by preferencesDataStore(name = "listening_private")
 
 class SettingsRepository(private val store: DataStore<Preferences>, private val historyStore: DataStore<Preferences> = store) {
+    val versionNotices = VersionNoticeStore(store)
     constructor(context: Context) : this(context.applicationContext.dataStore, context.applicationContext.listeningStore)
 
     private val IS_DARK_MODE_KEY = booleanPreferencesKey("is_dark_mode")
