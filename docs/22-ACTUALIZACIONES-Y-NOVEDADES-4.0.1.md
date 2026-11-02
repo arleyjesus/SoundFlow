@@ -135,3 +135,26 @@ escritura remota. Para evitar reutilizar la sesión equivocada, combinar
 autorizar el código en una ventana privada autenticada realmente como arleyjesus.
 El parámetro username es una indicación, no cambia la identidad del token emitido.
 Repetir Test-SoundFlowGitHubAccess.ps1 -RequireWrite antes del siguiente push.
+
+### Compatibilidad Windows PowerShell 5.1
+
+El usuario encontró `fatal: refusing to work with credential missing protocol field`
+al ejecutar el comprobador. Se reprodujo con Windows PowerShell 5.1.26100.9818:
+Console.InputEncoding era UTF-8 con preámbulo de tres bytes; .NET Framework no
+expone ProcessStartInfo.StandardInputEncoding y puede escribir ese preámbulo
+antes del protocolo. El envío inicial por pipeline dependía también de la
+codificación de la sesión. Era un fallo del script, independiente del HTTP 403.
+
+Get-SoundFlowGitCredential.ps1 centraliza una entrada de proceso ASCII explícita,
+sin pipeline ni archivos temporales de credenciales. En .NET moderno establece
+StandardInputEncoding; en PS 5.1 utiliza ASCII durante Start y restaura inmediatamente
+Console.InputEncoding. Lee stdout/stderr en memoria, no imprime tokens/trazas y
+limita a 30 segundos la consulta no interactiva. Comprobador y publicador lo usan.
+
+Test-SoundFlowCredentialProtocol.ps1 usa datos ficticios completos, sin red ni
+credenciales reales. Pasan 12 combinaciones: PowerShell 5.1/7.6.5, OutputEncoding
+ASCII/UTF-8 con BOM/UTF-16, finales LF/CRLF; comprueba también restauración del
+estado de consola. Consulta real del comprobador desde powershell.exe -NoProfile:
+Account=ArleyJ16, CanPush=False, sin error de protocolo. No se intentó otra subida
+ni publicación con esa identidad. Sintaxis y diff --check revisados. No hay cambios
+Android, APK o pruebas JVM nuevos en este ajuste de herramientas.

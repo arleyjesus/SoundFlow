@@ -7,9 +7,8 @@ $taskRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 Push-Location $taskRoot
 $taskHeaders = $null
 try {
-    $taskInput = "protocol=https`nhost=github.com`npath=arleyjesus/SoundFlow.git`nusername=arleyjesus`n`n"
-    $taskCredential = @($taskInput | & git -c credential.interactive=false credential fill)
-    if ($LASTEXITCODE -ne 0) { throw 'No hay una credencial accesible para este proyecto. Inicia sesion primero.' }
+    . (Join-Path $PSScriptRoot 'Get-SoundFlowGitCredential.ps1')
+    $taskCredential = @(Get-SoundFlowGitCredential)
     $taskTokenLine = $taskCredential | Where-Object { $_ -like 'password=*' } | Select-Object -First 1
     if (!$taskTokenLine) { throw 'La credencial no incluye un token utilizable.' }
     $taskHeaders = @{ 'User-Agent' = 'SoundFlow-access-check'; Accept = 'application/vnd.github+json';

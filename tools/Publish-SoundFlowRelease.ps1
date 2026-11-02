@@ -57,8 +57,8 @@ try {
     if (!$Publish) { Write-Host 'Review only. Add -Publish after build/APK verification and authorization.'; return }
     $taskHeaders = @{ 'User-Agent' = 'SoundFlow-release'; Accept = 'application/vnd.github+json'; 'X-GitHub-Api-Version' = '2022-11-28' }
     # Use the existing Git credential helper in memory; never print/store credentials.
-    $taskCredential = "protocol=https`nhost=github.com`npath=arleyjesus/SoundFlow.git`n`n" | & git credential fill
-    if ($LASTEXITCODE -ne 0) { throw 'GitHub credentials unavailable.' }
+    . (Join-Path $PSScriptRoot 'Get-SoundFlowGitCredential.ps1')
+    $taskCredential = @(Get-SoundFlowGitCredential)
     $taskTokenLine = $taskCredential | Where-Object { $_ -like 'password=*' } | Select-Object -First 1
     if (!$taskTokenLine) { throw 'GitHub credentials unavailable.' }
     $taskHeaders.Authorization = 'Bearer ' + $taskTokenLine.Substring(9)
