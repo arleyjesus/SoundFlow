@@ -381,3 +381,7 @@ Changelog instalado local, privacidad y consulta manual integrados. Ver docs/22.
 APK firmado 4.0.1/código 42. Gradle del agente mantiene el bloqueo de loopback.
 Primero instalar esta base; los otros dos ajustes se definirán para una versión
 posterior que permita comprobar el recorrido de actualización completo.
+
+Actualización: 4.0.1/código 42 firmada y publicada el 2026-11-02. Acceso al repositorio
+original resuelto localmente; todos los commits subidos. API latest y hash del APK
+verificados. Pendiente instalación/prueba Android y los otros dos ajustes del usuario.

@@ -191,3 +191,19 @@ No se modificaron ajustes globales, no se borraron cuentas ni se añadieron cola
 Test-SoundFlowGitHubAccess.ps1 -RequireWrite devuelve Account=arleyjesus y
 CanPush=True. El APK 4.0.1 pasa revisión de paquete/código/certificado/hash.
 Pendiente confirmar el resultado remoto del push y publicación autorizados.
+
+### Publicación 4.0.1 confirmada (2026-11-02)
+
+Todos los commits pendientes subidos al repositorio original, rama
+refactor/soundflow-4. Release estable pública v4.0.1 creada sobre
+b5bb88efe61bfcf913ac9f77d8b70d262e723cfe. Un único asset subido:
+SoundFlow-4.0.1.apk (17 640 291 bytes), SHA-256 remoto/local
+d7f18c6f47fb519f3d69fab6e13d6924eb6d71974f92c61bf0a616225b186a3e.
+API releases/latest confirma v4.0.1, no draft/prerelease, estado uploaded y digest
+correcto; página pública confirmada también. No se cambió main ni se incluyeron
+credenciales, archivos personales o los dos perfiles .dm generados.
+
+El bloqueo de publicación queda resuelto. No se afirma aún ejecutado el recorrido
+Android: instalar, ver novedades, cerrar/reabrir y comprobar su no repetición.
+Después de instalar esta base, los dos ajustes todavía pendientes de definición
+podrán formar una versión posterior para probar aviso/descarga/instalación completos.

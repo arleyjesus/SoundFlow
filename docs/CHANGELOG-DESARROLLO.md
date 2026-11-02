@@ -575,3 +575,14 @@ Gradle del agente bloqueado antes de tareas por loopback; no APK/release 4.0.1
 ni nueva validación Android. API latest v4.0.0 comprobada. Datos Room conservados;
 los otros dos ajustes del usuario esperan definición. Detalle y prueba en dos
 entregas (4.0.1 y versión posterior): docs/22.
+
+### 2026-11-02 — acceso original resuelto y 4.0.1 publicada
+
+Autorización del propietario confirmada en navegador; corregida la selección de
+credenciales únicamente en .git/config, con namespace aislado y helper explícito.
+GitHub devuelve arleyjesus/CanPush=True. Subidos todos los commits pendientes a
+refactor/soundflow-4. APK generado por usuario: 4.0.1/código 42, firma original
+válida. Publicada v4.0.1; latest, único APK, tamaño y digest remoto/local correctos.
+No se cambió configuración global, main ni cuentas/permisos de otros proyectos.
+Datos y archivos personales conservados. Prueba real de actualización Android
+y no repetición de ventanas aún pendiente; detalle y plan en docs/22.
