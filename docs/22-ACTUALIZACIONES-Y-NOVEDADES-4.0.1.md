@@ -172,3 +172,22 @@ el bloqueo pendiente es el acceso de escritura al repositorio original.
 Se solicita aclarar si el usuario puede acceder a la cuenta propietaria arleyjesus
 o solo a ArleyJ16 para elegir entre autenticar al propietario o una invitación
 de colaborador. No se efectuó otro intento de push/publicación con permiso falso.
+
+### Acceso resuelto sin cambiar la cuenta global (2026-11-02)
+
+El usuario completó la autorización por dispositivo. Se confirmó en la página
+de perfil del navegador que la sesión era arleyjesus; no fue un login equivocado
+del usuario. La lectura directa de Credential Manager sin ruta devolvía arleyjesus,
+mientras la selección anterior de git credential fill devolvía ArleyJ16.
+
+Selección comprobada y aplicada exclusivamente en .git/config de este proyecto:
+credential.helper con entrada vacía para reiniciar la lista heredada y una segunda
+entrada manager; credential.useHttpPath=false y
+credential.https://github.com.useHttpPath=false. Se conservan username arleyjesus,
+namespace soundflow-arleyjesus y el remoto original con usuario explícito.
+El namespace mantiene la credencial de este proyecto separada de otros proyectos.
+No se modificaron ajustes globales, no se borraron cuentas ni se añadieron colaboradores.
+
+Test-SoundFlowGitHubAccess.ps1 -RequireWrite devuelve Account=arleyjesus y
+CanPush=True. El APK 4.0.1 pasa revisión de paquete/código/certificado/hash.
+Pendiente confirmar el resultado remoto del push y publicación autorizados.
