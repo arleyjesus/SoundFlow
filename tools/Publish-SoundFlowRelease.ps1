@@ -65,6 +65,11 @@ try {
     $taskCredential = $null
     $taskTokenLine = $null
     try {
+        $taskAccess = Invoke-RestMethod -Uri 'https://api.github.com/repos/arleyjesus/SoundFlow' -Headers $taskHeaders
+        if (!$taskAccess.permissions.push) {
+            $taskIdentity = Invoke-RestMethod -Uri 'https://api.github.com/user' -Headers $taskHeaders
+            throw [System.UnauthorizedAccessException]::new("La cuenta '$($taskIdentity.login)' no tiene permiso de escritura en arleyjesus/SoundFlow. No se creo ninguna release.")
+        }
         $taskRemote = Invoke-RestMethod -Uri 'https://api.github.com/repos/arleyjesus/SoundFlow/git/ref/heads/refactor/soundflow-4' -Headers $taskHeaders
         if ($taskRemote.object.sha -ne $taskCommit) { throw 'Push the reviewed commit to the development branch first.' }
         $taskExisting = @(Invoke-RestMethod -Uri 'https://api.github.com/repos/arleyjesus/SoundFlow/releases?per_page=100' -Headers $taskHeaders)
@@ -80,6 +85,7 @@ try {
         if ($taskAsset.digest -and $taskAsset.digest -ne "sha256:$taskHash") { throw 'Remote digest mismatch; release remains draft.' }
         $taskPublished = Invoke-RestMethod -Method Patch -Uri $taskRelease.url -Headers $taskHeaders -ContentType 'application/json' -Body '{"draft":false,"make_latest":"true"}'
         Write-Host "Published: $($taskPublished.html_url)"
-    } catch { throw 'Release publication failed. Review GitHub drafts and credentials; no secrets are printed.' }
+    } catch [System.UnauthorizedAccessException] { throw }
+    catch { throw 'Release publication failed. Review GitHub drafts and credentials; no secrets are printed.' }
     finally { $taskHeaders.Remove('Authorization'); $taskHeaders = $null }
 } finally { Pop-Location }

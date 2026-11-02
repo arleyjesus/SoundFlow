@@ -109,3 +109,29 @@ repositorio antes de subir/publicar. La referencia remota observada sigue en
 5dd0195; 4.0.1 no está publicada. Git diff --check pasa; se conservan ambos
 perfiles .dm y los cinco archivos personales. Compilación firmada y prueba Android
 siguen pendientes, además de este bloqueo de autenticación.
+
+### Identidad real confirmada con la API
+
+Tras los comandos de login del usuario, GET /user devuelve ArleyJ16 y la consulta
+autenticada del repositorio devuelve permissions.push=false y admin=false.
+Username/namespace local no sustituyen el usuario real del token OAuth autorizado.
+No se mostraron ni guardaron tokens. Test-SoundFlowGitHubAccess.ps1 permite repetir
+esa verificación sin cambiar cuentas; -RequireWrite falla si no hay permisos.
+Publish-SoundFlowRelease.ps1 comprueba también el permiso y comunica la identidad
+real antes de crear un borrador. No se efectuó ninguna publicación ni push nuevo.
+
+El único APK release local sigue siendo 4.0.0/código 41 con la firma original.
+El código fuente ya es 4.0.1/código 42: requiere una nueva compilación firmada,
+no editar ni renombrar el APK anterior. Los perfiles y archivos personales siguen
+conservados. Alternativas legítimas: autorizar realmente la cuenta arleyjesus en
+el navegador o que el propietario conceda acceso de escritura a ArleyJ16 y este
+acepte la invitación. Ambas respetan el repositorio original y no requieren cambiar
+la configuración Git global. No eliminar credenciales de otros proyectos.
+
+Sintaxis PowerShell de ambos scripts correcta; ejecución del comprobador con
+-RequireWrite confirma Account=ArleyJ16, CanPush=False y rechazo esperado sin
+escritura remota. Para evitar reutilizar la sesión equivocada, combinar
+`git credential-manager github login --username arleyjesus --force --device` y
+autorizar el código en una ventana privada autenticada realmente como arleyjesus.
+El parámetro username es una indicación, no cambia la identidad del token emitido.
+Repetir Test-SoundFlowGitHubAccess.ps1 -RequireWrite antes del siguiente push.
