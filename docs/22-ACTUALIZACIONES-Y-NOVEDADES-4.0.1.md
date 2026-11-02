@@ -97,3 +97,15 @@ de producción; no desinstalar ni borrar datos para sortear un conflicto de firm
 
 Git inicial: refactor/soundflow-4 en 5dd0195. Dos perfiles .dm generados y cinco
 archivos personales sin seguimiento conservados, sin incluir en los cambios.
+
+## Entrega local y bloqueo de GitHub
+
+Implementación guardada en commit local d5522b9. El push recibió HTTP 403:
+Permission to arleyjesus/SoundFlow.git denied to ArleyJ16. La cuenta registrada
+por Credential Manager figura como arleyjesus, pero seleccionar ese usuario solo
+para el comando devolvió el mismo rechazo. No se borraron credenciales ni se
+modificó la configuración global. Se necesita reautenticación con acceso al
+repositorio antes de subir/publicar. La referencia remota observada sigue en
+5dd0195; 4.0.1 no está publicada. Git diff --check pasa; se conservan ambos
+perfiles .dm y los cinco archivos personales. Compilación firmada y prueba Android
+siguen pendientes, además de este bloqueo de autenticación.
