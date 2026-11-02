@@ -158,3 +158,17 @@ estado de consola. Consulta real del comprobador desde powershell.exe -NoProfile
 Account=ArleyJ16, CanPush=False, sin error de protocolo. No se intentó otra subida
 ni publicación con esa identidad. Sintaxis y diff --check revisados. No hay cambios
 Android, APK o pruebas JVM nuevos en este ajuste de herramientas.
+
+### APK 4.0.1 generado por el usuario y verificado (2026-11-02)
+
+app/release/app-release.apk ahora es 4.0.1/código 42, paquete
+com.example.comarleyaetheraudio, tamaño 17 640 291 bytes. apksigner confirma firma
+v2 válida y certificado original 31cbd14903f1fb7fe086efe8650d2465fbf7cfb6b9ffeaeef7adf01e1d91419b.
+SHA-256 del APK:
+d7f18c6f47fb519f3d69fab6e13d6924eb6d71974f92c61bf0a616225b186a3e.
+Generado el 2 de noviembre a las 15:51 en el equipo del usuario. No se declara
+probado en Android por esta verificación. La falta de APK nuevo queda resuelta;
+el bloqueo pendiente es el acceso de escritura al repositorio original.
+Se solicita aclarar si el usuario puede acceder a la cuenta propietaria arleyjesus
+o solo a ArleyJ16 para elegir entre autenticar al propietario o una invitación
+de colaborador. No se efectuó otro intento de push/publicación con permiso falso.
