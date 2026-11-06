@@ -56,8 +56,11 @@ fun ComarleyjesusaetheraudioTheme(
     content: @Composable () -> Unit
 ) {
     val scheme = remember(appTheme, darkTheme) { soundFlowColorScheme(appTheme, darkTheme) }
+    val quality = remember(darkTheme) {
+        if (darkTheme) SoundFlowColors(androidx.compose.ui.graphics.Color(0xFFFFD700), androidx.compose.ui.graphics.Color(0xFF1A1400))
+        else SoundFlowColors(androidx.compose.ui.graphics.Color(0xFFB8860B), contrastingContent(androidx.compose.ui.graphics.Color(0xFFB8860B)))
+    }
     MaterialTheme(colorScheme = scheme, typography = Typography,
-        shapes = Shapes(extraSmall = RoundedCornerShape(8.dp), small = RoundedCornerShape(12.dp),
-            medium = RoundedCornerShape(18.dp), large = RoundedCornerShape(24.dp), extraLarge = RoundedCornerShape(28.dp)),
-        content = { CompositionLocalProvider(LocalContentColor provides scheme.onBackground) { content() } })
+        shapes = SoundFlowShapes,
+        content = { CompositionLocalProvider(LocalContentColor provides scheme.onBackground, LocalSoundFlowColors provides quality) { content() } })
 }

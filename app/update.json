@@ -1,6 +1,6 @@
 {
-  "versionCode": 4,
-  "versionName": "2.2.0",
-  "apkUrl": "https://github.com/arleyjesus/SoundFlow/releases/download/v2.2.0/app-debug.apk",
-  "changelog": "• Color Dinámico extraído de la carátula (Palette API)\n• Visualizador de espectro audio-reactivo en tiempo real\n• Renderizado optimizado a 120 FPS"
+  "versionCode": 43,
+  "versionName": "4.0.2",
+  "apkUrl": "https://github.com/arleyjesus/SoundFlow/releases/download/v4.0.2/SoundFlow-4.0.2.apk",
+  "changelog": "Integración del diseño con la base 4.0.1; controles, navegación y estados de biblioteca renovados. Candidato local; publicación pendiente."
 }

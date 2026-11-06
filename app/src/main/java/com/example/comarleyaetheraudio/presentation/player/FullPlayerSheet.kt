@@ -67,6 +67,7 @@ fun FullPlayerSheet(
     onToggleShuffle: () -> Unit,
     onEditTags: (String, String, String) -> Unit,
     onRetry: () -> Unit = {},
+    onCycleRepeat: () -> Unit = {},
     sleepTimerState: SleepTimerState = if (currentTimerMinutes > 0)
         SleepTimerState.CountingDown(currentTimerMinutes) else SleepTimerState.Off,
     inspectAudio: suspend (Song) -> AudioInspection = { AudioInspection() }
@@ -407,38 +408,10 @@ fun FullPlayerSheet(
                             .padding(horizontal = 4.dp)
                     )
 
-                    val currentPos = (sliderPosition ?: playerState.currentPosition.toFloat())
-                        .coerceIn(0f, playerState.duration.coerceAtLeast(1L).toFloat())
-                    val totalDuration = playerState.duration.coerceAtLeast(1L).toFloat()
-
-                    Slider(
+                    SeekBar(playerState.currentPosition, playerState.duration, artworkAccent, onSeekTo,
                         enabled = !playerState.isConnecting && playerState.duration > 0,
-                        value = currentPos,
-                        onValueChange = { sliderPosition = it },
-                        onValueChangeFinished = {
-                            sliderPosition?.let { onSeekTo(it.toLong()) }
-                            sliderPosition = null
-                        },
-                        valueRange = 0f..totalDuration,
-                        colors = SliderDefaults.colors(
-                            thumbColor = dominantColor,
-                            activeTrackColor = dominantColor,
-                            inactiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 48.dp)
-                    )
+                        trackKey = song.id)
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 4.dp, end = 4.dp, top = 2.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(text = formatTime(currentPos.toLong()), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(text = formatTime(playerState.duration), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
@@ -448,14 +421,7 @@ fun FullPlayerSheet(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = onToggleShuffle, enabled = !playerState.isConnecting) {
-                        Icon(
-                            SoundFlowIcons.Shuffle,
-                            contentDescription = "Aleatorio",
-                            tint = if (playerState.isShuffleEnabled) dominantColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
+
 
                     IconButton(onClick = onRewind, enabled = !playerState.isConnecting) {
                         Icon(
@@ -474,40 +440,10 @@ fun FullPlayerSheet(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 20.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = onPrevious, enabled = !playerState.isConnecting) {
-                        Icon(SoundFlowIcons.Previous, contentDescription = "Anterior", tint = textColor, modifier = Modifier.size(38.dp))
-                    }
-
-                    Surface(
-                        onClick = onTogglePlayPause,
-                        enabled = !playerState.isConnecting,
-                        modifier = Modifier
-                            .size(68.dp)
-                            .shadow(14.dp, CircleShape, spotColor = artworkAccent),
-                        shape = CircleShape,
-                        color = artworkAccent
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = if (playerState.isPlaying) SoundFlowIcons.Pause else SoundFlowIcons.Play,
-                                contentDescription = if (playerState.isPlaying) "Pausar" else "Reproducir",
-                                modifier = Modifier.size(34.dp),
-                                tint = playContentColor
-                            )
-                        }
-                    }
-
-                    IconButton(onClick = onNext, enabled = !playerState.isConnecting) {
-                        Icon(SoundFlowIcons.Next, contentDescription = "Siguiente", tint = textColor, modifier = Modifier.size(38.dp))
-                    }
-                }
+                PlayerControls(playerState.isPlaying, playerState.isShuffleEnabled, playerState.repeatMode,
+                    artworkAccent, playContentColor, onTogglePlayPause, onPrevious, onNext,
+                    onToggleShuffle, onCycleRepeat, enabled = !playerState.isConnecting,
+                    modifier = Modifier.padding(bottom = 20.dp))
             }
         }
 

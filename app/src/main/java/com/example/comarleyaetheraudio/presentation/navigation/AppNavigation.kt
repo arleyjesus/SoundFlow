@@ -107,6 +107,7 @@ fun AppNavigation(
                 playlists = playlists,
                 favoriteIds = favoriteIds,
                 playerState = playerState,
+                isLoading = viewModel.isLibraryLoading.collectAsStateWithLifecycle().value,
                 isDarkMode = isDarkMode,
                 onSongClick = { song ->
                     viewModel.playerHandler.playSong(song, songs)

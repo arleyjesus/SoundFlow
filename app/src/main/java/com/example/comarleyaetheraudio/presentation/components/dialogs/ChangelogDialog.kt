@@ -11,7 +11,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.comarleyaetheraudio.ui.theme.ElectricPurple
 
 @Composable
 fun ChangelogDialog(onDismiss: () -> Unit) {
@@ -33,10 +32,10 @@ fun ChangelogDialog(onDismiss: () -> Unit) {
         },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                ChangelogItem("🔄", "Búsqueda automática de nuevas versiones al abrir o volver a SoundFlow y mientras la app está visible.")
-                ChangelogItem("🔔", "El aviso automático se muestra una sola vez por versión. Puedes volver a buscarla desde Ajustes.")
-                ChangelogItem("✨", "Esta ventana muestra la versión instalada y sus novedades una sola vez, incluso sin conexión.")
-                ChangelogItem("🔒", "La descarga conserva las comprobaciones del APK y la confirmación de instalación de Android.")
+                ChangelogItem("🎨", "Tipografía, navegación y filas de canciones unificadas con el nuevo diseño.")
+                ChangelogItem("▶", "Controles renovados, modos de repetición y deslizamiento del minirreproductor para cambiar de pista.")
+                ChangelogItem("✨", "Indicador de la canción actual y estados de carga que respetan las opciones de animación.")
+                ChangelogItem("🔒", "Se conservan favoritos, playlists, privacidad y comprobaciones de actualización de la versión 4.0.1.")
             }
         },
         confirmButton = {

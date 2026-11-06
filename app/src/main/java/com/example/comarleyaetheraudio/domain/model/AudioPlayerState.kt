@@ -9,8 +9,11 @@ data class AudioPlayerState(
     val currentPosition: Long = 0L,
     val duration: Long = 0L,
     val isShuffleEnabled: Boolean = false,
+    val repeatMode: RepeatMode = RepeatMode.ALL,
     val artworkData: ByteArray? = null,
     val isConnecting: Boolean = true,
     val isBuffering: Boolean = false,
     val errorMessage: String? = null
 )
+
+enum class RepeatMode { OFF, ALL, ONE }

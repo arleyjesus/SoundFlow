@@ -17,6 +17,7 @@ import androidx.media3.session.SessionToken
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
 import com.example.comarleyaetheraudio.domain.model.AudioEffectsState
+import com.example.comarleyaetheraudio.domain.model.RepeatMode
 import com.example.comarleyaetheraudio.domain.model.AudioPlayerState
 import com.example.comarleyaetheraudio.domain.model.Song
 import com.example.comarleyaetheraudio.domain.playback.playbackDuration
@@ -119,7 +120,7 @@ class AudioPlayerHandler(private val context: Context) {
                 val controller = future.get()
                 player = controller
                 controller.addListener(listener)
-                _playerState.update { it.copy(isConnecting = false) }
+                _playerState.update { it.copy(isConnecting = false, repeatMode = controller.repeatMode.toDomainRepeatMode()) }
                 requestAudioEffects(AudioEffectsProtocol.GET)
                 val request = pendingPlay
                 pendingPlay = null
@@ -148,6 +149,10 @@ class AudioPlayerHandler(private val context: Context) {
 
             override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
                 _playerState.update { it.copy(isShuffleEnabled = shuffleModeEnabled) }
+            }
+
+            override fun onRepeatModeChanged(repeatMode: Int) {
+                _playerState.update { it.copy(repeatMode = repeatMode.toDomainRepeatMode()) }
             }
 
             override fun onPlayerError(error: PlaybackException) {
@@ -286,7 +291,7 @@ class AudioPlayerHandler(private val context: Context) {
 
         if (reuseQueue) {
             p.shuffleModeEnabled = request.shuffle
-            p.repeatMode = Player.REPEAT_MODE_ALL
+            p.repeatMode = _playerState.value.repeatMode.toExoRepeatMode()
             p.seekTo(request.startIndex, 0L)
             if (p.playbackState == Player.STATE_IDLE || p.playerError != null) p.prepare()
             p.volume = 1f
@@ -317,7 +322,7 @@ class AudioPlayerHandler(private val context: Context) {
             p.shuffleModeEnabled = request.shuffle
 
             // ⚡ Mantiene la reproducción cíclica infinita dentro de la playlist
-            p.repeatMode = Player.REPEAT_MODE_ALL
+            p.repeatMode = _playerState.value.repeatMode.toExoRepeatMode()
 
             p.prepare()
             p.volume = 1.0f
@@ -356,6 +361,28 @@ class AudioPlayerHandler(private val context: Context) {
 
     fun toggleShuffle() {
         player?.let { it.shuffleModeEnabled = !it.shuffleModeEnabled }
+    }
+
+    /** Alterna OFF → ALL → ONE → OFF. */
+    fun cycleRepeatMode() {
+        val next = when (_playerState.value.repeatMode) {
+            RepeatMode.OFF -> RepeatMode.ALL
+            RepeatMode.ALL -> RepeatMode.ONE
+            RepeatMode.ONE -> RepeatMode.OFF
+        }
+        player?.repeatMode = next.toExoRepeatMode()
+    }
+
+    private fun RepeatMode.toExoRepeatMode(): Int = when (this) {
+        RepeatMode.OFF -> Player.REPEAT_MODE_OFF
+        RepeatMode.ALL -> Player.REPEAT_MODE_ALL
+        RepeatMode.ONE -> Player.REPEAT_MODE_ONE
+    }
+
+    private fun Int.toDomainRepeatMode(): RepeatMode = when (this) {
+        Player.REPEAT_MODE_ONE -> RepeatMode.ONE
+        Player.REPEAT_MODE_ALL -> RepeatMode.ALL
+        else -> RepeatMode.OFF
     }
 
     fun playNext() {

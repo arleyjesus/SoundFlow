@@ -51,8 +51,13 @@ class LibraryViewModel(
         viewModelScope.launch { settingsRepository.setNetworkFeature(feature, enabled) }
     }
 
-    val songs: StateFlow<List<Song>> = repository.allSongs
+    private data class LibrarySnapshot(val songs: List<Song> = emptyList(), val loading: Boolean = true)
+    private val librarySnapshot = repository.allSongs.map { LibrarySnapshot(it, false) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LibrarySnapshot())
+    val songs: StateFlow<List<Song>> = librarySnapshot.map { it.songs }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val isLibraryLoading: StateFlow<Boolean> = librarySnapshot.map { it.loading }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
     val artistGrouped: StateFlow<Map<String, List<Song>>> = songs.map { list ->
         list.groupBy { it.artist }

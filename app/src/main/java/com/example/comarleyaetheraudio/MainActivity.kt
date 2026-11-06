@@ -40,6 +40,10 @@ import com.example.comarleyaetheraudio.data.local.util.FolderScanner
 import com.example.comarleyaetheraudio.data.player.AudioPlayerHandler
 import com.example.comarleyaetheraudio.data.repository.AudioRepositoryImpl
 import com.example.comarleyaetheraudio.data.repository.SettingsRepository
+import com.example.comarleyaetheraudio.presentation.components.common.LocalNowPlaying
+import com.example.comarleyaetheraudio.presentation.components.common.NowPlayingInfo
+import com.example.comarleyaetheraudio.presentation.navigation.SoundFlowBottomBar
+import com.example.comarleyaetheraudio.presentation.player.MiniPlayer
 import com.example.comarleyaetheraudio.domain.model.Song
 import com.example.comarleyaetheraudio.presentation.library.LibraryViewModel
 import com.example.comarleyaetheraudio.presentation.navigation.AppNavigation
@@ -131,56 +135,18 @@ fun MainAppStructure(viewModel: LibraryViewModel, isDarkMode: Boolean) {
                     .background(navContainerColor)
             ) {
                 if (!showFullPlayer) MiniPlayerHost(viewModel) { showFullPlayer = true }
-                NavigationBar(
-                    containerColor = navContainerColor,
-                    tonalElevation = 0.dp,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    val navItems = listOf(
-                        Pair(Screen.Home, SoundFlowIcons.Home),
-                        Pair(Screen.Library, SoundFlowIcons.Library),
-                        Pair(Screen.Search, SoundFlowIcons.Search),
-                        Pair(Screen.Profile, SoundFlowIcons.Profile)
-                    )
-
-                    navItems.forEachIndexed { index, (screen, iconVector) ->
-                        NavigationBarItem(
-                            icon = { Icon(iconVector, contentDescription = screen.title) },
-                            label = {
-                                Text(
-                                    text = screen.title,
-                                    style = MaterialTheme.typography.labelSmall
-                                )
-                            },
-                            selected = currentRoute == screen.route,
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = MaterialTheme.colorScheme.primary,
-                                selectedTextColor = MaterialTheme.colorScheme.primary,
-                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                indicatorColor = MaterialTheme.colorScheme.primaryContainer
-                            ),
-                            onClick = {
-                                navController.navigate(screen.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            }
-                        )
-                        if (index < navItems.lastIndex) Box(Modifier.width(0.5.dp).height(18.dp).background(
-                            androidx.compose.ui.graphics.Brush.verticalGradient(listOf(
-                                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.05f),
-                                MaterialTheme.colorScheme.outline.copy(alpha = 0.12f),
-                                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.05f)))))
+                SoundFlowBottomBar(currentRoute) { screen ->
+                    navController.navigate(screen.route) {
+                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
                     }
                 }
             }
         }
     ) { paddingValues ->
         Box(modifier = Modifier.padding(paddingValues).consumeWindowInsets(paddingValues)) {
+            CompositionLocalProvider(LocalNowPlaying provides NowPlayingInfo(playerState.currentSong?.id, playerState.isPlaying)) {
             AppNavigation(
                 navController = navController,
                 viewModel = viewModel,
@@ -193,6 +159,7 @@ fun MainAppStructure(viewModel: LibraryViewModel, isDarkMode: Boolean) {
                 currentTheme = currentTheme,
                 isDarkMode = isDarkMode
             )
+            }
 
             if (showFullPlayer) {
                 FullPlayerHost(viewModel, isDarkMode) { showFullPlayer = false }
@@ -205,12 +172,16 @@ fun MainAppStructure(viewModel: LibraryViewModel, isDarkMode: Boolean) {
 
 @Composable
 private fun MiniPlayerHost(viewModel: LibraryViewModel, onExpand: () -> Unit) {
-    val state by viewModel.playerState.collectAsStateWithLifecycle()
+    val holder = viewModel.playerState.collectAsStateWithLifecycle()
+    val state = holder.value
     val song = state.currentSong
-    if (song == null) PlaybackStatusBanner(state, viewModel.playerHandler::retryPlayback)
-    else MiniPlayerCard(state, onExpand, viewModel::onTogglePlayPause,
-        viewModel.playerHandler::playNext, viewModel.playerHandler::retryPlayback,
-        artwork = { MiniPlayerSongCover(song) })
+    PlaybackStatusBanner(state, viewModel.playerHandler::retryPlayback)
+    if (song != null) MiniPlayer(song, state.isPlaying, progress = {
+        val latest = holder.value
+        if (latest.duration > 0) (latest.currentPosition.toFloat() / latest.duration).coerceIn(0f, 1f) else 0f
+    }, onTogglePlayPause = viewModel::onTogglePlayPause,
+        onNext = viewModel.playerHandler::playNext, onPrevious = viewModel.playerHandler::playPrevious, onOpen = onExpand)
+
 }
 
 @Composable
@@ -229,6 +200,7 @@ private fun FullPlayerHost(viewModel: LibraryViewModel, isDarkMode: Boolean, onD
         onPrevious = viewModel.playerHandler::playPrevious, onRewind = { viewModel.playerHandler.seekRewind() },
         onForward = { viewModel.playerHandler.seekForward() }, onToggleShuffle = viewModel.playerHandler::toggleShuffle,
         onRetry = viewModel.playerHandler::retryPlayback,
+        onCycleRepeat = viewModel.playerHandler::cycleRepeatMode,
         inspectAudio = viewModel::inspectAudio,
         onEditTags = { title, artist, album -> song?.let { viewModel.updateSongTags(it, title, artist, album) } })
 }

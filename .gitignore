@@ -36,3 +36,9 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+# Agent assistant files
+.agents/
+skills-lock.json
+SoundFlow-*.txt
+estructura_soundflow.txt

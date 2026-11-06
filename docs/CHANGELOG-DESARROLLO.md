@@ -1,5 +1,28 @@
 ﻿# Registro de desarrollo de SoundFlow 4.0
 
+## 2026-11-05 — Implementación del Sistema de Diseño MASTER.md (SoundFlow 4.0.2)
+
+- Definición del Sistema de Diseño en MASTER.md y persistencia en design-system/:
+  calibración de diales (--variance 6, --motion 5, --density 5), tokens semánticos
+  de color para los cuatro temas (Principal, Clásico, Cool, Minimalista), formas (Shape.kt),
+  espaciado (Dimens.kt) y movimiento adaptativo (Motion.kt, respetando reduced motion).
+- Componentes comunes reutilizables y accesibles en presentation/components/common/:
+  Shimmer animado sin sobrecarga de recomposición, HiResBadge con cálculo de kHz,
+  CoverImage con soporte de caché Coil/CoverCacheManager, EqualizerBars reactivo,
+  EmptyState unificado y CompositionLocal NowPlaying para filas de pistas.
+- Refactorización de pista en TrackRow.kt / SongItem.kt: indicador visual de
+  reproducción activa, metadatos legibles y áreas táctiles de 48 dp mínimas con
+  semántica TalkBack.
+- MiniPlayer reactivo: gestos horizontales táctiles (swipe para anterior/siguiente) con
+  acciones accesibles, lectura de progreso mediante lambda (evita recomposición total) y
+  borde sutil tonal.
+- Controles del reproductor (PlayerControls.kt y SeekBar.kt): corrección del ciclo de
+  repetición (OFF -> ALL -> ONE) respaldado por AudioPlayerState.repeatMode, arrastre suave
+  en barra de tiempo y contraste garantizado (ColorUtils.ensureContrast).
+- Unificación del espacio de trabajo sobre la rama refactor/soundflow-4 (versión 4.0.2, código 43).
+- Verificación: compilación Kotlin limpia (compileDebugKotlin), pruebas JVM superadas
+  (testDebugUnitTest), sin impacto destructivo en Room ni en dependencias.
+
 ## 2026-10-12 — Primer bloque funcional de fases 6/7
 
 - Smart DJ local en Inicio: hasta 30 sugerencias por metadatos y favoritos,
@@ -27,6 +50,29 @@
   no se vuelve a compilar por un cambio documental. Fases 6/7 abiertas, sin release.
 - Documentación actualizada localmente; sin staging, commit ni push.
 
+## 2026-11-05 — Implementación del Sistema de Diseño MASTER.md (SoundFlow 4.0.2)
+
+- Definición del Sistema de Diseño en MASTER.md y persistencia en design-system/:
+  calibración de diales (--variance 6, --motion 5, --density 5), tokens semánticos
+  de color para los cuatro temas (Principal, Clásico, Cool, Minimalista), formas (Shape.kt),
+  espaciado (Dimens.kt) y movimiento adaptativo (Motion.kt, respetando reduced motion).
+- Componentes comunes reutilizables y accesibles en presentation/components/common/:
+  Shimmer animado sin sobrecarga de recomposición, HiResBadge con cálculo de kHz,
+  CoverImage con soporte de caché Coil/CoverCacheManager, EqualizerBars reactivo,
+  EmptyState unificado y CompositionLocal NowPlaying para filas de pistas.
+- Refactorización de pista en TrackRow.kt / SongItem.kt: indicador visual de
+  reproducción activa, metadatos legibles y áreas táctiles de 48 dp mínimas con
+  semántica TalkBack.
+- MiniPlayer reactivo: gestos horizontales táctiles (swipe para anterior/siguiente) con
+  acciones accesibles, lectura de progreso mediante lambda (evita recomposición total) y
+  borde sutil tonal.
+- Controles del reproductor (PlayerControls.kt y SeekBar.kt): corrección del ciclo de
+  repetición (OFF -> ALL -> ONE) respaldado por AudioPlayerState.repeatMode, arrastre suave
+  en barra de tiempo y contraste garantizado (ColorUtils.ensureContrast).
+- Unificación del espacio de trabajo sobre la rama refactor/soundflow-4 (versión 4.0.2, código 43).
+- Verificación: compilación Kotlin limpia (compileDebugKotlin), pruebas JVM superadas
+  (testDebugUnitTest), sin impacto destructivo en Room ni en dependencias.
+
 ## 2026-10-12 — Revisión de cierre de desarrollo 4/5
 
 - Verificados informes reales del usuario: Gradle correcto, app/androidTest,
@@ -45,6 +91,29 @@
   visual/TalkBack siguen sin ejecutar. Desarrollo esencial listo con validación
   externa pendiente; no se declara cierre integral ni lanzamiento de fases 4–7.
 - Rama y modificaciones existentes conservadas; sin staging, commit ni push.
+
+## 2026-11-05 — Implementación del Sistema de Diseño MASTER.md (SoundFlow 4.0.2)
+
+- Definición del Sistema de Diseño en MASTER.md y persistencia en design-system/:
+  calibración de diales (--variance 6, --motion 5, --density 5), tokens semánticos
+  de color para los cuatro temas (Principal, Clásico, Cool, Minimalista), formas (Shape.kt),
+  espaciado (Dimens.kt) y movimiento adaptativo (Motion.kt, respetando reduced motion).
+- Componentes comunes reutilizables y accesibles en presentation/components/common/:
+  Shimmer animado sin sobrecarga de recomposición, HiResBadge con cálculo de kHz,
+  CoverImage con soporte de caché Coil/CoverCacheManager, EqualizerBars reactivo,
+  EmptyState unificado y CompositionLocal NowPlaying para filas de pistas.
+- Refactorización de pista en TrackRow.kt / SongItem.kt: indicador visual de
+  reproducción activa, metadatos legibles y áreas táctiles de 48 dp mínimas con
+  semántica TalkBack.
+- MiniPlayer reactivo: gestos horizontales táctiles (swipe para anterior/siguiente) con
+  acciones accesibles, lectura de progreso mediante lambda (evita recomposición total) y
+  borde sutil tonal.
+- Controles del reproductor (PlayerControls.kt y SeekBar.kt): corrección del ciclo de
+  repetición (OFF -> ALL -> ONE) respaldado por AudioPlayerState.repeatMode, arrastre suave
+  en barra de tiempo y contraste garantizado (ColorUtils.ensureContrast).
+- Unificación del espacio de trabajo sobre la rama refactor/soundflow-4 (versión 4.0.2, código 43).
+- Verificación: compilación Kotlin limpia (compileDebugKotlin), pruebas JVM superadas
+  (testDebugUnitTest), sin impacto destructivo en Room ni en dependencias.
 
 ## 2026-10-12 - Ajustes finales 4/5, Audio Inspector y preparación 7
 
@@ -68,6 +137,29 @@
 - Documentos 14–16 registran archivos, pruebas, viabilidad y requisitos pendientes.
   No se declara cierre de fases 4–7 ni release 4.0. Sin staging, commit ni push.
 
+## 2026-11-05 — Implementación del Sistema de Diseño MASTER.md (SoundFlow 4.0.2)
+
+- Definición del Sistema de Diseño en MASTER.md y persistencia en design-system/:
+  calibración de diales (--variance 6, --motion 5, --density 5), tokens semánticos
+  de color para los cuatro temas (Principal, Clásico, Cool, Minimalista), formas (Shape.kt),
+  espaciado (Dimens.kt) y movimiento adaptativo (Motion.kt, respetando reduced motion).
+- Componentes comunes reutilizables y accesibles en presentation/components/common/:
+  Shimmer animado sin sobrecarga de recomposición, HiResBadge con cálculo de kHz,
+  CoverImage con soporte de caché Coil/CoverCacheManager, EqualizerBars reactivo,
+  EmptyState unificado y CompositionLocal NowPlaying para filas de pistas.
+- Refactorización de pista en TrackRow.kt / SongItem.kt: indicador visual de
+  reproducción activa, metadatos legibles y áreas táctiles de 48 dp mínimas con
+  semántica TalkBack.
+- MiniPlayer reactivo: gestos horizontales táctiles (swipe para anterior/siguiente) con
+  acciones accesibles, lectura de progreso mediante lambda (evita recomposición total) y
+  borde sutil tonal.
+- Controles del reproductor (PlayerControls.kt y SeekBar.kt): corrección del ciclo de
+  repetición (OFF -> ALL -> ONE) respaldado por AudioPlayerState.repeatMode, arrastre suave
+  en barra de tiempo y contraste garantizado (ColorUtils.ensureContrast).
+- Unificación del espacio de trabajo sobre la rama refactor/soundflow-4 (versión 4.0.2, código 43).
+- Verificación: compilación Kotlin limpia (compileDebugKotlin), pruebas JVM superadas
+  (testDebugUnitTest), sin impacto destructivo en Room ni en dependencias.
+
 ## 2026-10-12 - APK del rediseño aceptado en general
 
 - Usuario confirma prueba satisfactoria del APK. App/tests regenerados a las
@@ -78,6 +170,29 @@
   matriz visual y mediciones pendientes; no se declara terminada toda la fase 5.
 - Solo documentación y respaldo local del estado aceptado. Sin cambios de código,
   staging, commit ni push. Rama refactor/soundflow-4 y cambios existentes conservados.
+
+## 2026-11-05 — Implementación del Sistema de Diseño MASTER.md (SoundFlow 4.0.2)
+
+- Definición del Sistema de Diseño en MASTER.md y persistencia en design-system/:
+  calibración de diales (--variance 6, --motion 5, --density 5), tokens semánticos
+  de color para los cuatro temas (Principal, Clásico, Cool, Minimalista), formas (Shape.kt),
+  espaciado (Dimens.kt) y movimiento adaptativo (Motion.kt, respetando reduced motion).
+- Componentes comunes reutilizables y accesibles en presentation/components/common/:
+  Shimmer animado sin sobrecarga de recomposición, HiResBadge con cálculo de kHz,
+  CoverImage con soporte de caché Coil/CoverCacheManager, EqualizerBars reactivo,
+  EmptyState unificado y CompositionLocal NowPlaying para filas de pistas.
+- Refactorización de pista en TrackRow.kt / SongItem.kt: indicador visual de
+  reproducción activa, metadatos legibles y áreas táctiles de 48 dp mínimas con
+  semántica TalkBack.
+- MiniPlayer reactivo: gestos horizontales táctiles (swipe para anterior/siguiente) con
+  acciones accesibles, lectura de progreso mediante lambda (evita recomposición total) y
+  borde sutil tonal.
+- Controles del reproductor (PlayerControls.kt y SeekBar.kt): corrección del ciclo de
+  repetición (OFF -> ALL -> ONE) respaldado por AudioPlayerState.repeatMode, arrastre suave
+  en barra de tiempo y contraste garantizado (ColorUtils.ensureContrast).
+- Unificación del espacio de trabajo sobre la rama refactor/soundflow-4 (versión 4.0.2, código 43).
+- Verificación: compilación Kotlin limpia (compileDebugKotlin), pruebas JVM superadas
+  (testDebugUnitTest), sin impacto destructivo en Room ni en dependencias.
 
 ## 2026-10-12 - Rediseño visual fase 5 sobre APK aceptado
 

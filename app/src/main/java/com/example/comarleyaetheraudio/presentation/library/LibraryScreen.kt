@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -33,6 +34,8 @@ import com.example.comarleyaetheraudio.data.local.util.CoverCacheManager
 import com.example.comarleyaetheraudio.domain.model.AudioPlayerState
 import com.example.comarleyaetheraudio.domain.model.Playlist
 import com.example.comarleyaetheraudio.domain.model.Song
+import com.example.comarleyaetheraudio.presentation.components.common.EmptyState
+import com.example.comarleyaetheraudio.presentation.components.common.ShimmerTrackList
 import com.example.comarleyaetheraudio.presentation.components.items.SongItem
 import com.example.comarleyaetheraudio.presentation.components.items.SongOptionsMenuSheet
 import com.example.comarleyaetheraudio.presentation.library.components.ArtistDetailBottomSheet
@@ -48,6 +51,7 @@ fun LibraryScreen(
     playlists: List<Playlist>,
     favoriteIds: List<Long>,
     playerState: AudioPlayerState = AudioPlayerState(),
+    isLoading: Boolean = false,
     isDarkMode: Boolean = false,
     onSongClick: (Song) -> Unit,
     onSongClickWithPlaylist: (Song, List<Song>) -> Unit = { song, _ -> onSongClick(song) },
@@ -140,6 +144,17 @@ fun LibraryScreen(
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
+                            if (songs.isEmpty()) {
+                                item(key = "empty_or_loading") {
+                                    if (isLoading) ShimmerTrackList()
+                                    else EmptyState(
+                                        icon = Icons.Default.LibraryMusic,
+                                        title = "Tu biblioteca está vacía",
+                                        message = "Añade una carpeta de música desde Perfil para empezar.",
+                                        modifier = Modifier.height(320.dp)
+                                    )
+                                }
+                            }
                             item(contentType = "header_stats") {
                                 Row(
                                     modifier = Modifier
